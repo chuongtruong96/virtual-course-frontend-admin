@@ -1,0 +1,60 @@
+/* ActionButton.css */
+
+.action-btn {
+  padding: 10px 10px;
+  margin: 2px;
+  border-radius: 5px;
+  font-size: 12px; /* Điều chỉnh kích thước chữ cho dễ đọc */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  font-weight: bold;
+  transition: background-color 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.action-btn.edit {
+  background-color: #4CAF50;  /* Green */
+  color: white;
+}
+
+.action-btn.delete {
+  background-color: #f44336;  /* Red */
+  color: white;
+}
+
+.action-btn.enable {
+  background-color: #008CBA;  /* Blue */
+  color: white;
+}
+
+.action-btn.disable {
+  background-color: #f27575;  /* Gray */
+  color: black;
+}
+
+/* Hiệu ứng hover: thêm bóng đổ và thay đổi màu nền */
+.action-btn:hover {
+  opacity: 0.8;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); /* Thêm bóng đổ khi hover */
+}
+
+
+.action-btn:focus {
+  outline: none;
+}
+
+.action-btn .icon {
+  margin-right: 5px;
+  font-size: 1.2em;
+}
+
+/* Cải thiện hiệu ứng focus cho tính năng Accessibility */
+.action-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.5);
+}
+
+.action-btn:active {
+  transform: translateY(2px); /* Tạo hiệu ứng nhấn nút khi click */
+}

@@ -1,0 +1,25 @@
+/* App.css */
+.MuiTableCell-head {
+    font-weight: bold;
+  }
+  
+  .MuiTableCell-body {
+    padding: 12px;
+  }
+  
+  .MuiTableRow-root {
+    cursor: pointer;
+  }
+  
+  .MuiTablePagination-root {
+    justify-content: center;
+  }
+  
+  .MuiChip-root {
+    padding: 5px 10px;
+  }
+  
+  .MuiTableSortLabel-root {
+    color: #1976d2;
+  }
+  
