@@ -1,7 +1,12 @@
-// src/contexts/AuthContext.js
+// src/contexts/AuthContext.js (hoặc .jsx)
 import React, { createContext, useState, useEffect } from 'react';
-import jwt_decode from 'jwt-decode';
-import authService from '../contexts/';
+// IMPORT default export (nếu bạn đã cài jwt-decode version phù hợp)
+import jwt_decode from 'jwt-decode'; 
+// Hoặc nếu bạn vẫn bị lỗi, hãy thử: 
+// import * as jwt_decode from 'jwt-decode'; 
+// rồi gọi jwt_decode.default(token) thay vì jwt_decode(token).
+
+import authService from '../services/authService';
 
 export const AuthContext = createContext();
 
@@ -15,7 +20,7 @@ export const AuthProvider = ({ children }) => {
     // Kiểm tra token từ localStorage khi ứng dụng tải lên
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (storedUser && storedUser.jwt) {
-      const decoded = jwt_decode(storedUser.jwt);
+      const decoded = jwt_decode(storedUser.jwt); 
       setAuth({
         token: storedUser.jwt,
         user: decoded,
