@@ -1,7 +1,7 @@
 // src/contexts/AuthContext.js (hoặc .jsx)
 import React, { createContext, useState, useEffect } from 'react';
 // IMPORT default export (nếu bạn đã cài jwt-decode version phù hợp)
-import jwt_decode from 'jwt-decode'; 
+import jwt_decode  from 'jwt-decode';
 // Hoặc nếu bạn vẫn bị lỗi, hãy thử: 
 // import * as jwt_decode from 'jwt-decode'; 
 // rồi gọi jwt_decode.default(token) thay vì jwt_decode(token).
@@ -51,3 +51,4 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+export default AuthContext;
