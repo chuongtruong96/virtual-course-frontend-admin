@@ -1,25 +1,23 @@
 // src/services/authService.js
 import axios from 'axios';
 
-// URL của backend
 const API_URL = 'http://localhost:8080/api/auth/';
 
-// Đăng ký người dùng
+// Đăng ký
 const register = (userData) => {
   return axios.post(`${API_URL}register`, userData);
 };
 
-// Đăng nhập người dùng
+// Đăng nhập
 const login = async (userData) => {
   const response = await axios.post(`${API_URL}login`, userData);
-    if (response.data.jwt) {
-        // Lưu token vào localStorage
-        localStorage.setItem('user', JSON.stringify(response.data));
-    }
-    return response.data;
+  if (response.data.jwt) {
+    localStorage.setItem('user', JSON.stringify(response.data));
+  }
+  return response.data;
 };
 
-// Đăng xuất người dùng
+// Đăng xuất
 const logout = () => {
   localStorage.removeItem('user');
 };
