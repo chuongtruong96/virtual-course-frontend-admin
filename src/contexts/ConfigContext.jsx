@@ -1,20 +1,23 @@
-// src/contexts/ConfigContext.jsx
 import PropTypes from 'prop-types';
 import React, { createContext, useReducer } from 'react';
 import * as actionType from '../store/actions';
 import { CONFIG } from '../config/constant';
 
-// State mặc định
+// Trạng thái mặc định
 const initialState = {
   ...CONFIG,
   isOpen: [],
   isTrigger: []
 };
 
+// Tạo Context
 export const ConfigContext = createContext(initialState);
 const { Provider } = ConfigContext;
 
-const ConfigProvider = ({ children }) => {
+/**
+ * Tạo Provider (Named Export)
+ */
+export const ConfigProvider = ({ children }) => {
   const [state, dispatch] = useReducer((currState, action) => {
     let trigger = [];
     let open = [];
@@ -31,15 +34,17 @@ const ConfigProvider = ({ children }) => {
           collapseMenu: !currState.collapseMenu
         };
       case actionType.COLLAPSE_TOGGLE:
-        if (action.menu.type === 'sub') {
+        if (action.menu?.type === 'sub') {
           open = currState.isOpen;
           trigger = currState.isTrigger;
 
           const triggerIndex = trigger.indexOf(action.menu.id);
           if (triggerIndex > -1) {
+            // Đã tồn tại => remove
             open = open.filter((item) => item !== action.menu.id);
             trigger = trigger.filter((item) => item !== action.menu.id);
           } else {
+            // Chưa có => thêm
             open = [...open, action.menu.id];
             trigger = [...trigger, action.menu.id];
           }
@@ -55,7 +60,7 @@ const ConfigProvider = ({ children }) => {
           isTrigger: trigger
         };
       case actionType.NAV_COLLAPSE_LEAVE:
-        if (action.menu.type === 'sub') {
+        if (action.menu?.type === 'sub') {
           open = currState.isOpen;
           trigger = currState.isTrigger;
 
@@ -97,5 +102,3 @@ const ConfigProvider = ({ children }) => {
 ConfigProvider.propTypes = {
   children: PropTypes.node
 };
-
-export default ConfigProvider;
