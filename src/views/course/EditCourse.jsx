@@ -1,10 +1,11 @@
 // src/views/course/EditCourse.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Button, Form, Alert, Spinner } from 'react-bootstrap';
+import { Button, Form, Alert, Spinner, Image } from 'react-bootstrap';
 import CourseService from '../../services/courseService';
 import CategoryService from '../../services/categoryService';
 import InstructorService from '../../services/instructorService';
+import { uploadPhoto } from '../../services/fileService'; // Import phương thức upload
 import { useParams, useNavigate } from 'react-router-dom';
 
 const EditCourse = () => {
@@ -12,6 +13,7 @@ const EditCourse = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [uploading, setUploading] = useState(false);
     const [categories, setCategories] = useState([]);
     const [instructors, setInstructors] = useState([]);
     const [formData, setFormData] = useState({
@@ -22,8 +24,15 @@ const EditCourse = () => {
         basePrice: '',
         duration: '',
         status: 'ACTIVE',
+        imageCover: '', // Thêm trường imageCover
+        urlVideo: '',
+        hashtag: '',
         // Các trường khác nếu cần
     });
+
+    // State quản lý file upload & preview
+    const [file, setFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -41,9 +50,20 @@ const EditCourse = () => {
                     basePrice: courseData.basePrice,
                     duration: courseData.duration,
                     status: courseData.status,
+                    imageCover: courseData.imageCover || '',
+                    urlVideo: courseData.urlVideo || '',
+                    hashtag: courseData.hashtag || '',
+                    // Các trường khác nếu cần
                 });
                 setCategories(categoryData);
                 setInstructors(instructorData);
+
+                // Xử lý preview nếu đã có imageCover
+                if (courseData.imageCover) {
+                    setImagePreview(`http://localhost:8080/uploads/course/${courseData.imageCover}`);
+                } else {
+                    setImagePreview('https://via.placeholder.com/150'); // Ảnh mặc định
+                }
             } catch (error) {
                 console.error("Error fetching course data:", error);
                 setError('Failed to load course data.');
@@ -57,6 +77,40 @@ const EditCourse = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleFileChange = (e) => {
+        const chosenFile = e.target.files[0];
+        if (chosenFile) {
+            setFile(chosenFile);
+            setImagePreview(URL.createObjectURL(chosenFile)); // Preview local
+        }
+    };
+
+    const handleUpload = async () => {
+        if (!file) {
+            alert('Please choose a file to upload.');
+            return;
+        }
+        setUploading(true);
+        setError(null);
+        try {
+            // Gọi API uploadPhoto cho entity='course'
+            const uploadedFileName = await uploadPhoto(file, 'course');
+
+            // Set imageCover thành tên file
+            setFormData(prev => ({ ...prev, imageCover: uploadedFileName }));
+
+            // Set imagePreview thành đường dẫn đầy đủ
+            setImagePreview(`http://localhost:8080/uploads/course/${uploadedFileName}`);
+
+            alert('Image uploaded successfully!');
+        } catch (err) {
+            console.error('Error uploading image:', err);
+            setError('Failed to upload image.');
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -88,16 +142,20 @@ const EditCourse = () => {
     };
 
     if (loading) {
-        return <Spinner animation="border" />;
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+                <Spinner animation="border" />
+            </div>
+        );
     }
 
     return (
-        <div>
+        <div className="container mt-4">
             <h2>Edit Course</h2>
             {error && <Alert variant="danger">{error}</Alert>}
             <Form onSubmit={handleSubmit}>
                 <Form.Group controlId="titleCourse" className="mb-3">
-                    <Form.Label>Course Title</Form.Label>
+                    <Form.Label>Course Title *</Form.Label>
                     <Form.Control
                         type="text"
                         name="titleCourse"
@@ -108,7 +166,7 @@ const EditCourse = () => {
                 </Form.Group>
 
                 <Form.Group controlId="description" className="mb-3">
-                    <Form.Label>Description</Form.Label>
+                    <Form.Label>Description *</Form.Label>
                     <Form.Control
                         as="textarea"
                         rows={3}
@@ -120,7 +178,7 @@ const EditCourse = () => {
                 </Form.Group>
 
                 <Form.Group controlId="categoryId" className="mb-3">
-                    <Form.Label>Category</Form.Label>
+                    <Form.Label>Category *</Form.Label>
                     <Form.Control as="select" name="categoryId" value={formData.categoryId} onChange={handleChange} required>
                         <option value="">Select Category</option>
                         {categories.map(category => (
@@ -130,7 +188,7 @@ const EditCourse = () => {
                 </Form.Group>
 
                 <Form.Group controlId="level" className="mb-3">
-                    <Form.Label>Level</Form.Label>
+                    <Form.Label>Level *</Form.Label>
                     <Form.Control as="select" name="level" value={formData.level} onChange={handleChange} required>
                         <option value="BEGINNER">BEGINNER</option>
                         <option value="INTERMEDIATE">INTERMEDIATE</option>
@@ -139,7 +197,7 @@ const EditCourse = () => {
                 </Form.Group>
 
                 <Form.Group controlId="basePrice" className="mb-3">
-                    <Form.Label>Base Price</Form.Label>
+                    <Form.Label>Base Price *</Form.Label>
                     <Form.Control
                         type="number"
                         name="basePrice"
@@ -150,7 +208,7 @@ const EditCourse = () => {
                 </Form.Group>
 
                 <Form.Group controlId="duration" className="mb-3">
-                    <Form.Label>Duration (hrs)</Form.Label>
+                    <Form.Label>Duration (hrs) *</Form.Label>
                     <Form.Control
                         type="number"
                         name="duration"
@@ -161,11 +219,31 @@ const EditCourse = () => {
                 </Form.Group>
 
                 <Form.Group controlId="status" className="mb-3">
-                    <Form.Label>Status</Form.Label>
+                    <Form.Label>Status *</Form.Label>
                     <Form.Control as="select" name="status" value={formData.status} onChange={handleChange} required>
                         <option value="ACTIVE">ACTIVE</option>
                         <option value="INACTIVE">INACTIVE</option>
                     </Form.Control>
+                </Form.Group>
+
+                {/* Upload Image Cover */}
+                <Form.Group controlId="imageCover" className="mb-3">
+                    <Form.Label>Image Cover</Form.Label>
+                    <div className="d-flex align-items-center">
+                        <Form.Control
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                        />
+                        <Button variant="outline-primary" className="ms-2" onClick={handleUpload} disabled={!file || uploading}>
+                            {uploading ? 'Uploading...' : 'Upload'}
+                        </Button>
+                    </div>
+                    {imagePreview && (
+                        <div className="mt-3">
+                            <Image src={imagePreview} alt="Course Cover" thumbnail width={200} />
+                        </div>
+                    )}
                 </Form.Group>
 
                 {/* Các trường khác nếu cần */}

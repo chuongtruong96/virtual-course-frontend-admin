@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import instructorService from '../../services/instructorService';
-import { uploadInstructorPhoto } from '../../services/fileService';
+import { uploadPhoto } from '../../services/fileService';
 import { Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import '../../styles/EditInstructorForm.css';

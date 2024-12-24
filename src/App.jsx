@@ -1,6 +1,6 @@
 // src/App.jsx
 import React from 'react';
-
+import '@fortawesome/fontawesome-free/css/all.min.css';
 import { BrowserRouter } from 'react-router-dom';
 
 import routes, { renderRoutes } from './routes';

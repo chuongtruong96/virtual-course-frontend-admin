@@ -11,7 +11,7 @@ import api from "../untils/api";
 export const uploadPhoto = async (file, entity) => {
     const formData = new FormData();
     formData.append("file", file);
-
+    formData.append('entity', entity);
     try {
         const response = await api.post(`/files/upload/${entity}`, formData, {
             // Không cần đặt Content-Type, axios sẽ tự động đặt nó là multipart/form-data với boundary

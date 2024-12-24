@@ -1,5 +1,7 @@
+// src/views/dashboard/index.jsx
+
 import React from 'react';
-import { Row, Col, Card, Table, Tabs, Tab } from 'react-bootstrap';
+import { Grid, Card, CardContent, Typography, Avatar, Box, LinearProgress, Tabs, Tab, Button } from '@mui/material';
 import { Link } from 'react-router-dom';
 
 import avatar1 from '../../assets/images/user/avatar-1.jpg';
@@ -7,581 +9,251 @@ import avatar2 from '../../assets/images/user/avatar-2.jpg';
 import avatar3 from '../../assets/images/user/avatar-3.jpg';
 
 const dashSalesData = [
-  { title: 'Daily Sales', amount: '$249.95', icon: 'icon-arrow-up text-c-green', value: 50, class: 'progress-c-theme' },
-  { title: 'Monthly Sales', amount: '$2.942.32', icon: 'icon-arrow-down text-c-red', value: 36, class: 'progress-c-theme2' },
-  { title: 'Yearly Sales', amount: '$8.638.32', icon: 'icon-arrow-up text-c-green', value: 70, color: 'progress-c-theme' }
+  { title: 'Daily Sales', amount: '$249.95', icon: 'arrow_upward', value: 50, color: 'primary' },
+  { title: 'Monthly Sales', amount: '$2,942.32', icon: 'arrow_downward', value: 36, color: 'error' },
+  { title: 'Yearly Sales', amount: '$8,638.32', icon: 'arrow_upward', value: 70, color: 'primary' },
+];
+
+const userActivityData = [
+  { name: 'Silje Larsen', avatar: avatar1, change: 3784, trend: 'up', color: 'success' },
+  { name: 'Julie Vad', avatar: avatar2, change: 3544, trend: 'up', color: 'success' },
+  { name: 'Storm Hanse', avatar: avatar3, change: 2739, trend: 'down', color: 'error' },
+  { name: 'Frida Thomse', avatar: avatar1, change: 1032, trend: 'down', color: 'error' },
+  { name: 'Silje Larsen', avatar: avatar2, change: 8750, trend: 'up', color: 'success' },
+  { name: 'Storm Hanse', avatar: avatar3, change: 8750, trend: 'down', color: 'error' },
 ];
 
 const DashDefault = () => {
-  const tabContent = (
-    <React.Fragment>
-      <div className="d-flex friendlist-box align-items-center justify-content-center m-b-20">
-        <div className="m-r-10 photo-table flex-shrink-0">
-          <Link to="#">
-            <img className="rounded-circle" style={{ width: '40px' }} src={avatar1} alt="activity-user" />
-          </Link>
-        </div>
-        <div className="flex-grow-1 ms-3">
-          <h6 className="m-0 d-inline">Silje Larsen</h6>
-          <span className="float-end d-flex  align-items-center">
-            <i className="fa fa-caret-up f-22 m-r-10 text-c-green" />
-            3784
-          </span>
-        </div>
-      </div>
-      <div className="d-flex friendlist-box align-items-center justify-content-center m-b-20">
-        <div className="m-r-10 photo-table flex-shrink-0">
-          <Link to="#">
-            <img className="rounded-circle" style={{ width: '40px' }} src={avatar2} alt="activity-user" />
-          </Link>
-        </div>
-        <div className="flex-grow-1 ms-3">
-          <h6 className="m-0 d-inline">Julie Vad</h6>
-          <span className="float-end d-flex  align-items-center">
-            <i className="fa fa-caret-up f-22 m-r-10 text-c-green" />
-            3544
-          </span>
-        </div>
-      </div>
-      <div className="d-flex friendlist-box align-items-center justify-content-center m-b-20">
-        <div className="m-r-10 photo-table flex-shrink-0">
-          <Link to="#">
-            <img className="rounded-circle" style={{ width: '40px' }} src={avatar3} alt="activity-user" />
-          </Link>
-        </div>
-        <div className="flex-grow-1 ms-3">
-          <h6 className="m-0 d-inline">Storm Hanse</h6>
-          <span className="float-end d-flex  align-items-center">
-            <i className="fa fa-caret-down f-22 m-r-10 text-c-red" />
-            2739
-          </span>
-        </div>
-      </div>
-      <div className="d-flex friendlist-box align-items-center justify-content-center m-b-20">
-        <div className="m-r-10 photo-table flex-shrink-0">
-          <Link to="#">
-            <img className="rounded-circle" style={{ width: '40px' }} src={avatar1} alt="activity-user" />
-          </Link>
-        </div>
-        <div className="flex-grow-1 ms-3">
-          <h6 className="m-0 d-inline">Frida Thomse</h6>
-          <span className="float-end d-flex  align-items-center">
-            <i className="fa fa-caret-down f-22 m-r-10 text-c-red" />
-            1032
-          </span>
-        </div>
-      </div>
-      <div className="d-flex friendlist-box align-items-center justify-content-center m-b-20">
-        <div className="m-r-10 photo-table flex-shrink-0">
-          <Link to="#">
-            <img className="rounded-circle" style={{ width: '40px' }} src={avatar2} alt="activity-user" />
-          </Link>
-        </div>
-        <div className="flex-grow-1 ms-3">
-          <h6 className="m-0 d-inline">Silje Larsen</h6>
-          <span className="float-end d-flex  align-items-center">
-            <i className="fa fa-caret-up f-22 m-r-10 text-c-green" />
-            8750
-          </span>
-        </div>
-      </div>
-      <div className="d-flex friendlist-box align-items-center justify-content-center">
-        <div className="m-r-10 photo-table flex-shrink-0">
-          <Link to="#">
-            <img className="rounded-circle" style={{ width: '40px' }} src={avatar3} alt="activity-user" />
-          </Link>
-        </div>
-        <div className="flex-grow-1 ms-3">
-          <h6 className="m-0 d-inline">Storm Hanse</h6>
-          <span className="float-end d-flex  align-items-center">
-            <i className="fa fa-caret-down f-22 m-r-10 text-c-red" />
-            8750
-          </span>
-        </div>
-      </div>
-    </React.Fragment>
-  );
+  const [tabValue, setTabValue] = React.useState(0);
+
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+  };
+
   return (
-    <React.Fragment>
-      <Row>
-        {dashSalesData.map((data, index) => {
-          return (
-            <Col key={index} xl={6} xxl={4}>
-              <Card>
-                <Card.Body>
-                  <h6 className="mb-4">{data.title}</h6>
-                  <div className="row d-flex align-items-center">
-                    <div className="col-9">
-                      <h3 className="f-w-300 d-flex align-items-center m-b-0">
-                        <i className={`feather ${data.icon} f-30 m-r-5`} /> $249.95
-                      </h3>
-                    </div>
-                    <div className="col-3 text-end">
-                      <p className="m-b-0">{data.value}%</p>
-                    </div>
-                  </div>
-                  <div className="progress m-t-30" style={{ height: '7px' }}>
-                    <div
-                      className={`progress-bar ${data.class}`}
-                      role="progressbar"
-                      style={{ width: `${data.value}%` }}
-                      aria-valuenow={data.value}
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          );
-        })}
-        <Col md={6} xl={8}>
-          <Card className="Recent-Users widget-focus-lg">
-            <Card.Header>
-              <Card.Title as="h5">Recent Users</Card.Title>
-            </Card.Header>
-            <Card.Body className="px-0 py-2">
-              <Table responsive hover className="recent-users">
-                <tbody>
-                  <tr className="unread">
-                    <td>
-                      <img className="rounded-circle" style={{ width: '40px' }} src={avatar1} alt="activity-user" />
-                    </td>
-                    <td>
-                      <h6 className="mb-1">Isabella Christensen</h6>
-                      <p className="m-0">Lorem Ipsum is simply dummy text of…</p>
-                    </td>
-                    <td>
-                      <h6 className="text-muted">
-                        <i className="fa fa-circle text-c-green f-10 m-r-15" />
-                        11 MAY 12:56
-                      </h6>
-                    </td>
-                    <td>
-                      <Link to="#" className="label theme-bg2 text-white f-12">
-                        Reject
-                      </Link>
-                      <Link to="#" className="label theme-bg text-white f-12">
-                        Approve
-                      </Link>
-                    </td>
-                  </tr>
-                  <tr className="unread">
-                    <td>
-                      <img className="rounded-circle" style={{ width: '40px' }} src={avatar2} alt="activity-user" />
-                    </td>
-                    <td>
-                      <h6 className="mb-1">Mathilde Andersen</h6>
-                      <p className="m-0">Lorem Ipsum is simply dummy text of…</p>
-                    </td>
-                    <td>
-                      <h6 className="text-muted">
-                        <i className="fa fa-circle text-c-red f-10 m-r-15" />
-                        11 MAY 10:35
-                      </h6>
-                    </td>
-                    <td>
-                      <Link to="#" className="label theme-bg2 text-white f-12">
-                        Reject
-                      </Link>
-                      <Link to="#" className="label theme-bg text-white f-12">
-                        Approve
-                      </Link>
-                    </td>
-                  </tr>
-                  <tr className="unread">
-                    <td>
-                      <img className="rounded-circle" style={{ width: '40px' }} src={avatar3} alt="activity-user" />
-                    </td>
-                    <td>
-                      <h6 className="mb-1">Karla Sorensen</h6>
-                      <p className="m-0">Lorem Ipsum is simply dummy text of…</p>
-                    </td>
-                    <td>
-                      <h6 className="text-muted">
-                        <i className="fa fa-circle text-c-green f-10 m-r-15" />9 MAY 17:38
-                      </h6>
-                    </td>
-                    <td>
-                      <Link to="#" className="label theme-bg2 text-white f-12">
-                        Reject
-                      </Link>
-                      <Link to="#" className="label theme-bg text-white f-12">
-                        Approve
-                      </Link>
-                    </td>
-                  </tr>
-                  <tr className="unread">
-                    <td>
-                      <img className="rounded-circle" style={{ width: '40px' }} src={avatar1} alt="activity-user" />
-                    </td>
-                    <td>
-                      <h6 className="mb-1">Ida Jorgensen</h6>
-                      <p className="m-0">Lorem Ipsum is simply dummy text of…</p>
-                    </td>
-                    <td>
-                      <h6 className="text-muted f-w-300">
-                        <i className="fa fa-circle text-c-red f-10 m-r-15" />
-                        19 MAY 12:56
-                      </h6>
-                    </td>
-                    <td>
-                      <Link to="#" className="label theme-bg2 text-white f-12">
-                        Reject
-                      </Link>
-                      <Link to="#" className="label theme-bg text-white f-12">
-                        Approve
-                      </Link>
-                    </td>
-                  </tr>
-                  <tr className="unread">
-                    <td>
-                      <img className="rounded-circle" style={{ width: '40px' }} src={avatar2} alt="activity-user" />
-                    </td>
-                    <td>
-                      <h6 className="mb-1">Albert Andersen</h6>
-                      <p className="m-0">Lorem Ipsum is simply dummy text of…</p>
-                    </td>
-                    <td>
-                      <h6 className="text-muted">
-                        <i className="fa fa-circle text-c-green f-10 m-r-15" />
-                        21 July 12:56
-                      </h6>
-                    </td>
-                    <td>
-                      <Link to="#" className="label theme-bg2 text-white f-12">
-                        Reject
-                      </Link>
-                      <Link to="#" className="label theme-bg text-white f-12">
-                        Approve
-                      </Link>
-                    </td>
-                  </tr>
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={6} xl={4}>
-          <Card className="card-event">
-            <Card.Body>
-              <div className="row align-items-center justify-content-center">
-                <div className="col">
-                  <h5 className="m-0">Upcoming Event</h5>
-                </div>
-                <div className="col-auto">
-                  <label className="label theme-bg2 text-white f-14 f-w-400 float-end">34%</label>
-                </div>
-              </div>
-              <h2 className="mt-2 f-w-300">
-                45<sub className="text-muted f-14">Competitors</sub>
-              </h2>
-              <h6 className="text-muted mt-3 mb-0">You can participate in event </h6>
-              <i className="fab fa-angellist text-c-purple f-50" />
-            </Card.Body>
-          </Card>
+    <Box sx={{ flexGrow: 1, padding: 2 }}>
+      <Grid container spacing={2}>
+        {dashSalesData.map((data, index) => (
+          <Grid item xs={12} md={6} lg={4} key={index}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  {data.title}
+                </Typography>
+                <Box display="flex" alignItems="center">
+                  <Avatar sx={{ bgcolor: data.color === 'primary' ? 'primary.main' : 'error.main', mr: 2 }}>
+                    {data.icon === 'arrow_upward' ? <i className="fa fa-arrow-up" /> : <i className="fa fa-arrow-down" />}
+                  </Avatar>
+                  <Typography variant="h5" component="div">
+                    {data.amount}
+                  </Typography>
+                </Box>
+                <Box sx={{ mt: 2 }}>
+                  <LinearProgress variant="determinate" value={data.value} color={data.color} />
+                  <Typography variant="body2" color="text.secondary">
+                    {data.value}%
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+
+        {/* Recent Users */}
+        <Grid item xs={12} md={6} lg={8}>
           <Card>
-            <Card.Body className="border-bottom">
-              <div className="row d-flex align-items-center">
-                <div className="col-auto">
-                  <i className="feather icon-zap f-30 text-c-green" />
-                </div>
-                <div className="col">
-                  <h3 className="f-w-300">235</h3>
-                  <span className="d-block text-uppercase">total ideas</span>
-                </div>
-              </div>
-            </Card.Body>
-            <Card.Body>
-              <div className="row d-flex align-items-center">
-                <div className="col-auto">
-                  <i className="feather icon-map-pin f-30 text-c-blue" />
-                </div>
-                <div className="col">
-                  <h3 className="f-w-300">26</h3>
-                  <span className="d-block text-uppercase">total locations</span>
-                </div>
-              </div>
-            </Card.Body>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Recent Users
+              </Typography>
+              {userActivityData.map((user, index) => (
+                <Box key={index} display="flex" alignItems="center" mb={2}>
+                  <Avatar src={user.avatar} alt={user.name} sx={{ mr: 2 }} />
+                  <Box flexGrow={1}>
+                    <Typography variant="subtitle1">{user.name}</Typography>
+                  </Box>
+                  <Box display="flex" alignItems="center">
+                    <i className={`fa fa-caret-${user.trend === 'up' ? 'up' : 'down'}`} style={{ color: user.color === 'success' ? 'green' : 'red' }} />
+                    <Typography variant="body2" color={user.color === 'success' ? 'green' : 'red'} sx={{ ml: 1 }}>
+                      {user.change}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+              <Button component={Link} to="#" variant="contained" color="primary">
+                View All
+              </Button>
+            </CardContent>
           </Card>
-        </Col>
-        <Col md={6} xl={4}>
-          <Card className="card-social">
-            <Card.Body className="border-bottom">
-              <div className="row align-items-center justify-content-center">
-                <div className="col-auto">
-                  <i className="fab fa-facebook-f text-primary f-36" />
-                </div>
-                <div className="col text-end">
-                  <h3>12,281</h3>
-                  <h5 className="text-c-green mb-0">
-                    +7.2% <span className="text-muted">Total Likes</span>
-                  </h5>
-                </div>
-              </div>
-            </Card.Body>
-            <Card.Body>
-              <div className="row align-items-center justify-content-center card-active">
-                <div className="col-6">
-                  <h6 className="text-center m-b-10">
-                    <span className="text-muted m-r-5">Target:</span>35,098
-                  </h6>
-                  <div className="progress">
-                    <div
-                      className="progress-bar progress-c-theme"
-                      role="progressbar"
-                      style={{ width: '60%', height: '6px' }}
-                      aria-valuenow="60"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </div>
-                <div className="col-6">
-                  <h6 className="text-center  m-b-10">
-                    <span className="text-muted m-r-5">Duration:</span>350
-                  </h6>
-                  <div className="progress">
-                    <div
-                      className="progress-bar progress-c-theme2"
-                      role="progressbar"
-                      style={{ width: '45%', height: '6px' }}
-                      aria-valuenow="45"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card.Body>
+        </Grid>
+
+        {/* Additional Widgets */}
+        <Grid item xs={12} md={6} lg={4}>
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Upcoming Event
+              </Typography>
+              <Typography variant="h4" gutterBottom>
+                45 <Typography variant="subtitle2" component="span">Competitors</Typography>
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                You can participate in event
+              </Typography>
+              <Avatar sx={{ bgcolor: 'purple.main', width: 56, height: 56 }}>
+                <i className="fab fa-angellist" />
+              </Avatar>
+            </CardContent>
           </Card>
-        </Col>
-        <Col md={6} xl={4}>
-          <Card className="card-social">
-            <Card.Body className="border-bottom">
-              <div className="row align-items-center justify-content-center">
-                <div className="col-auto">
-                  <i className="fab fa-twitter text-c-blue f-36" />
-                </div>
-                <div className="col text-end">
-                  <h3>11,200</h3>
-                  <h5 className="text-c-purple mb-0">
-                    +6.2% <span className="text-muted">Total Likes</span>
-                  </h5>
-                </div>
-              </div>
-            </Card.Body>
-            <Card.Body>
-              <div className="row align-items-center justify-content-center card-active">
-                <div className="col-6">
-                  <h6 className="text-center m-b-10">
-                    <span className="text-muted m-r-5">Target:</span>34,185
-                  </h6>
-                  <div className="progress">
-                    <div
-                      className="progress-bar progress-c-green"
-                      role="progressbar"
-                      style={{ width: '40%', height: '6px' }}
-                      aria-valuenow="40"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </div>
-                <div className="col-6">
-                  <h6 className="text-center  m-b-10">
-                    <span className="text-muted m-r-5">Duration:</span>800
-                  </h6>
-                  <div className="progress">
-                    <div
-                      className="progress-bar progress-c-blue"
-                      role="progressbar"
-                      style={{ width: '70%', height: '6px' }}
-                      aria-valuenow="70"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card.Body>
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Statistics
+              </Typography>
+              <Box display="flex" justifyContent="space-between" mb={2}>
+                <Box>
+                  <Typography variant="h5">235</Typography>
+                  <Typography variant="subtitle2">Total Ideas</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="h5">26</Typography>
+                  <Typography variant="subtitle2">Total Locations</Typography>
+                </Box>
+              </Box>
+              <Box display="flex" justifyContent="space-between">
+                <Box>
+                  <Typography variant="body2">Ideas</Typography>
+                  <LinearProgress variant="determinate" value={70} color="primary" />
+                </Box>
+                <Box>
+                  <Typography variant="body2">Locations</Typography>
+                  <LinearProgress variant="determinate" value={35} color="secondary" />
+                </Box>
+              </Box>
+            </CardContent>
           </Card>
-        </Col>
-        <Col xl={4}>
-          <Card className="card-social">
-            <Card.Body className="border-bottom">
-              <div className="row align-items-center justify-content-center">
-                <div className="col-auto">
-                  <i className="fab fa-google-plus-g text-c-red f-36" />
-                </div>
-                <div className="col text-end">
-                  <h3>10,500</h3>
-                  <h5 className="text-c-blue mb-0">
-                    +5.9% <span className="text-muted">Total Likes</span>
-                  </h5>
-                </div>
-              </div>
-            </Card.Body>
-            <Card.Body>
-              <div className="row align-items-center justify-content-center card-active">
-                <div className="col-6">
-                  <h6 className="text-center m-b-10">
-                    <span className="text-muted m-r-5">Target:</span>25,998
-                  </h6>
-                  <div className="progress">
-                    <div
-                      className="progress-bar progress-c-theme"
-                      role="progressbar"
-                      style={{ width: '80%', height: '6px' }}
-                      aria-valuenow="80"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </div>
-                <div className="col-6">
-                  <h6 className="text-center  m-b-10">
-                    <span className="text-muted m-r-5">Duration:</span>900
-                  </h6>
-                  <div className="progress">
-                    <div
-                      className="progress-bar progress-c-theme2"
-                      role="progressbar"
-                      style={{ width: '50%', height: '6px' }}
-                      aria-valuenow="50"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card.Body>
+        </Grid>
+
+        <Grid item xs={12} md={6} lg={4}>
+          {/* Social Cards */}
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Box>
+                  <i className="fab fa-facebook-f fa-2x" style={{ color: '#1877F2' }}></i>
+                </Box>
+                <Box textAlign="right">
+                  <Typography variant="h5">12,281</Typography>
+                  <Typography variant="body2" color="success.main">+7.2% Total Likes</Typography>
+                </Box>
+              </Box>
+              <Box>
+                <Typography variant="body2" gutterBottom>Target: 35,098</Typography>
+                <LinearProgress variant="determinate" value={60} color="primary" />
+                <Typography variant="body2" gutterBottom>Duration: 350</Typography>
+                <LinearProgress variant="determinate" value={45} color="secondary" />
+              </Box>
+            </CardContent>
           </Card>
-        </Col>
-        <Col md={6} xl={4}>
+
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Box>
+                  <i className="fab fa-twitter fa-2x" style={{ color: '#1DA1F2' }}></i>
+                </Box>
+                <Box textAlign="right">
+                  <Typography variant="h5">11,200</Typography>
+                  <Typography variant="body2" color="success.main">+6.2% Total Likes</Typography>
+                </Box>
+              </Box>
+              <Box>
+                <Typography variant="body2" gutterBottom>Target: 34,185</Typography>
+                <LinearProgress variant="determinate" value={40} color="primary" />
+                <Typography variant="body2" gutterBottom>Duration: 800</Typography>
+                <LinearProgress variant="determinate" value={70} color="primary" />
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Box>
+                  <i className="fab fa-google-plus-g fa-2x" style={{ color: '#DB4437' }}></i>
+                </Box>
+                <Box textAlign="right">
+                  <Typography variant="h5">10,500</Typography>
+                  <Typography variant="body2" color="success.main">+5.9% Total Likes</Typography>
+                </Box>
+              </Box>
+              <Box>
+                <Typography variant="body2" gutterBottom>Target: 25,998</Typography>
+                <LinearProgress variant="determinate" value={80} color="primary" />
+                <Typography variant="body2" gutterBottom>Duration: 900</Typography>
+                <LinearProgress variant="determinate" value={50} color="secondary" />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6} lg={8}>
+          {/* Rating Card */}
           <Card>
-            <Card.Header>
-              <Card.Title as="h5">Rating</Card.Title>
-            </Card.Header>
-            <Card.Body>
-              <div className="row align-items-center justify-content-center m-b-20">
-                <div className="col-6">
-                  <h2 className="f-w-300 d-flex align-items-center float-start m-0">
-                    4.7 <i className="fa fa-star f-10 m-l-10 text-c-yellow" />
-                  </h2>
-                </div>
-                <div className="col-6">
-                  <h6 className="d-flex  align-items-center float-end m-0">
-                    0.4 <i className="fa fa-caret-up text-c-green f-22 m-l-10" />
-                  </h6>
-                </div>
-              </div>
-
-              <div className="row">
-                <div className="col-xl-12">
-                  <h6 className="align-items-center float-start">
-                    <i className="fa fa-star f-10 m-r-10 text-c-yellow" />5
-                  </h6>
-                  <h6 className="align-items-center float-end">384</h6>
-                  <div className="progress m-t-30 m-b-20" style={{ height: '6px' }}>
-                    <div
-                      className="progress-bar progress-c-theme"
-                      role="progressbar"
-                      style={{ width: '70%' }}
-                      aria-valuenow="70"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </div>
-
-                <div className="col-xl-12">
-                  <h6 className="align-items-center float-start">
-                    <i className="fa fa-star f-10 m-r-10 text-c-yellow" />4
-                  </h6>
-                  <h6 className="align-items-center float-end">145</h6>
-                  <div className="progress m-t-30  m-b-20" style={{ height: '6px' }}>
-                    <div
-                      className="progress-bar progress-c-theme"
-                      role="progressbar"
-                      style={{ width: '35%' }}
-                      aria-valuenow="35"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </div>
-
-                <div className="col-xl-12">
-                  <h6 className="align-items-center float-start">
-                    <i className="fa fa-star f-10 m-r-10 text-c-yellow" />3
-                  </h6>
-                  <h6 className="align-items-center float-end">24</h6>
-                  <div className="progress m-t-30  m-b-20" style={{ height: '6px' }}>
-                    <div
-                      className="progress-bar progress-c-theme"
-                      role="progressbar"
-                      style={{ width: '25%' }}
-                      aria-valuenow="25"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </div>
-
-                <div className="col-xl-12">
-                  <h6 className="align-items-center float-start">
-                    <i className="fa fa-star f-10 m-r-10 text-c-yellow" />2
-                  </h6>
-                  <h6 className="align-items-center float-end">1</h6>
-                  <div className="progress m-t-30  m-b-20" style={{ height: '6px' }}>
-                    <div
-                      className="progress-bar progress-c-theme"
-                      role="progressbar"
-                      style={{ width: '10%' }}
-                      aria-valuenow="10"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </div>
-                <div className="col-xl-12">
-                  <h6 className="align-items-center float-start">
-                    <i className="fa fa-star f-10 m-r-10 text-c-yellow" />1
-                  </h6>
-                  <h6 className="align-items-center float-end">0</h6>
-                  <div className="progress m-t-30  m-b-5" style={{ height: '6px' }}>
-                    <div
-                      className="progress-bar"
-                      role="progressbar"
-                      style={{ width: '0%' }}
-                      aria-valuenow="0"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card.Body>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Box>
+                  <Typography variant="h4">4.7 <Typography variant="subtitle1" component="span">★</Typography></Typography>
+                </Box>
+                <Box display="flex" alignItems="center">
+                  <Typography variant="body1" color="success.main">+0.4%</Typography>
+                  <i className="fa fa-arrow-up" style={{ color: 'green', marginLeft: '5px' }}></i>
+                </Box>
+              </Box>
+              <Box>
+                {[5, 4, 3, 2, 1].map((star) => (
+                  <Box key={star} display="flex" alignItems="center" mb={1}>
+                    <Typography variant="body2" sx={{ width: '20px' }}>{star}★</Typography>
+                    <LinearProgress variant="determinate" value={star === 5 ? 70 : star === 4 ? 35 : star === 3 ? 25 : star === 2 ? 10 : 0} sx={{ flexGrow: 1, mr: 2 }} />
+                    <Typography variant="body2">{star === 5 ? 384 : star === 4 ? 145 : star === 3 ? 24 : star === 2 ? 1 : 0}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </CardContent>
           </Card>
-        </Col>
-        <Col md={6} xl={8} className="user-activity">
+
+          {/* User Activity with Tabs */}
           <Card>
-            <Tabs defaultActiveKey="today" id="uncontrolled-tab-example">
-              <Tab eventKey="today" title="Today">
-                {tabContent}
-              </Tab>
-              <Tab eventKey="week" title="This Week">
-                {tabContent}
-              </Tab>
-              <Tab eventKey="all" title="All">
-                {tabContent}
-              </Tab>
-            </Tabs>
+            <CardContent>
+              <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
+                <Tab label="Today" />
+                <Tab label="This Week" />
+                <Tab label="All" />
+              </Tabs>
+              <Box mt={2}>
+                {userActivityData.map((user, index) => (
+                  <Box key={index} display="flex" alignItems="center" mb={2}>
+                    <Avatar src={user.avatar} alt={user.name} sx={{ mr: 2 }} />
+                    <Box flexGrow={1}>
+                      <Typography variant="subtitle1">{user.name}</Typography>
+                    </Box>
+                    <Box display="flex" alignItems="center">
+                      <i className={`fa fa-caret-${user.trend === 'up' ? 'up' : 'down'}`} style={{ color: user.color === 'success' ? 'green' : 'red' }} />
+                      <Typography variant="body2" color={user.color === 'success' ? 'green' : 'red'} sx={{ ml: 1 }}>
+                        {user.change}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+                <Button variant="contained" color="primary" fullWidth>
+                  View All
+                </Button>
+              </Box>
+            </CardContent>
           </Card>
-        </Col>
-      </Row>
-    </React.Fragment>
+        </Grid>
+      </Grid>
+    </Box>
   );
 };
 

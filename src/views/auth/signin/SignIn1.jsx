@@ -1,14 +1,15 @@
+// src/views/auth/signin/SignIn1.js
 import React from 'react';
-import { Card, Button, Alert } from 'react-bootstrap';
+import { Card, Alert, Button } from 'react-bootstrap';
 import { NavLink, Link } from 'react-router-dom';
 
 import Breadcrumb from '../../../layouts/AdminLayout/Breadcrumb';
 
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 
-import AuthLogin from './JWTLogin';
+import JWTLogin from './JWTLogin';
 
-const Signin1 = () => {
+const SignIn1 = () => {
   return (
     <React.Fragment>
       <Breadcrumb />
@@ -25,28 +26,28 @@ const Signin1 = () => {
               <div className="mb-4">
                 <i className="feather icon-unlock auth-icon" />
               </div>
-              <AuthLogin />
+              <JWTLogin />
               <p className="mb-2 text-muted">
                 Forgot password?{' '}
-                <NavLink to={'#'} className="f-w-400">
+                <NavLink to="/auth/forgot-password" className="f-w-400">
                   Reset
                 </NavLink>
               </p>
               <p className="mb-0 text-muted">
                 Don’t have an account?{' '}
-                <NavLink to="/auth/signup-1" className="f-w-400">
+                <NavLink to="/auth/signup/signup1" className="f-w-400">
                   Signup
                 </NavLink>
               </p>
               <Alert variant="primary" className="text-start mt-3">
-                User:
+                <strong>User:</strong>
                 <CopyToClipboard text="info@codedthemes.com">
                   <Button variant="outline-primary" as={Link} to="#" className="badge mx-2 mb-2" size="sm">
                     <i className="fa fa-user" /> info@codedthemes.com
                   </Button>
                 </CopyToClipboard>
                 <br />
-                Password:
+                <strong>Password:</strong>
                 <CopyToClipboard text="123456">
                   <Button variant="outline-primary" as={Link} to="#" className="badge mx-2" size="sm">
                     <i className="fa fa-lock" /> 123456
@@ -61,4 +62,4 @@ const Signin1 = () => {
   );
 };
 
-export default Signin1;
+export default SignIn1;

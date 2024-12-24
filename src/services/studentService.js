@@ -35,25 +35,25 @@ const StudentService = {
         }
     },
 
-    /**
+   /**
      * Add a new student for a specific account.
      * @param {number} accountId - The ID of the account to associate with the student.
      * @param {Object} studentData - The student data to add (excluding accountId).
      * @returns {Promise<Object>} The added student.
      */
-    addStudent: async (accountId, studentData) => {
-        try {
-            const response = await api.post(`/students/add-student/${accountId}`, studentData, {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            return response.data;
-        } catch (error) {
-            console.error("Error adding student:", error.response ? error.response.data : error.message);
-            throw error;
-        }
-    },
+   addStudent: async (accountId, studentData) => {
+    try {
+        const response = await api.post(`/students/add-student/${accountId}`, studentData, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error adding student:", error.response ? error.response.data : error.message);
+        throw error;
+    }
+},
 
     /**
      * Edit an existing student.
