@@ -102,3 +102,5 @@ export const ConfigProvider = ({ children }) => {
 ConfigProvider.propTypes = {
   children: PropTypes.node
 };
+// Export default chính là hàm Provider
+export default ConfigProvider;
