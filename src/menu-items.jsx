@@ -2,210 +2,330 @@
 
 const menuItems = {
   items: [
+    // Core Navigation
     {
       id: 'navigation',
-      title: 'Navigation',
+      title: 'Core Navigation',
       type: 'group',
-      icon: 'Dashboard', // Sử dụng icon từ MUI
+      icon: 'Dashboard',
       children: [
         {
           id: 'dashboard',
           title: 'Dashboard',
           type: 'item',
-          icon: 'Dashboard', // Sử dụng icon từ MUI
-          url: '/app/dashboard/default',
+          icon: 'Dashboard',
+          url: '/dashboard/default',
         },
       ],
     },
+
+    // User Management
     {
-      id: 'ui-element',
-      title: 'UI ELEMENT',
-      type: 'group',
-      icon: 'Widgets', // Sử dụng icon từ MUI
-      children: [
-        {
-          id: 'component',
-          title: 'Component',
-          type: 'collapse',
-          icon: 'Build', // Sử dụng icon từ MUI
-          children: [
-            {
-              id: 'button',
-              title: 'Button',
-              type: 'item',
-              url: '/app/ui-elements/basic/button',
-            },
-            {
-              id: 'badges',
-              title: 'Badges',
-              type: 'item',
-              url: '/app/ui-elements/basic/badges',
-            },
-            {
-              id: 'breadcrumb',
-              title: 'Breadcrumb & Pagination',
-              type: 'item',
-              url: '/app/ui-elements/basic/breadcrumb-paging',
-            },
-            {
-              id: 'collapse',
-              title: 'Collapse',
-              type: 'item',
-              url: '/app/ui-elements/basic/collapse',
-            },
-            {
-              id: 'tabs-pills',
-              title: 'Tabs & Pills',
-              type: 'item',
-              url: '/app/ui-elements/basic/tabs-pills',
-            },
-            {
-              id: 'typography',
-              title: 'Typography',
-              type: 'item',
-              url: '/app/ui-elements/basic/typography',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: 'instructor-management',
-      title: 'INSTRUCTOR MANAGEMENT',
-      type: 'group',
-      icon: 'Group', // Sử dụng icon từ MUI
-      children: [
-        {
-          id: 'instructor-list',
-          title: 'Instructor List',
-          type: 'item',
-          icon: 'List',
-          url: '/app/instructor/list-instructor',
-        },
-        {
-          id: 'add-instructor',
-          title: 'Add Instructor',
-          type: 'item',
-          icon: 'AddCircle',
-          url: '/app/instructor/add-instructor/:accountId',
-        },
-      ],
-    },
-    {
-      id: 'student-management',
-      title: 'STUDENT MANAGEMENT',
-      type: 'group',
-      icon: 'School', // Sử dụng icon từ MUI
-      children: [
-        {
-          id: 'student-list',
-          title: 'Student List',
-          type: 'item',
-          icon: 'List',
-          url: '/app/student/list-student',
-        },
-        {
-          id: 'add-student',
-          title: 'Add Student',
-          type: 'item',
-          icon: 'PersonAdd',
-          url: '/app/student/add-student/:accountId',
-        },
-      ],
-    },
-    {
-      id: 'category-management',
-      title: 'CATEGORY MANAGEMENT',
-      type: 'group',
-      icon: 'Category', // Sử dụng icon từ MUI
-      children: [
-        {
-          id: 'category-list',
-          title: 'Category List',
-          type: 'item',
-          icon: 'List',
-          url: '/app/category/list-category',
-        },
-        {
-          id: 'add-category',
-          title: 'Add Category',
-          type: 'item',
-          icon: 'AddCircle',
-          url: '/app/category/add-category',
-        },
-      ],
-    },
-    {
-      id: 'course-management',
-      title: 'COURSE MANAGEMENT',
-      type: 'group',
-      icon: 'Book', // Sử dụng icon từ MUI
-      children: [
-        {
-          id: 'course-list',
-          title: 'Course List',
-          type: 'item',
-          icon: 'List',
-          url: '/app/course/list-course',
-        },
-        {
-          id: 'add-course',
-          title: 'Add Course',
-          type: 'item',
-          icon: 'AddCircle',
-          url: '/app/course/add-course/:accountId',
-        },
-      ],
-    },
-    {
-      id: 'account',
+      id: 'user-management',
       title: 'User Management',
       type: 'group',
-      icon: 'Person', // Sử dụng icon từ MUI
+      icon: 'Person',
       children: [
         {
           id: 'account-list',
           title: 'Account List',
           type: 'item',
           icon: 'List',
-          url: '/app/account/list',
+          url: '/dashboard/account/list',
         },
         {
           id: 'role-list',
           title: 'Role List',
           type: 'item',
           icon: 'Security',
-          url: '/app/usermanagement/roles/rolelist',
+          url: '/dashboard/usermanagement/roles/rolelist',
+        },
+        {
+          id: 'token-list',
+          title: 'Check Token',
+          type: 'item',
+          icon: 'Lock', // Thay 'Token' bằng 'Lock'
+          url: '/dashboard/account/checktoken',
         },
       ],
     },
+
+    // Instructor Management
     {
-      id: 'chart-maps',
-      title: 'Chart & Maps',
+      id: 'instructor-management',
+      title: 'Instructor Management',
       type: 'group',
-      icon: 'BarChart', // Sử dụng icon từ MUI
+      icon: 'Group',
+      children: [
+        {
+          id: 'instructor-list',
+          title: 'Instructor List',
+          type: 'item',
+          icon: 'List',
+          url: '/dashboard/instructor/list-instructor',
+        },
+        {
+          id: 'add-instructor',
+          title: 'Add Instructor',
+          type: 'item',
+          icon: 'AddCircle',
+          url: '/dashboard/instructor/add-instructor/:accountId',
+        },
+      ],
+    },
+
+    // Student Management
+    {
+      id: 'student-management',
+      title: 'Student Management',
+      type: 'group',
+      icon: 'School',
+      children: [
+        {
+          id: 'student-list',
+          title: 'Student List',
+          type: 'item',
+          icon: 'List',
+          url: '/dashboard/student/list-student',
+        },
+        {
+          id: 'add-student',
+          title: 'Add Student',
+          type: 'item',
+          icon: 'PersonAdd',
+          url: '/dashboard/student/add-student/:accountId',
+        },
+      ],
+    },
+
+    // Category Management
+    {
+      id: 'category-management',
+      title: 'Category Management',
+      type: 'group',
+      icon: 'Category',
+      children: [
+        {
+          id: 'category-list',
+          title: 'Category List',
+          type: 'item',
+          icon: 'List',
+          url: '/dashboard/category/list-category',
+        },
+        {
+          id: 'add-category',
+          title: 'Add Category',
+          type: 'item',
+          icon: 'AddCircle',
+          url: '/dashboard/category/add-category',
+        },
+      ],
+    },
+
+    // Course Management
+    {
+      id: 'course-management',
+      title: 'Course Management',
+      type: 'group',
+      icon: 'Book',
+      children: [
+        {
+          id: 'course-list',
+          title: 'Course List',
+          type: 'item',
+          icon: 'List',
+          url: '/dashboard/course/list-course',
+        },
+        {
+          id: 'add-course',
+          title: 'Add Course',
+          type: 'item',
+          icon: 'AddCircle',
+          url: '/dashboard/course/add-course/:accountId',
+        },
+      ],
+    },
+
+    // Operational Management
+    {
+      id: 'operational-management',
+      title: 'Operational Management',
+      type: 'group',
+      icon: 'Build',
+      children: [
+        {
+          id: 'review-management',
+          title: 'Review Management',
+          type: 'collapse',
+          icon: 'RateReview',
+          children: [
+            {
+              id: 'list-review',
+              title: 'List Reviews',
+              type: 'item',
+              icon: 'List',
+              url: '/dashboard/review/list/:courseId',
+            },
+            {
+              id: 'add-review',
+              title: 'Add Review',
+              type: 'item',
+              icon: 'AddCircle',
+              url: '/dashboard/review/add/:courseId',
+            },
+          ],
+        },
+        {
+          id: 'ticket-management',
+          title: 'Ticket Management',
+          type: 'collapse',
+          icon: 'Support',
+          children: [
+            {
+              id: 'list-ticket',
+              title: 'List Tickets',
+              type: 'item',
+              icon: 'List',
+              url: '/dashboard/ticket/list',
+            },
+            {
+              id: 'add-ticket',
+              title: 'Add Ticket',
+              type: 'item',
+              icon: 'AddCircle',
+              url: '/dashboard/ticket/add',
+            },
+          ],
+        },
+      ],
+    },
+
+    // Bank Account Management
+    {
+      id: 'bank-account-management',
+      title: 'Bank Account Management',
+      type: 'group',
+      icon: 'AccountBalance',
+      children: [
+        {
+          id: 'list-bank-account',
+          title: 'Bank Account List',
+          type: 'item',
+          icon: 'List',
+          url: '/dashboard/bank-account/list',
+        },
+        {
+          id: 'add-bank-account',
+          title: 'Add Bank Account',
+          type: 'item',
+          icon: 'AddCircle',
+          url: '/dashboard/bank-account/add',
+        },
+        {
+          id: 'edit-bank-account',
+          title: 'Edit Bank Account',
+          type: 'item',
+          icon: 'Build', // Thay 'Edit' bằng 'Build'
+          url: '/dashboard/bank-account/edit/:id',
+        },
+      ],
+    },
+
+    // Wallet Management
+    {
+      id: 'wallet-management',
+      title: 'Wallet Management',
+      type: 'group',
+      icon: 'AccountBalanceWallet',
+      children: [
+        {
+          id: 'wallet-list',
+          title: 'Wallet List',
+          type: 'item',
+          icon: 'List',
+          url: '/dashboard/wallet/list',
+        },
+        {
+          id: 'transaction-history',
+          title: 'Transaction History',
+          type: 'item',
+          icon: 'Pageview', // Thay 'History' bằng 'Pageview'
+          url: '/dashboard/wallet/transaction-history/:walletId',
+        },
+      ],
+    },
+
+    // Notification Management
+    {
+      id: 'notification-management',
+      title: 'Notification Management',
+      type: 'group',
+      icon: 'Notifications',
+      children: [
+        {
+          id: 'notification-list',
+          title: 'Notifications',
+          type: 'item',
+          icon: 'List',
+          url: '/dashboard/notification/list',
+        },
+      ],
+    },
+
+    // Data Visualization
+    {
+      id: 'data-visualization',
+      title: 'Data Visualization',
+      type: 'group',
+      icon: 'BarChart',
       children: [
         {
           id: 'charts',
           title: 'Charts',
           type: 'item',
           icon: 'PieChart',
-          url: '/app/charts/nvd3',
+          url: '/dashboard/charts/nvd3',
         },
         {
           id: 'maps',
           title: 'Maps',
           type: 'item',
           icon: 'Map',
-          url: '/app/maps/google-map',
+          url: '/dashboard/maps/google-map',
         },
       ],
     },
+
+    // UI Elements
     {
-      id: 'pages',
-      title: 'Pages',
+      id: 'ui-elements',
+      title: 'UI Elements',
       type: 'group',
-      icon: 'Pages', // Sử dụng icon từ MUI
+      icon: 'Widgets',
+      children: [
+        {
+          id: 'component',
+          title: 'Component',
+          type: 'collapse',
+          icon: 'Build',
+          children: [
+            { id: 'button', title: 'Button', type: 'item', icon: 'Build', url: '/dashboard/ui-elements/basic/button' },
+            { id: 'badges', title: 'Badges', type: 'item', icon: 'Build', url: '/dashboard/ui-elements/basic/badges' },
+            { id: 'breadcrumb', title: 'Breadcrumb & Pagination', type: 'item', icon: 'Build', url: '/dashboard/ui-elements/basic/breadcrumb-paging' },
+            { id: 'collapse', title: 'Collapse', type: 'item', icon: 'Build', url: '/dashboard/ui-elements/basic/collapse' },
+            { id: 'tabs-pills', title: 'Tabs & Pills', type: 'item', icon: 'Build', url: '/dashboard/ui-elements/basic/tabs-pills' },
+            { id: 'typography', title: 'Typography', type: 'item', icon: 'Build', url: '/dashboard/ui-elements/basic/typography' },
+          ],
+        },
+      ],
+    },
+
+    // Static Pages
+    {
+      id: 'static-pages',
+      title: 'Static Pages',
+      type: 'group',
+      icon: 'Pages',
       children: [
         {
           id: 'auth',
@@ -213,26 +333,11 @@ const menuItems = {
           type: 'collapse',
           icon: 'Lock',
           children: [
-            {
-              id: 'signup-1',
-              title: 'Sign up',
-              type: 'item',
-              url: '/auth/signup/signup1',
-            },
-            {
-              id: 'signin-1',
-              title: 'Sign in',
-              type: 'item',
-              url: '/auth/signin',
-            },
+            { id: 'signin', title: 'Sign In', type: 'item', icon: 'Lock', url: '/auth/signin' },
+            { id: 'signup', title: 'Sign Up', type: 'item', icon: 'Lock', url: '/auth/signup/signup1' },
+            { id: 'forgot-password', title: 'Forgot Password', type: 'item', icon: 'Lock', url: '/auth/forgot-password' },
+            { id: 'reset-password', title: 'Reset Password', type: 'item', icon: 'Lock', url: '/auth/reset-password/:token' },
           ],
-        },
-        {
-          id: 'sample-page',
-          title: 'Sample Page',
-          type: 'item',
-          icon: 'Pageview',
-          url: '/app/sample-page',
         },
         {
           id: 'documentation',
@@ -241,60 +346,6 @@ const menuItems = {
           icon: 'Book',
           url: 'https://codedthemes.gitbook.io/datta/',
           external: true,
-        },
-        {
-          id: 'menu-level',
-          title: 'Menu Levels',
-          type: 'collapse',
-          icon: 'Menu',
-          children: [
-            {
-              id: 'menu-level-1.1',
-              title: 'Menu Level 1.1',
-              type: 'item',
-              url: '#!',
-            },
-            {
-              id: 'menu-level-1.2',
-              title: 'Menu Level 2.2',
-              type: 'collapse',
-              children: [
-                {
-                  id: 'menu-level-2.1',
-                  title: 'Menu Level 2.1',
-                  type: 'item',
-                  url: '#',
-                },
-                {
-                  id: 'menu-level-2.2',
-                  title: 'Menu Level 2.2',
-                  type: 'collapse',
-                  children: [
-                    {
-                      id: 'menu-level-3.1',
-                      title: 'Menu Level 3.1',
-                      type: 'item',
-                      url: '#',
-                    },
-                    {
-                      id: 'menu-level-3.2',
-                      title: 'Menu Level 3.2',
-                      type: 'item',
-                      url: '#',
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-        {
-          id: 'disabled-menu',
-          title: 'Disabled Menu',
-          type: 'item',
-          icon: 'Block',
-          url: '#',
-          disabled: true,
         },
       ],
     },

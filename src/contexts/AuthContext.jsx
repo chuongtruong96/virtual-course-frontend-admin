@@ -1,44 +1,71 @@
 // src/contexts/AuthContext.jsx
+
 import React, { createContext, useState, useEffect } from 'react';
-import jwt_decode from 'jwt-decode'; // Version ^3.x => OK
-import authService from '../services/authService';
+import jwt_decode from 'jwt-decode';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState({
     token: null,
-    user: null
+    user: null,
   });
 
   useEffect(() => {
-    // Kiểm tra token từ localStorage khi app khởi tạo
     const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser && storedUser.jwt) {
+    console.log("Stored User from localStorage:", storedUser);
+
+    if (storedUser && storedUser.token) {
       try {
-        const decoded = jwt_decode(storedUser.jwt);
-        setAuth({
-          token: storedUser.jwt,
-          user: decoded,
-        });
+        const rawToken = storedUser.token; // raw JWT
+        // Decode token
+        const decoded = jwt_decode(rawToken);
+        console.log("Decoded Token Payload:", decoded);
+
+        // Check token expiration
+        if (decoded.exp * 1000 > Date.now()) {
+          setAuth({
+            token: rawToken,
+            user: {
+              id: storedUser.id,
+              email: storedUser.email,
+              username: storedUser.username,
+              roles: storedUser.roles, // ['ROLE_ADMIN']
+              ...decoded,
+            },
+          });
+        } else {
+          console.error("Token expired");
+          localStorage.removeItem('user');
+        }
       } catch (error) {
         console.error('Invalid token:', error);
-        // Nếu token lỗi => logout
         localStorage.removeItem('user');
       }
     }
   }, []);
 
-  const login = (token) => {
+  const login = (user) => {
+    // user = {token, id, email, username, roles}
     try {
-      const decoded = jwt_decode(token);
-      localStorage.setItem('user', JSON.stringify({ jwt: token }));
+      const decoded = jwt_decode(user.token);
+      console.log("Decoded Token Payload on Login:", decoded);
+
+      localStorage.setItem('user', JSON.stringify(user));
+
       setAuth({
-        token,
-        user: decoded
+        token: user.token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          roles: user.roles, // ['ROLE_ADMIN']
+          ...decoded,
+        },
       });
     } catch (error) {
       console.error('Invalid token on login:', error);
+      localStorage.removeItem('user');
     }
   };
 
@@ -46,7 +73,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setAuth({
       token: null,
-      user: null
+      user: null,
     });
   };
 
@@ -57,4 +84,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export default AuthContext; // optional
+export default AuthContext;

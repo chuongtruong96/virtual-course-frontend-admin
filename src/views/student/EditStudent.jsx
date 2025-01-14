@@ -1,9 +1,10 @@
 // src/views/student/EditStudent.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import StudentService from '../../services/studentService';
 import { uploadPhoto } from '../../services/fileService';
+import { NotificationContext } from '../../contexts/NotificationContext';
 
 import {
   Box,
@@ -22,16 +23,15 @@ import {
 import { FaSave, FaTimesCircle } from 'react-icons/fa';
 
 const EditStudent = () => {
-  // Lấy "id" từ param: route '/student/edit-student/:id'
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addNotification } = useContext(NotificationContext);
 
-  // Trạng thái tải dữ liệu & lỗi
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  // Dữ liệu Student
+  // formData sẽ chỉ lưu "filename.png" cho avatar
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -40,22 +40,33 @@ const EditStudent = () => {
     gender: '',
     phone: '',
     bio: '',
-    avatar: '',
+    avatar: '', // chỉ filename
     categoryPrefer: '',
     statusStudent: 'ACTIVE',
     verifiedPhone: false
   });
 
-  // File upload & preview
-  const [file, setFile] = useState(null);
+  // Preview hiển thị
   const [imagePreview, setImagePreview] = useState('');
 
-  // Fetch student khi mount
+  // Helper cắt prefix
+  const extractFileName = (fullUrl) => {
+    // fullUrl = "http://localhost:8080/uploads/student/xxx.png"
+    if (!fullUrl || !fullUrl.includes('/')) return fullUrl || '';
+    const idx = fullUrl.lastIndexOf('/');
+    return fullUrl.substring(idx + 1); // => "xxx.png"
+  };
+
   useEffect(() => {
     const fetchStudent = async () => {
       try {
         const student = await StudentService.fetchStudentById(id);
-        // Gán formData
+        /*
+         student.avatar = "http://localhost:8080/uploads/student/xxx.png"
+         => cắt prefix => "xxx.png"
+        */
+        const filename = student.avatar ? extractFileName(student.avatar) : '';
+
         setFormData({
           firstName: student.firstName || '',
           lastName: student.lastName || '',
@@ -64,17 +75,18 @@ const EditStudent = () => {
           gender: student.gender || '',
           phone: student.phone || '',
           bio: student.bio || '',
-          avatar: student.avatar || '',
+          avatar: filename, // CHỈ filename
           categoryPrefer: student.categoryPrefer || '',
           statusStudent: student.statusStudent || 'ACTIVE',
           verifiedPhone: !!student.verifiedPhone
         });
-        // Xử lý preview nếu đã có avatar
+
+        // Xử lý preview full URL (nếu có)
         if (student.avatar) {
           setImagePreview(student.avatar); 
-          // student.avatar đã có prefix "http://localhost:8080/uploads/student/filename.png"
+          // => "http://localhost:8080/uploads/student/xxx.png"
         } else {
-          setImagePreview('https://via.placeholder.com/150'); // Ảnh mặc định
+          setImagePreview('https://via.placeholder.com/150');
         }
       } catch (err) {
         console.error('Error fetching student:', err);
@@ -86,7 +98,7 @@ const EditStudent = () => {
     fetchStudent();
   }, [id]);
 
-  // Xử lý thay đổi form
+  // Xử lý form
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -95,16 +107,17 @@ const EditStudent = () => {
     }));
   };
 
-  // Khi chọn file ảnh mới
+  // Chọn file => preview local
   const handleFileChange = (e) => {
     const chosenFile = e.target.files[0];
     if (chosenFile) {
       setFile(chosenFile);
-      setImagePreview(URL.createObjectURL(chosenFile)); // Preview local
+      setImagePreview(URL.createObjectURL(chosenFile));
     }
   };
+  const [file, setFile] = useState(null);
 
-  // Upload ảnh lên server (entity='student')
+  // Upload file => server
   const handleUpload = async () => {
     if (!file) {
       alert('Please choose a file to upload.');
@@ -113,15 +126,13 @@ const EditStudent = () => {
     setUploading(true);
     setError('');
     try {
-      // Gọi API uploadPhoto cho entity='student'
       const uploadedFileName = await uploadPhoto(file, 'student');
-
-      // Set avatar thành tên file
-      setFormData(prev => ({ ...prev, avatar: uploadedFileName }));
-
-      // Set imagePreview thành đường dẫn đầy đủ
-      setImagePreview(`http://localhost:8080/uploads/student/${uploadedFileName}`);
-
+      // => e.g. "1735801864566_Picture6.png"
+      // Gán vào formData.avatar
+      setFormData(prev => ({
+        ...prev,
+        avatar: uploadedFileName // CHỈ filename
+      }));
       alert('Avatar uploaded successfully!');
     } catch (err) {
       console.error('Error uploading avatar:', err);
@@ -131,13 +142,12 @@ const EditStudent = () => {
     }
   };
 
-  // Submit => update student
+  // Submit => PUT /api/students/:id
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Kiểm tra required
     if (!formData.firstName || !formData.lastName || !formData.gender) {
       setError('Please fill required fields: firstName, lastName, gender');
       setLoading(false);
@@ -145,10 +155,17 @@ const EditStudent = () => {
     }
 
     try {
-      // PUT /students/:id
-      await StudentService.editStudent(id, formData);
+      // Gửi formData (avatar = "xxx.png") => backend
+      const updated = await StudentService.editStudent(id, formData);
+
+      // Thêm notify
+      addNotification(
+        `Successfully updated student (${updated.firstName} ${updated.lastName})`,
+        'success'
+      );
+
       alert('Student updated successfully');
-      navigate('/student/list-student');
+      navigate('/dashboard/student/list-student');
     } catch (err) {
       console.error('Error updating student:', err);
       setError('Failed to update. Please try again.');
@@ -159,7 +176,7 @@ const EditStudent = () => {
 
   // Cancel
   const handleCancel = () => {
-    navigate('/student/list-student');
+    navigate(-1);
   };
 
   if (loading) {

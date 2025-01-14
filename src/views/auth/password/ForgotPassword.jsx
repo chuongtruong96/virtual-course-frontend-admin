@@ -1,18 +1,19 @@
-// src/views/ForgotPassword.js
-import React, { useState } from 'react';
-import { Card, Alert, Button } from 'react-bootstrap';
+// src/views/auth/ForgotPassword.jsx
+import React from 'react';
+import { Card, Button, Form, Spinner } from 'react-bootstrap';
 import { NavLink } from 'react-router-dom';
-import Breadcrumb from '../layouts/AdminLayout/Breadcrumb';
+import Breadcrumb from '../../../layouts/AdminLayout/Breadcrumb';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import authService from '../services/authService';
+
+// Dùng custom hook useAuth
+import useAuth from '../../../hooks/useAuth';
 
 const ForgotPassword = () => {
-  const [serverError, setServerError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
+  const { forgotPassword } = useAuth(); // mutation
 
   return (
-    <React.Fragment>
+    <>
       <Breadcrumb />
       <div className="auth-wrapper">
         <div className="auth-content">
@@ -25,66 +26,67 @@ const ForgotPassword = () => {
           <Card className="borderless">
             <Card.Body className="text-center">
               <div className="mb-4">
-                <i className="feather icon-mail auth-icon" />
+                <i className="feather icon-mail auth-icon" aria-hidden="true" />
               </div>
               <h3 className="mb-4">Forgot Password</h3>
               <Formik
-                initialValues={{
-                  email: '',
-                }}
-                validationSchema={Yup.object().shape({
-                  email: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
+                initialValues={{ email: '' }}
+                validationSchema={Yup.object({
+                  email: Yup.string()
+                    .email('Must be a valid email')
+                    .max(255)
+                    .required('Email is required'),
                 })}
                 onSubmit={(values, { setSubmitting }) => {
-                  setServerError(null);
-                  setSuccessMessage(null);
-                  authService.forgotPassword(values.email)
-                    .then(response => {
-                      setSuccessMessage("Đường dẫn đặt lại mật khẩu đã được gửi đến email của bạn.");
+                  // Gọi mutation
+                  forgotPassword(values.email, {
+                    onSettled: () => {
                       setSubmitting(false);
-                    })
-                    .catch(err => {
-                      if (err.response && err.response.data) {
-                        setServerError(err.response.data.message || 'Yêu cầu không thành công.');
-                      } else {
-                        setServerError('Yêu cầu không thành công.');
-                      }
-                      setSubmitting(false);
-                    });
+                    },
+                  });
                 }}
               >
-                {({ errors, handleBlur, handleChange, handleSubmit, isSubmitting, touched, values }) => (
-                  <form noValidate onSubmit={handleSubmit}>
-                    <div className="form-group mb-3">
-                      <input
-                        className="form-control"
+                {({ errors, handleBlur, handleChange, handleSubmit, isSubmitting, touched }) => (
+                  <Form noValidate onSubmit={handleSubmit}>
+                    <Form.Group controlId="email" className="mb-3">
+                      <Form.Control
+                        type="email"
                         name="email"
+                        placeholder="Email Address"
                         onBlur={handleBlur}
                         onChange={handleChange}
-                        type="email"
-                        value={values.email}
-                        placeholder="Email Address"
+                        isInvalid={touched.email && !!errors.email}
+                        aria-label="Email Address"
+                        required
                       />
-                      {touched.email && errors.email && <small className="text-danger form-text">{errors.email}</small>}
-                    </div>
-
-                    {serverError && (
-                      <Alert variant="danger">{serverError}</Alert>
-                    )}
-
-                    {successMessage && (
-                      <Alert variant="success">{successMessage}</Alert>
-                    )}
+                      <Form.Control.Feedback type="invalid">
+                        {errors.email}
+                      </Form.Control.Feedback>
+                    </Form.Group>
 
                     <Button
                       className="btn-block mb-4"
                       variant="primary"
                       disabled={isSubmitting}
                       type="submit"
+                      aria-label="Send Reset Link"
                     >
-                      Send Reset Link
+                      {isSubmitting ? (
+                        <>
+                          <Spinner
+                            as="span"
+                            animation="border"
+                            size="sm"
+                            role="status"
+                            aria-hidden="true"
+                          />{' '}
+                          Sending...
+                        </>
+                      ) : (
+                        'Send Reset Link'
+                      )}
                     </Button>
-                  </form>
+                  </Form>
                 )}
               </Formik>
               <p className="mb-2 text-muted">
@@ -96,7 +98,7 @@ const ForgotPassword = () => {
           </Card>
         </div>
       </div>
-    </React.Fragment>
+    </>
   );
 };
 

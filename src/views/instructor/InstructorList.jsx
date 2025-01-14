@@ -1,140 +1,242 @@
-import React, { useState, useEffect } from 'react';
-import { CircularProgress, TablePagination, IconButton } from '@mui/material';
-import { Search } from '@mui/icons-material';
+// src/views/instructor/InstructorList.jsx
+
+import React, { useState, useContext, useMemo } from 'react';
+import {
+  Modal, Row, Col, Button, Spinner, Alert, Form,
+  InputGroup
+} from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { saveAs } from 'file-saver';
-import InstructorService from '../../services/instructorService';
-import ColumnVisibilityToggle from '../../components/Table/ColumnVisibilityToggle';
-import ErrorBoundary from '../Exceptions/ErrorBoundary';
-import { TableWrapper, PaginationWrapper, SearchInput } from './styled/TableStyles';
-import InstructorCard from './InstructorCard'; // Import InstructorCard
-import './styled/TableStyles';
-import './styled/Card.css';
+import { useQueryClient } from '@tanstack/react-query';
+import { FaPlus, FaSearch } from 'react-icons/fa';
 
-const ListInstructor = () => {
-  const [instructorData, setInstructorData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+import useInstructors from '../../hooks/useInstructors';
+import { NotificationContext } from '../../contexts/NotificationContext';
+import AddInstructorModal from './AddInstructor';
+import InstructorCard from './InstructorCard';
+import InstructorDetail from './InstructorDetail';
+
+import '../../styles/table.css';
+
+const InstructorList = () => {
   const navigate = useNavigate();
+  const { addNotification } = useContext(NotificationContext);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const fetchInstructors = async () => {
-      try {
-        const data = await InstructorService.fetchInstructors();
-        setInstructorData(data);
-      } catch (error) {
-        console.error('Failed to load instructors:', error);
-        alert('Failed to load instructors. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchInstructors();
-  }, []);
+  const {
+    instructors,
+    isLoading,
+    isError,
+    error,
+    enableInstructor,
+    disableInstructor,
+    deleteInstructor
+  } = useInstructors();
 
-  const filteredData = instructorData.filter(
-    (instructor) =>
-      instructor.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      instructor.lastName.toLowerCase().includes(searchTerm.toLowerCase())
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Modal AddInstructor
+  const [showAddInstructorModal, setShowAddInstructorModal] = useState(false);
+
+  // Modal InstructorDetail
+  const [selectedInstructor, setSelectedInstructor] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // Filters
+  const [statusFilter, setStatusFilter] = useState('');
+  const [instructorFilter, setInstructorFilter] = useState('');
+
+  // Dữ liệu đã filter
+  const filteredInstructors = useMemo(() => {
+    let data = instructors || [];
+    if (statusFilter) {
+      data = data.filter((inst) => inst.status === statusFilter);
+    }
+    if (instructorFilter) {
+      const lower = instructorFilter.toLowerCase();
+      data = data.filter(
+        (inst) =>
+          inst.firstName.toLowerCase().includes(lower) ||
+          inst.lastName.toLowerCase().includes(lower)
+      );
+    }
+    return data;
+  }, [instructors, statusFilter, instructorFilter]);
+
+  // Phân trang
+  const totalPages = Math.ceil(filteredInstructors.length / itemsPerPage);
+  const currentPageInstructors = filteredInstructors.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
   );
 
-  const downloadCSV = () => {
-    const csvContent = instructorData
-      .map((instructor) => {
-        return `${instructor.firstName || ''},${instructor.lastName || ''},${instructor.gender || ''},${instructor.status || ''},${instructor.phone || ''},${instructor.workplace || ''}`;
-      })
-      .join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    saveAs(blob, 'instructors.csv');
+  // Xử lý Enable/Disable/Delete
+  const handleEnableInstructor = (id) => {
+    enableInstructor(id);
   };
 
-  const handleEdit = (id) => {
-    navigate(`/instructor/edit-instructor/${id}`);
+  const handleDisableInstructor = (id) => {
+    disableInstructor(id);
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await InstructorService.deleteInstructor(id);
-      alert('Instructor deleted');
-      const updatedData = await InstructorService.fetchInstructors(); // Re-fetch data
-      setInstructorData(updatedData);
-    } catch (error) {
-      alert('Failed to delete instructor');
+  const handleDeleteInstructor = (id) => {
+    if (window.confirm('Are you sure you want to delete this instructor?')) {
+      deleteInstructor(id);
     }
   };
 
-  const handleEnable = async (instructorId) => {
-    try {
-      await InstructorService.enableInstructor(instructorId);
-      alert('Instructor enabled');
-      const updatedData = await InstructorService.fetchInstructors(); // Re-fetch data
-      setInstructorData(updatedData);
-    } catch (error) {
-      alert('Failed to enable instructor');
-    }
+  // Detail modal
+  const handleShowInstructorDetail = (instructor) => {
+    setSelectedInstructor(instructor);
+    setShowDetailModal(true);
   };
 
-  const handleDisable = async (instructorId) => {
-    try {
-      await InstructorService.disableInstructor(instructorId);
-      alert('Instructor disabled');
-      const updatedData = await InstructorService.fetchInstructors(); // Re-fetch data
-      setInstructorData(updatedData);
-    } catch (error) {
-      alert('Failed to disable instructor');
-    }
+  const handleCloseInstructorDetail = () => {
+    setSelectedInstructor(null);
+    setShowDetailModal(false);
   };
 
-  if (loading) {
-    return <CircularProgress />;
+  // Thêm Instructor
+  const handleShowAddInstructorModal = () => setShowAddInstructorModal(true);
+  const handleCloseAddInstructorModal = () => setShowAddInstructorModal(false);
+
+  // Chuyển trang
+  const handlePageChange = (newPage) => setPage(newPage);
+
+  if (isLoading) {
+    return (
+      <div className="text-center my-5">
+        <Spinner animation="border" role="status" aria-label="Loading Instructors">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+        <p className="mt-3">Loading instructors...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Alert variant="danger">
+        {error?.message || 'Failed to load instructors. Please try again later.'}
+      </Alert>
+    );
   }
 
   return (
-    <ErrorBoundary>
-      <SearchInput
-        variant="outlined"
-        placeholder="Search Instructors"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        InputProps={{
-          startAdornment: (
-            <IconButton position="start">
-              <Search />
-            </IconButton>
-          )
-        }}
-      />
-      <ColumnVisibilityToggle />
-      <TableWrapper>
-        <div className="instructor-list">
-          {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((instructor) => (
-            <InstructorCard
-              key={instructor.id}
-              instructor={instructor}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onEnable={handleEnable}
-              onDisable={handleDisable}
-            />
-          ))}
-        </div>
-        <PaginationWrapper>
-          <TablePagination
-            component="div"
-            count={filteredData.length}
-            page={page}
-            onPageChange={(event, newPage) => setPage(newPage)}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(event) => setRowsPerPage(parseInt(event.target.value, 10))}
+    <div>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h3>Instructor List</h3>
+        <Button
+          variant="success"
+          onClick={handleShowAddInstructorModal}
+          aria-label="Add Instructor"
+        >
+          <FaPlus /> Add Instructor
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <div className="filters mb-3 d-flex flex-wrap gap-3">
+        <Form.Select
+          aria-label="Filter by Status"
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">All Status</option>
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+        </Form.Select>
+
+        <InputGroup style={{ maxWidth: '300px' }}>
+          <Form.Control
+            placeholder="Search by First or Last Name"
+            value={instructorFilter}
+            onChange={(e) => {
+              setInstructorFilter(e.target.value);
+              setPage(1);
+            }}
+            aria-label="Search First or Last Name"
           />
-        </PaginationWrapper>
-      </TableWrapper>
-      <button onClick={downloadCSV}>Export CSV</button>
-    </ErrorBoundary>
+          <InputGroup.Text>
+            <FaSearch />
+          </InputGroup.Text>
+        </InputGroup>
+      </div>
+
+      {/* Danh sách instructors => Mỗi instructor 1 row => Col=12 */}
+      {currentPageInstructors.length > 0 ? (
+        currentPageInstructors.map((inst) => (
+          <Row key={inst.id} className="mb-3">
+            <Col xs={12}>
+              <InstructorCard
+                instructor={inst}
+                onEdit={() => navigate(`/dashboard/instructor/edit/${inst.id}`)}
+                onDelete={() => handleDeleteInstructor(inst.id)}
+                onEnable={() => handleEnableInstructor(inst.id)}
+                onDisable={() => handleDisableInstructor(inst.id)}
+                onViewDetail={() => handleShowInstructorDetail(inst)}
+              />
+            </Col>
+          </Row>
+        ))
+      ) : (
+        <Alert variant="warning" className="text-center">
+          No instructors found.
+        </Alert>
+      )}
+
+      {/* Pagination */}
+      <div className="d-flex justify-content-between align-items-center mt-4">
+        <Button
+          onClick={() => handlePageChange(page - 1)}
+          disabled={page === 1}
+          aria-label="Previous Page"
+        >
+          Previous
+        </Button>
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <Button
+          onClick={() => handlePageChange(page + 1)}
+          disabled={page === totalPages}
+          aria-label="Next Page"
+        >
+          Next
+        </Button>
+      </div>
+
+      {/* Modal AddInstructor */}
+      <AddInstructorModal
+        show={showAddInstructorModal}
+        handleClose={handleCloseAddInstructorModal}
+        accountId={null}
+      />
+
+      {/* Modal InstructorDetail */}
+      {selectedInstructor && (
+        <Modal
+          show={showDetailModal}
+          onHide={handleCloseInstructorDetail}
+          size="lg"
+          aria-labelledby="instructor-detail-modal"
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title id="instructor-detail-modal">
+              Instructor Details
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <InstructorDetail instructor={selectedInstructor} />
+          </Modal.Body>
+        </Modal>
+      )}
+    </div>
   );
 };
 
-export default ListInstructor;
+export default InstructorList;

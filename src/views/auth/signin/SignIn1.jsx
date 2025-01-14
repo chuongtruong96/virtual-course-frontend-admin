@@ -1,17 +1,13 @@
-// src/views/auth/signin/SignIn1.js
+// src/views/auth/SignIn1.jsx
 import React from 'react';
-import { Card, Alert, Button } from 'react-bootstrap';
-import { NavLink, Link } from 'react-router-dom';
-
+import { Card } from 'react-bootstrap';
+import { NavLink } from 'react-router-dom';
 import Breadcrumb from '../../../layouts/AdminLayout/Breadcrumb';
-
-import { CopyToClipboard } from 'react-copy-to-clipboard';
-
 import JWTLogin from './JWTLogin';
 
 const SignIn1 = () => {
   return (
-    <React.Fragment>
+    <>
       <Breadcrumb />
       <div className="auth-wrapper">
         <div className="auth-content">
@@ -24,41 +20,27 @@ const SignIn1 = () => {
           <Card className="borderless text-center">
             <Card.Body>
               <div className="mb-4">
-                <i className="feather icon-unlock auth-icon" />
+                <i className="feather icon-unlock auth-icon" aria-hidden="true" />
               </div>
+              {/* Formik login nằm trong JWTLogin */}
               <JWTLogin />
               <p className="mb-2 text-muted">
                 Forgot password?{' '}
-                <NavLink to="/auth/forgot-password" className="f-w-400">
+                <NavLink to="/auth/forgot-password" className="f-w-400" aria-label="Forgot Password">
                   Reset
                 </NavLink>
               </p>
               <p className="mb-0 text-muted">
                 Don’t have an account?{' '}
-                <NavLink to="/auth/signup/signup1" className="f-w-400">
+                <NavLink to="/auth/signup/signup1" className="f-w-400" aria-label="Signup">
                   Signup
                 </NavLink>
               </p>
-              <Alert variant="primary" className="text-start mt-3">
-                <strong>User:</strong>
-                <CopyToClipboard text="info@codedthemes.com">
-                  <Button variant="outline-primary" as={Link} to="#" className="badge mx-2 mb-2" size="sm">
-                    <i className="fa fa-user" /> info@codedthemes.com
-                  </Button>
-                </CopyToClipboard>
-                <br />
-                <strong>Password:</strong>
-                <CopyToClipboard text="123456">
-                  <Button variant="outline-primary" as={Link} to="#" className="badge mx-2" size="sm">
-                    <i className="fa fa-lock" /> 123456
-                  </Button>
-                </CopyToClipboard>
-              </Alert>
             </Card.Body>
           </Card>
         </div>
       </div>
-    </React.Fragment>
+    </>
   );
 };
 

@@ -74,8 +74,8 @@
   
   /* Column visibility dropdown */
   .dropdown-toggle {
-    background-color: #007bff;
-    border-color: #007bff;
+    /* background-color: #007bff; */
+    /* border-color: #007bff; */
     color: #fff;
     padding: 0.5rem 1rem;
     font-size: 1rem;

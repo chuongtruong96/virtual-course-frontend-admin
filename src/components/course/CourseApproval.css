@@ -1,0 +1,14 @@
+/* src/views/course/CourseApproval.css */
+.course-approval-container {
+    padding: 1rem;
+  }
+  
+  .course-approval-loading {
+    text-align: center;
+    margin: 2rem 0;
+  }
+  
+  table th, table td {
+    vertical-align: middle !important;
+  }
+  

@@ -1,241 +1,334 @@
-// src/views/instructor/AddInstructor.jsx
+// src/views/instructor/AddInstructorModal.jsx
 
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import instructorService from '../../services/instructorService';
-import { uploadPhoto } from '../../services/fileService';
-import { Form, Button, Alert, Spinner } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
-import '../../styles/EditInstructorForm.css';
+import React, { useState, useContext, useEffect } from 'react';
+import { Modal, Button, Form, Alert, Spinner, Image } from 'react-bootstrap';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import accountService from '../../services/accountService'; // Import AccountService
+import { NotificationContext } from '../../contexts/NotificationContext';
+import { FaSave, FaTimes } from 'react-icons/fa';
+import FileService from '../../services/fileService';
 
-const AddInstructor = () => {
-    const { accountId } = useParams(); // Lấy accountId từ URL
-    const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+const AddInstructorModal = ({ show, handleClose, accountId }) => {
+    const { addNotification } = useContext(NotificationContext);
+    const queryClient = useQueryClient();
+
     const [error, setError] = useState(null);
     const [file, setFile] = useState(null);
     const [imagePreview, setImagePreview] = useState('');
     const [uploadedFileName, setUploadedFileName] = useState('');
 
-    // Sử dụng react-hook-form
-    const { register, handleSubmit, formState: { errors }, setValue } = useForm();
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        gender: '',
+        address: '',
+        phone: '',
+        bio: '',
+        photo: '',
+        title: '',
+        workplace: '',
+        status: 'ACTIVE',
+    });
 
-    const onSubmit = async (data) => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            // Kiểm tra nếu đã upload hình ảnh
-            let photo = uploadedFileName;
-            if (file && !uploadedFileName) {
-                // Nếu người dùng đã chọn file nhưng chưa upload, yêu cầu upload
-                alert('Please upload the photo before submitting the form.');
-                setLoading(false);
-                return;
-            }
-
-            // Tạo một bản sao của dữ liệu để gửi, không bao gồm các trường không cần thiết
-            const instructorData = {
-                firstName: data.firstName,
-                lastName: data.lastName,
-                gender: data.gender,
-                address: data.address,
-                phone: data.phone,
-                bio: data.bio,
-                photo: photo, // Sử dụng tên file đã upload
-                title: data.title,
-                workplace: data.workplace,
-                status: data.status,
-                accountId: parseInt(accountId) // Thêm accountId vào data nếu cần
-            };
-
-            await instructorService.addInstructor(accountId, instructorData);
-            alert('Instructor added successfully!');
-            navigate('/virtualcourse/instructor/list-instructor'); // Điều hướng về danh sách Instructor
-        } catch (err) {
-            console.error("Error adding instructor:", err);
-            // Kiểm tra lỗi từ backend và hiển thị thông báo phù hợp
-            if (err.response && err.response.data) {
-                setError(err.response.data);
-            } else {
-                setError('Failed to add instructor. Please try again.');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    // Handle file changes
     const handleFileChange = (e) => {
-        const selectedFile = e.target.files[0];
-        if (selectedFile) {
-            setFile(selectedFile);
-            setImagePreview(URL.createObjectURL(selectedFile));
+        const selected = e.target.files[0];
+        if (selected) {
+            setFile(selected);
+            setImagePreview(URL.createObjectURL(selected));
+            setUploadedFileName(''); // Reset to allow uploading a new file
         }
     };
 
+    // Handle photo upload
     const handleUpload = async () => {
         if (!file) {
-            alert('Please select a file to upload.');
+            addNotification('Vui lòng chọn ảnh để tải lên.', 'warning');
+            return;
+        }
+        setError(null);
+        try {
+            const uploadedFileName = await FileService.uploadPhoto({
+                file,
+                entity: 'instructor',
+            });
+            setUploadedFileName(uploadedFileName);
+            setFormData((prev) => ({ ...prev, photo: uploadedFileName }));
+            setImagePreview(`http://localhost:8080/uploads/instructor/${uploadedFileName}`);
+            addNotification('Ảnh đã được tải lên thành công!', 'success');
+        } catch (err) {
+            console.error('Error uploading photo:', err);
+            setError('Không thể tải lên ảnh. Vui lòng thử lại.');
+            addNotification('Không thể tải lên ảnh. Vui lòng thử lại.', 'danger');
+        }
+    };
+
+    // Define the mutation using the new service method
+    const addInstructorMutation = useMutation({
+        mutationFn: (instructorData) => accountService.addInstructorToAccount(accountId, instructorData),
+        onSuccess: (data) => {
+            queryClient.invalidateQueries(['instructors']);
+            addNotification('Instructor đã được thêm thành công!', 'success');
+            resetForm();
+            handleClose();
+        },
+        onError: (error) => {
+            console.error('Error adding instructor:', error);
+            setError('Không thể thêm Instructor. Vui lòng thử lại.');
+            addNotification('Không thể thêm Instructor. Vui lòng thử lại.', 'danger');
+        },
+    });
+
+    // Handle form submission
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setError(null);
+
+        // Validation: Ensure required fields are filled
+        if (!formData.firstName || !formData.lastName) {
+            setError('Vui lòng điền đầy đủ các trường bắt buộc.');
+            addNotification('Vui lòng điền đầy đủ các trường bắt buộc.', 'warning');
             return;
         }
 
-        setLoading(true);
+        // Prepare data to send (exclude accountId as it's in the URL)
+        const { firstName, lastName, gender, address, phone, bio, photo, title, workplace, status } = formData;
+        const dataToSend = {
+            firstName,
+            lastName,
+            gender,
+            address,
+            phone,
+            bio,
+            photo,
+            title,
+            workplace,
+            status,
+        };
+
+        addInstructorMutation.mutate(dataToSend);
+    };
+
+    // Reset form when modal closes or after successful submission
+    const resetForm = () => {
+        setFormData({
+            firstName: '',
+            lastName: '',
+            gender: '',
+            address: '',
+            phone: '',
+            bio: '',
+            photo: '',
+            title: '',
+            workplace: '',
+            status: 'ACTIVE',
+        });
         setError(null);
-        try {
-            const uploadedFilePath = await uploadPhoto(file , 'instructor');
-            setUploadedFileName(uploadedFilePath); // Lưu tên file đã upload
-            // Nếu cần, bạn có thể sử dụng setValue từ react-hook-form để cập nhật giá trị 'photo'
-            setValue('photo', uploadedFilePath);
-            alert('Photo uploaded successfully!');
-        } catch (err) {
-            console.error("Error uploading photo:", err);
-            setError('Failed to upload photo. Please try again.');
-        } finally {
-            setLoading(false);
+        setFile(null);
+        setImagePreview('');
+        setUploadedFileName('');
+    };
+
+    // Handle modal close
+    const handleModalCloseInternal = () => {
+        if (!addInstructorMutation.isLoading) {
+            resetForm();
+            handleClose();
         }
     };
 
     return (
-        <div className="add-instructor-form-container">
-            <Form onSubmit={handleSubmit(onSubmit)}>
-                <h2>Add Instructor</h2>
+        <Modal show={show} onHide={handleModalCloseInternal} backdrop="static" keyboard={!addInstructorMutation.isLoading}>
+            <Modal.Header closeButton={!addInstructorMutation.isLoading}>
+                <Modal.Title>Add Instructor</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
                 {error && <Alert variant="danger">{error}</Alert>}
-                
-                <Form.Group controlId="formFirstName" className="mb-3">
-                    <Form.Label>First Name <span style={{color: 'red'}}>*</span></Form.Label>
-                    <Form.Control
-                        type="text"
-                        placeholder="Enter first name"
-                        {...register('firstName', { required: true })}
-                        isInvalid={errors.firstName}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                        First name is required.
-                    </Form.Control.Feedback>
-                </Form.Group>
-
-                <Form.Group controlId="formLastName" className="mb-3">
-                    <Form.Label>Last Name <span style={{color: 'red'}}>*</span></Form.Label>
-                    <Form.Control
-                        type="text"
-                        placeholder="Enter last name"
-                        {...register('lastName', { required: true })}
-                        isInvalid={errors.lastName}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                        Last name is required.
-                    </Form.Control.Feedback>
-                </Form.Group>
-
-                <Form.Group controlId="formGender" className="mb-3">
-                    <Form.Label>Gender <span style={{color: 'red'}}>*</span></Form.Label>
-                    <Form.Control
-                        as="select"
-                        {...register('gender', { required: true })}
-                        isInvalid={errors.gender}
-                    >
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </Form.Control>
-                    <Form.Control.Feedback type="invalid">
-                        Gender is required.
-                    </Form.Control.Feedback>
-                </Form.Group>
-
-                <Form.Group controlId="formStatus" className="mb-3">
-                    <Form.Label>Status <span style={{color: 'red'}}>*</span></Form.Label>
-                    <Form.Control
-                        as="select"
-                        {...register('status', { required: true })}
-                        isInvalid={errors.status}
-                    >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </Form.Control>
-                    <Form.Control.Feedback type="invalid">
-                        Status is required.
-                    </Form.Control.Feedback>
-                </Form.Group>
-
-                <Form.Group controlId="formAddress" className="mb-3">
-                    <Form.Label>Address</Form.Label>
-                    <Form.Control
-                        type="text"
-                        placeholder="Enter address"
-                        {...register('address')}
-                    />
-                </Form.Group>
-
-                <Form.Group controlId="formPhone" className="mb-3">
-                    <Form.Label>Phone</Form.Label>
-                    <Form.Control
-                        type="text"
-                        placeholder="Enter phone number"
-                        {...register('phone')}
-                    />
-                </Form.Group>
-
-                <Form.Group controlId="formBio" className="mb-3">
-                    <Form.Label>Bio</Form.Label>
-                    <Form.Control
-                        as="textarea"
-                        rows={3}
-                        placeholder="Enter bio"
-                        {...register('bio')}
-                    />
-                </Form.Group>
-
-                <Form.Group controlId="formPhoto" className="mb-3">
-                    <Form.Label>Photo</Form.Label>
-                    <div className="d-flex align-items-center">
+                <Form onSubmit={handleSubmit} aria-label="Add Instructor Form">
+                    {/* First Name */}
+                    <Form.Group controlId="formFirstName" className="mb-3">
+                        <Form.Label>
+                            First Name <span style={{ color: 'red' }}>*</span>
+                        </Form.Label>
                         <Form.Control
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileChange}
+                            type="text"
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                            required
+                            placeholder="Enter firstname"
                         />
-                        <Button variant="outline-secondary" className="ms-2" onClick={handleUpload} disabled={loading || !file || uploadedFileName}>
-                            {loading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : uploadedFileName ? 'Uploaded' : 'Upload'}
+                    </Form.Group>
+
+                    {/* Last Name */}
+                    <Form.Group controlId="formLastName" className="mb-3">
+                        <Form.Label>
+                            Last Name <span style={{ color: 'red' }}>*</span>
+                        </Form.Label>
+                        <Form.Control
+                            type="text"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                            required
+                            placeholder="Enter lastname"
+                        />
+                    </Form.Group>
+
+                    {/* Gender */}
+                    <Form.Group controlId="formGender" className="mb-3">
+                        <Form.Label>
+                            Gender <span style={{ color: 'red' }}>*</span>
+                        </Form.Label>
+                        <Form.Control
+                            as="select"
+                            name="gender"
+                            value={formData.gender}
+                            onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                            required
+                            aria-label="Choose Gender"
+                        >
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </Form.Control>
+                    </Form.Group>
+
+                    {/* Status */}
+                    <Form.Group controlId="formStatus" className="mb-3">
+                        <Form.Label>
+                            Status <span style={{ color: 'red' }}>*</span>
+                        </Form.Label>
+                        <Form.Control
+                            as="select"
+                            name="status"
+                            value={formData.status}
+                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                            required
+                            aria-label="Choose status"
+                        >
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                        </Form.Control>
+                    </Form.Group>
+
+                    {/* Address */}
+                    <Form.Group controlId="formAddress" className="mb-3">
+                        <Form.Label>Address</Form.Label>
+                        <Form.Control
+                            type="text"
+                            name="address"
+                            value={formData.address}
+                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                            placeholder="Enter address"
+                        />
+                    </Form.Group>
+
+                    {/* Phone */}
+                    <Form.Group controlId="formPhone" className="mb-3">
+                        <Form.Label>Phone number</Form.Label>
+                        <Form.Control
+                            type="text"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            placeholder="Enter phone number"
+                        />
+                    </Form.Group>
+
+                    {/* Bio */}
+                    <Form.Group controlId="formBio" className="mb-3">
+                        <Form.Label>Bio</Form.Label>
+                        <Form.Control
+                            as="textarea"
+                            rows={3}
+                            name="bio"
+                            value={formData.bio}
+                            onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                            placeholder="Enter bio"
+                        />
+                    </Form.Group>
+
+                    {/* Title */}
+                    <Form.Group controlId="formTitle" className="mb-3">
+                        <Form.Label>Title</Form.Label>
+                        <Form.Control
+                            type="text"
+                            name="title"
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            placeholder="Enter title"
+                        />
+                    </Form.Group>
+
+                    {/* Workplace */}
+                    <Form.Group controlId="formWorkplace" className="mb-3">
+                        <Form.Label>Workplace</Form.Label>
+                        <Form.Control
+                            type="text"
+                            name="workplace"
+                            value={formData.workplace}
+                            onChange={(e) => setFormData({ ...formData, workplace: e.target.value })}
+                            placeholder="Enter workplace"
+                        />
+                    </Form.Group>
+
+                    {/* Photo */}
+                    <Form.Group controlId="formPhoto" className="mb-3">
+                        <Form.Label>Ảnh Đại Diện</Form.Label>
+                        <div className="d-flex align-items-center">
+                            <Form.Control
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                aria-label="Chọn Ảnh Đại Diện"
+                            />
+                            <Button
+                                variant="outline-secondary"
+                                className="ms-2"
+                                onClick={handleUpload}
+                                disabled={!file || uploadedFileName !== ''}
+                                aria-label="Tải Lên Ảnh"
+                            >
+                                {uploadedFileName ? 'Đã Tải Lên' : 'Tải Lên'}
+                            </Button>
+                        </div>
+                        {imagePreview && (
+                            <Image src={imagePreview} alt="Instructor Preview" className="mt-3" width="100" height="100" rounded />
+                        )}
+                    </Form.Group>
+
+                    {/* Submit & Cancel */}
+                    <div className="d-flex justify-content-between">
+                        <Button
+                            variant="secondary"
+                            onClick={handleModalCloseInternal}
+                            disabled={addInstructorMutation.isLoading}
+                            aria-label="Hủy"
+                        >
+                            Hủy
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleSubmit}
+                            disabled={addInstructorMutation.isLoading}
+                            aria-label="Lưu"
+                        >
+                            {addInstructorMutation.isLoading ? (
+                                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                            ) : (
+                                <>
+                                    <FaSave /> Lưu
+                                </>
+                            )}
                         </Button>
                     </div>
-                    {imagePreview && (
-                        <img src={imagePreview} alt="Instructor Preview" className="mt-3" width="100" height="100" />
-                    )}
-                </Form.Group>
-
-                <Form.Group controlId="formTitle" className="mb-3">
-                    <Form.Label>Title</Form.Label>
-                    <Form.Control
-                        type="text"
-                        placeholder="Enter title"
-                        {...register('title')}
-                    />
-                </Form.Group>
-
-                <Form.Group controlId="formWorkplace" className="mb-3">
-                    <Form.Label>Workplace</Form.Label>
-                    <Form.Control
-                        type="text"
-                        placeholder="Enter workplace"
-                        {...register('workplace')}
-                    />
-                </Form.Group>
-
-                {/* Các trường khác nếu cần */}
-
-                <div className="d-flex justify-content-between">
-                    <Button variant="secondary" onClick={() => navigate(-1)} disabled={loading}>
-                        Cancel
-                    </Button>
-                    <Button variant="primary" type="submit" disabled={loading}>
-                        {loading ? <Spinner as="span" animation="border" size="sm" /> : 'Save'}
-                    </Button>
-                </div>
-            </Form>
-        </div>
+                </Form>
+            </Modal.Body>
+        </Modal>
     );
 
 };
 
-export default AddInstructor;
+export default AddInstructorModal;

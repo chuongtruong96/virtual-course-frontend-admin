@@ -1,18 +1,20 @@
 // src/routes.jsx
 
-import React, { Suspense, Fragment, lazy } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Loader from './components/Loader/Loader';
 import AdminLayout from './layouts/AdminLayout';
 import PrivateRoute from './untils/PrivateRoute';
 import { BASE_URL } from './config/constant';
+// import EditAccount from './views/account/EditAccount';
 
-// Sử dụng React.lazy để tải các component một cách lười biếng
+// Lazy load components (đảm bảo đường dẫn đúng)
 const SignIn1 = lazy(() => import('./views/auth/signin/SignIn1'));
 const SignUp1 = lazy(() => import('./views/auth/signup/SignUp1'));
-const ForgotPassword = lazy(() => import('../src/views/auth/password/ForgotPassword'));
-const ResetPassword = lazy(() => import('../src/views/auth/password/ResetPassword'));
-const DashDefault = lazy(() => import('./views/dashboard'));
+const ForgotPassword = lazy(() => import('./views/auth/password/ForgotPassword'));
+const ResetPassword = lazy(() => import('./views/auth/password/ResetPassword'));
+const DashDefault = lazy(() => import('./views/dashboard/index'));
+//Default
 const BasicButton = lazy(() => import('./views/ui-elements/basic/BasicButton'));
 const BasicBadges = lazy(() => import('./views/ui-elements/basic/BasicBadges'));
 const BasicBreadcrumb = lazy(() => import('./views/ui-elements/basic/BasicBreadcrumb'));
@@ -29,6 +31,13 @@ const AddStudent = lazy(() => import('./views/student/AddStudent'));
 const InstructorList = lazy(() => import('./views/instructor/InstructorList'));
 const EditInstructorForm = lazy(() => import('./views/instructor/EditInstructorForm'));
 const AddInstructor = lazy(() => import('./views/instructor/AddInstructor'));
+const InstructorDetail = lazy(() => import('./views/instructor/InstructorDetail'));
+
+// Các component cho Wallet, Transactions, Notifications, Reviews
+const InstructorWallet = lazy(() => import('./views/instructor/others/InstructorWallet'));
+const InstructorTransactions = lazy(() => import('./views/instructor/others/InstructorTransactions'));
+const InstructorNotifications = lazy(() => import('./views/instructor/others/InstructorNotifications'));
+const InstructorReviews = lazy(() => import('./views/instructor/others/InstructorReviews'));
 
 const ListCategory = lazy(() => import('./views/category/ListCategory'));
 const EditCategory = lazy(() => import('./views/category/EditCategory'));
@@ -40,13 +49,30 @@ const AddCourse = lazy(() => import('./views/course/AddCourse'));
 
 const AccountList = lazy(() => import('./views/account/AccountList'));
 const AddAccountModal = lazy(() => import('./views/account/AddAccountModal'));
+const EditAccount = lazy(() => import('./views/account/EditAccount'));
+const CheckToken = lazy(() => import('./views/account/CheckToken'));
 
+// MỚI THÊM – Lazy load Review & Ticket
+const ListReview = lazy(() => import('./views/review/ListReview'));
+const AddReview = lazy(() => import('./views/review/AddReview'));
+
+const ListTicket = lazy(() => import('./views/ticket/ListTicket'));
+const AddTicket = lazy(() => import('./views/ticket/AddTicket'));
+//BANK_ACCOUNT
+// const ListBankAccount = lazy(() => import('./views/bankAccount/ListBankAccount'));
+// const AddBankAccount = lazy(() => import('./views/bankAccount/AddBankAccountModal'));
+// const EditBankAccount = lazy(() => import('./views/bankAccount/EditBankAccount'));
+// const BankAccountDetail = lazy(()=> import('./views/bankAccount/BankAccountDetail'));
+//WALLET
+const ListWallet = lazy(() => import('./views/wallet/ListWallet'));
+const TransactionHistory = lazy(() => import('./views/wallet/TransactionHistory'));
+//NOTIFICATION
+const NotificationList = lazy(() => import('./views/notification/NotificationList'));
+//ROLE
 const RoleList = lazy(() => import('./views/UserManagement/Roles/RoleList'));
 
 const Nvd3Chart = lazy(() => import('./views/charts/nvd3-chart'));
 const GoogleMaps = lazy(() => import('./views/maps/GoogleMaps'));
-
-const SamplePage = lazy(() => import('./views/extra/SamplePage'));
 
 const routes = [
   {
@@ -66,7 +92,7 @@ const routes = [
     element: <ResetPassword />,
   },
   {
-    path: '/app',
+    path: '/dashboard/*', // Sử dụng wildcard để bao phủ tất cả các con đường
     element: (
       <PrivateRoute>
         <AdminLayout />
@@ -74,7 +100,7 @@ const routes = [
     ),
     children: [
       {
-        path: 'dashboard/default',
+        path: 'default',
         element: <DashDefault />,
       },
       {
@@ -105,6 +131,19 @@ const routes = [
         path: 'forms/form-basic',
         element: <FormsElements />,
       },
+      // ACCOUNT
+      {
+        path: 'account/list',
+        element: <AccountList />,
+      },
+      {
+        path: 'account/add',
+        element: <AddAccountModal />,
+      },
+      {
+        path: 'account/edit/:accountId', // Sử dụng :accountId
+        element: <EditAccount />,
+      },
       // STUDENT
       {
         path: 'student/list-student',
@@ -124,12 +163,16 @@ const routes = [
         element: <InstructorList />,
       },
       {
-        path: 'instructor/edit-instructor/:instructorId',
+        path: 'instructor/edit/:instructorId', // Sử dụng instructorId nếu backend sử dụng
         element: <EditInstructorForm />,
       },
       {
         path: 'instructor/add-instructor/:accountId',
         element: <AddInstructor />,
+      },
+      {
+        path: 'instructor/detail/:instructorId',
+        element: <InstructorDetail />,
       },
       // CATEGORY
       {
@@ -157,19 +200,74 @@ const routes = [
         path: 'course/add-course/:accountId',
         element: <AddCourse />,
       },
-      // ACCOUNT
+      
       {
-        path: 'account/list',
-        element: <AccountList />,
+        path: 'account/checktoken',
+        element: <CheckToken />,
       },
-      {
-        path: 'account/add',
-        element: <AddAccountModal />,
-      },
+      //BANK ACCOUNT
+      // {
+      //   path: 'bank-account/list',
+      //   element: <ListBankAccount />
+      // },
+      // {
+      //   path: 'bank-account/add',
+      //   element: <AddBankAccount />
+      // },
+      // {
+      //   path: 'bank-account/edit/:id',
+      //   element: <EditBankAccount />
+      // },
+      // {
+      //   path: 'bank-account/detail/:id',
+      //   element: <BankAccountDetail />
+      // },
       // USER MANAGEMENT
       {
         path: 'usermanagement/roles/rolelist',
         element: <RoleList />,
+      },
+      // REVIEW
+      {
+        path: 'review',
+        children: [
+          // Ví dụ: hiển thị danh sách review của 1 course
+          { path: 'list/:courseId', element: <ListReview /> },
+          // Thêm 1 route tạo review
+          { path: 'add/:courseId', element: <AddReview /> },
+          /*
+            Lưu ý: Tùy logic, bạn có thể đặt path = 'list' hoặc 'add' 
+            hay thay đổi parameter, v.v. 
+            Nếu review gắn liền với course, 
+            bạn có thể path = 'course/:courseId/reviews'...
+          */
+        ],
+      },
+
+      // TICKET
+      {
+        path: 'ticket',
+        children: [
+          // Ticket list
+          { path: 'list', element: <ListTicket /> },
+          // Ticket add
+          { path: 'add', element: <AddTicket /> },
+        ],
+      },
+      // Wallet routes
+      {
+        path: 'wallet/list',
+        element: <ListWallet />,
+      },
+      {
+        path: 'wallet/transaction-history/:walletId',
+        element: <TransactionHistory />,
+      },
+
+      // Notification routes
+      {
+        path: 'notification/list',
+        element: <NotificationList />,
       },
       // CHART & MAPS
       {
@@ -180,47 +278,79 @@ const routes = [
         path: 'maps/google-map',
         element: <GoogleMaps />,
       },
-      // EXTRA PAGES
+      // INSTRUCTOR RELATED ROUTES
       {
-        path: 'sample-page',
-        element: <SamplePage />,
+        path: 'instructor/:instructorId/wallet',
+        element: <InstructorWallet />, // Đảm bảo component này tồn tại
       },
-      // Redirect all unknown paths to dashboard
+      {
+        path: 'instructor/:instructorId/transactions',
+        element: <InstructorTransactions />, // Đảm bảo component này tồn tại
+      },
+      {
+        path: 'instructor/:instructorId/notifications',
+        element: <InstructorNotifications />, // Đảm bảo component này tồn tại
+      },
+      {
+        path: 'instructor/:instructorId/reviews',
+        element: <InstructorReviews />, // Đảm bảo component này tồn tại
+      },
+
+      // Redirect all unknown paths within /dashboard to dashboard default
       {
         path: '*',
-        element: <Navigate to={`${BASE_URL}/dashboard/default`} replace />,
+        element: <Navigate to="/dashboard/default" replace />,
       },
     ],
   },
   // Redirect root to dashboard
   {
     path: '/',
-    element: <Navigate to={`${BASE_URL}/dashboard/default`} replace />,
+    element: <Navigate to="/dashboard/default" replace />,
   },
   // Catch-all route
   {
     path: '*',
-    element: <Navigate to={`${BASE_URL}/dashboard/default`} replace />,
+    element: <Navigate to="/dashboard/default" replace />,
   },
 ];
 
-const renderRoutes = (routesArray) => (
+/**
+ * Helper function to render routes with console logging
+ */
+const renderRoutes = (routesArray) => {
+  return routesArray.map((route, index) => {
+    const hasElement = !!route.element;
+    const hasPath = !!route.path;
+    console.log(
+      `Route ${index}: path=${route.path}, element=${hasElement ? 'defined' : 'undefined'}`
+    );
+
+    if (!hasElement && route.path !== '*') {
+      console.warn(
+        `Warning: Route at index ${index} with path "${route.path}" is missing an element.`
+      );
+    }
+
+    if (route.children) {
+      return (
+        <Route key={index} path={route.path} element={route.element}>
+          {renderRoutes(route.children)}
+        </Route>
+      );
+    } else {
+      return <Route key={index} path={route.path} element={route.element} />;
+    }
+  });
+};
+
+/**
+ * AppRoutes - Component that renders all routes
+ */
+const AppRoutes = () => (
   <Suspense fallback={<Loader />}>
-    <Routes>
-      {routesArray.map((route, index) => {
-        if (route.children) {
-          return (
-            <Route key={index} path={route.path} element={route.element}>
-              {renderRoutes(route.children)}
-            </Route>
-          );
-        } else {
-          return <Route key={index} path={route.path} element={route.element} />;
-        }
-      })}
-    </Routes>
+    <Routes>{renderRoutes(routes)}</Routes>
   </Suspense>
 );
 
-export default routes;
-export { renderRoutes };
+export default AppRoutes;

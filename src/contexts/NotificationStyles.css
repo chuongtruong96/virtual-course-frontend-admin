@@ -1,0 +1,53 @@
+/* src/contexts/NotificationStyles.css */
+
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+  }
+  
+  .notification {
+    background-color: #fff;
+    border-left: 5px solid;
+    padding: 15px 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-width: 250px;
+    max-width: 300px;
+  }
+  
+  .notification.success {
+    border-color: #28a745;
+  }
+  
+  .notification.danger {
+    border-color: #dc3545;
+  }
+  
+  .notification.info {
+    border-color: #17a2b8;
+  }
+  
+  .notification.warning {
+    border-color: #ffc107;
+  }
+  
+  .notification button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #aaa;
+  }
+  
+  .notification button:hover {
+    color: #000;
+  }
+  

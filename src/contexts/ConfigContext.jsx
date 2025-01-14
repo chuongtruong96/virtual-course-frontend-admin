@@ -1,13 +1,17 @@
+// src/contexts/ConfigContext.jsx
+
 import PropTypes from 'prop-types';
 import React, { createContext, useReducer } from 'react';
 import * as actionType from '../store/actions';
 import { CONFIG } from '../config/constant';
 
-// Trạng thái mặc định
+/**
+ * Trạng thái mặc định, lấy từ CONFIG + 2 mảng isOpen, isTrigger
+ */
 const initialState = {
   ...CONFIG,
   isOpen: [],
-  isTrigger: []
+  isTrigger: [],
 };
 
 // Tạo Context
@@ -26,12 +30,12 @@ export const ConfigProvider = ({ children }) => {
       case actionType.CHANGE_LAYOUT:
         return {
           ...currState,
-          layout: action.layout
+          layout: action.layout,
         };
       case actionType.COLLAPSE_MENU:
         return {
           ...currState,
-          collapseMenu: !currState.collapseMenu
+          collapseMenu: !currState.collapseMenu,
         };
       case actionType.COLLAPSE_TOGGLE:
         if (action.menu?.type === 'sub') {
@@ -57,7 +61,7 @@ export const ConfigProvider = ({ children }) => {
         return {
           ...currState,
           isOpen: open,
-          isTrigger: trigger
+          isTrigger: trigger,
         };
       case actionType.NAV_COLLAPSE_LEAVE:
         if (action.menu?.type === 'sub') {
@@ -72,25 +76,22 @@ export const ConfigProvider = ({ children }) => {
           return {
             ...currState,
             isOpen: open,
-            isTrigger: trigger
+            isTrigger: trigger,
           };
         }
         return { ...currState };
-
       case actionType.NAV_CONTENT_LEAVE:
         return {
           ...currState,
           isOpen: open,
-          isTrigger: trigger
+          isTrigger: trigger,
         };
-
       case actionType.RESET:
         return {
           ...currState,
           layout: initialState.layout,
-          collapseMenu: initialState.collapseMenu
+          collapseMenu: initialState.collapseMenu,
         };
-
       default:
         throw new Error(`Unhandled action type: ${action.type}`);
     }
@@ -100,7 +101,11 @@ export const ConfigProvider = ({ children }) => {
 };
 
 ConfigProvider.propTypes = {
-  children: PropTypes.node
+  children: PropTypes.node,
 };
-// Export default chính là hàm Provider
+
+/** 
+ * Export mặc định = ConfigProvider 
+ * => Ở file index.js bạn import { ConfigProvider }
+ */
 export default ConfigProvider;

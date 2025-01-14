@@ -1,34 +1,34 @@
-// src/utils/api.js
-import axios from "axios";
+// src/untils/PrivateRoute.jsx
 
-const api = axios.create({
-    baseURL: 'http://localhost:8080/api',
-    withCredentials: true,
-});
+import React, { useContext } from 'react';
+import { AuthContext } from '../contexts/AuthContext';
+import { Navigate, Outlet } from 'react-router-dom';
 
-// Interceptor để thêm Authorization header
-api.interceptors.request.use(
-    (config) => {
-        const storedUser = JSON.parse(localStorage.getItem("user"));
-        if (storedUser && storedUser.jwt) {
-            config.headers.Authorization = `Bearer ${storedUser.jwt}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
+/**
+ * PrivateRoute (React Router v6):
+ * - Nếu đã đăng nhập (auth.token != null) và có vai trò 'ROLE_ADMIN' thì cho render children
+ * - Ngược lại, chuyển hướng về /auth/signin
+ */
+const PrivateRoute = ({ children }) => {
+  const { auth } = useContext(AuthContext);
 
-// Interceptor để xử lý lỗi response
-api.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    (error) => {
-        console.error("API Error:", error.response || error.message);
-        return Promise.reject(error);
-    }
-);
+  // Thêm log để kiểm tra trạng thái auth
+  console.log("Current auth state:", auth);
 
-export default api;
+  // Kiểm tra xem người dùng đã đăng nhập chưa
+  if (!auth || !auth.token) {
+    console.warn("User not authenticated. Redirecting to /auth/signin");
+    return <Navigate to="/auth/signin" replace />;
+  }
+
+  // Kiểm tra xem người dùng có vai trò 'ROLE_ADMIN' không
+  if (!auth.user?.roles?.includes('ROLE_ADMIN')) {
+    console.warn("User does not have ADMIN role. Redirecting to /auth/signin");
+    return <Navigate to="/auth/signin" replace />;
+  }
+
+  // Nếu tất cả điều kiện đều thỏa mãn, render children hoặc Outlet
+  return children ? children : <Outlet />;
+};
+
+export default PrivateRoute;

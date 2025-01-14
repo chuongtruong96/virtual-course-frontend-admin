@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ListGroup } from 'react-bootstrap';
 import { Link, useLocation } from 'react-router-dom';
 
-import navigation from '../../../menu-items';
+import menuItems  from '../../../menu-items';
 import { BASE_TITLE } from '../../../config/constant';
 
 const Breadcrumb = () => {
@@ -12,35 +12,32 @@ const Breadcrumb = () => {
   const [item, setItem] = useState([]);
 
   useEffect(() => {
-    navigation.items.map((item, index) => {
-      if (item.type && item.type === 'group') {
-        getCollapse(item, index);
+    menuItems.items.forEach((itemGroup, index) => {
+      if (itemGroup.type === 'group') {
+        getCollapse(itemGroup, index);
       }
-      return false;
     });
-  });
-
-  const getCollapse = (item, index) => {
-    if (item.children) {
-      item.children.filter((collapse) => {
-        if (collapse.type && collapse.type === 'collapse') {
+  }, [location.pathname]); // Thêm dependency vào useEffect
+  
+  const getCollapse = (itemGroup, index) => {
+    if (itemGroup.children) {
+      itemGroup.children.forEach((collapse) => {
+        if (collapse.type === 'collapse') {
           getCollapse(collapse, index);
-        } else if (collapse.type && collapse.type === 'item') {
+        } else if (collapse.type === 'item') {
           if (location.pathname === collapse.url) {
-            setMain(item);
+            setMain(itemGroup);
             setItem(collapse);
           }
         }
-        return false;
       });
     }
   };
-
   let mainContent, itemContent;
   let breadcrumbContent = '';
   let title = '';
 
-  if (main && main.type === 'collapse') {
+  if (main && main.type === 'group') { // Sửa điều kiện để đúng với cấu trúc menuItems.js
     mainContent = (
       <ListGroup.Item as="li" bsPrefix=" " className="breadcrumb-item">
         <Link to="#">{main.title}</Link>

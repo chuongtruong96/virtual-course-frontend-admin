@@ -1,0 +1,27 @@
+/* src/styles/InstructorCard.css */
+
+/* card horizontal layout */
+.instructor-card-horizontal {
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 0.25rem;
+}
+
+.instructor-image-horizontal {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-right: 1px solid #ccc;
+}
+
+.image-col {
+  /* fix certain height if you want or auto */
+  max-height: 180px; /* for example */
+  overflow: hidden;
+}
+
+/* adjust button spacing if needed */
+.instructor-card-horizontal .card-body .btn {
+  margin-right: 0.25rem;
+  margin-bottom: 0.25rem;
+}

@@ -20,8 +20,8 @@ const FilterForm = ({ filters, onFilterChange }) => {
         onChange={(e) => onFilterChange({ status: e.target.value })}
       >
         <option value="">All Status</option>
-        <option value="ACTIVE">Active</option>
-        <option value="INACTIVE">Inactive</option>
+        <option value="ACTIVE">ACTIVE</option>
+        <option value="INACTIVE">INACTIVE</option>
       </select>
     </div>
   );

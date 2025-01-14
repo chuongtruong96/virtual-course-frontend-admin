@@ -1,61 +1,25 @@
 // src/services/roleService.js
-import api from "../untils/api";
 
-/**
- * Fetch all roles from the API.
- * @returns {Promise<Array>} The list of roles.
- */
-export const fetchRoles = async () => {
-  try {
-    const response = await api.get("/roles");
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching roles:", error);
-    throw error;
+import createCRUDService from './baseService';
+import api from '../untils/api'; // Sửa từ 'untils' thành 'utils'
+import { ENDPOINTS } from '../config/endpoint';
+import { handleError } from '../untils/errorHandler'; // Sửa từ 'untils' thành 'utils'
+
+const roleCRUD = createCRUDService(ENDPOINTS.ROLES.BASE);
+
+const roleService = {
+  ...roleCRUD,
+
+  // Phương thức để xóa role
+  deleteRole: async ({ id, signal }) => {
+    // Nhận đối tượng chứa id và signal
+    try {
+      await api.delete(`${ENDPOINTS.ROLES.BASE}/${id}`, { signal });
+    } catch (error) {
+      console.error('Error deleting role:', error);
+      throw handleError(error);
+    }
   }
 };
 
-/**
- * Add a new role.
- * @param {Object} role - The role data to add.
- * @returns {Promise<Object>} The added role.
- */
-export const addRole = async (role) => {
-  try {
-    const response = await api.post("/roles", role);
-    return response.data;
-  } catch (error) {
-    console.error("Error adding role:", error);
-    throw error;
-  }
-};
-
-/**
- * Edit an existing role.
- * @param {number} roleId - The ID of the role to edit.
- * @param {Object} roleData - The updated role data.
- * @returns {Promise<Object>} The updated role.
- */
-export const editRole = async (roleId, roleData) => {
-  try {
-    const response = await api.put(`/roles/${roleId}`, roleData);
-    return response.data;
-  } catch (error) {
-    console.error("Error editing role:", error);
-    throw error;
-  }
-};
-
-/**
- * Delete a role.
- * @param {number} roleId - The ID of the role to delete.
- * @returns {Promise<void>} Resolves when the role is deleted.
- */
-export const deleteRole = async (roleId) => {
-  try {
-    await api.delete(`/roles/${roleId}`);
-  } catch (error) {
-    console.error("Error deleting role:", error);
-    throw error;
-  }
-};
+export default roleService;

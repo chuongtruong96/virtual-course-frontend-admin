@@ -8,7 +8,7 @@ const TableRow = ({ account }) => {
       <td>{username}</td>
       <td>{email}</td>
       <td>{authenticationType}</td>
-      <td>{enable ? 'Active' : 'Inactive'}</td>
+      <td>{enable ? 'ACTIVE' : 'INACTIVE'}</td>
       <td>
         <button onClick={() => handleEdit(account)}>Edit</button>
         <button onClick={() => handleDelete(account.id)}>Delete</button>

@@ -1,12 +1,13 @@
 // src/views/student/AddStudent.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import StudentService from '../../services/studentService';
 import { uploadPhoto } from '../../services/fileService';
 import { Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 // import '../../styles/AddStudentForm.css';
+import { NotificationContext } from '../../contexts/NotificationContext';
 
 const AddStudent = () => {
     const { accountId } = useParams(); // Lấy accountId từ URL
@@ -16,6 +17,7 @@ const AddStudent = () => {
     const [file, setFile] = useState(null);
     const [imagePreview, setImagePreview] = useState('');
     const [uploadedFileName, setUploadedFileName] = useState('');
+  const { addNotification } = useContext(NotificationContext);
 
     // Sử dụng react-hook-form
     const { register, handleSubmit, formState: { errors }, setValue } = useForm();
@@ -51,8 +53,10 @@ const AddStudent = () => {
             };
 
             await StudentService.addStudent(accountId, studentData);
+            addNotification('Successfully added student.', 'success');
+
             alert('Student added successfully!');
-            navigate('/student/list-student'); // Điều hướng về danh sách Student
+            navigate('/dashboard/student/list-student'); // Điều hướng về danh sách Student
         } catch (err) {
             console.error("Error adding student:", err);
             // Kiểm tra lỗi từ backend và hiển thị thông báo phù hợp

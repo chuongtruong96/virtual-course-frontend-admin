@@ -1,21 +1,22 @@
-// src/views/auth/signup/SignUp1.js
-import React, { useState } from 'react';
-import { Card, Row, Col, Alert, Button } from 'react-bootstrap';
-import { NavLink, useNavigate } from 'react-router-dom';
+// src/views/auth/SignUp1.jsx
+import React from 'react';
+import { Card, Row, Col, Button, Form, Spinner } from 'react-bootstrap';
+import { NavLink } from 'react-router-dom';
 import * as Yup from 'yup';
 import { Formik } from 'formik';
 
+// Layout & context
 import Breadcrumb from '../../../layouts/AdminLayout/Breadcrumb';
+import { NotificationContext } from '../../../contexts/NotificationContext';
 
-import authService from '../../../services/authService';
+// Dùng custom hook useAuth
+import useAuth from '../../../hooks/useAuth';
 
 const SignUp1 = () => {
-  const navigate = useNavigate();
-  const [serverError, setServerError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
-
+  const { register } = useAuth(); // Mutation "register"
+  
   return (
-    <React.Fragment>
+    <>
       <Breadcrumb />
       <div className="auth-wrapper">
         <div className="auth-content">
@@ -30,7 +31,7 @@ const SignUp1 = () => {
               <Col>
                 <Card.Body className="text-center">
                   <div className="mb-4">
-                    <i className="feather icon-user-plus auth-icon" />
+                    <i className="feather icon-user-plus auth-icon" aria-hidden="true" />
                   </div>
                   <h3 className="mb-4">Sign up</h3>
                   <Formik
@@ -38,136 +39,167 @@ const SignUp1 = () => {
                       username: '',
                       email: '',
                       password: '',
-                      roles: ['USER'],
-                      submit: null
+                      roles: [],
                     }}
-                    validationSchema={Yup.object().shape({
-                      username: Yup.string().max(255).required('Username is required'),
-                      email: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
-                      password: Yup.string().min(6, 'Password must be at least 6 characters').max(255).required('Password is required'),
-                      roles: Yup.array().of(Yup.string()).min(1, 'Select at least one role')
+                    validationSchema={Yup.object({
+                      username: Yup.string()
+                        .max(255)
+                        .required('Username is required'),
+                      email: Yup.string()
+                        .email('Must be a valid email')
+                        .max(255)
+                        .required('Email is required'),
+                      password: Yup.string()
+                        .min(6, 'Password must be at least 6 characters')
+                        .required('Password is required'),
+                      roles: Yup.array()
+                        .of(Yup.string())
+                        .min(1, 'Select at least one role'),
                     })}
                     onSubmit={(values, { setSubmitting }) => {
-                      setServerError(null);
-                      setSuccessMessage(null);
-                      authService.register(values)
-                        .then(response => {
-                          setSuccessMessage("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
+                      // Gọi mutation: .mutate(payload, { onSettled })
+                      register(values, {
+                        onSettled: () => {
+                          // Hết loading (Formik)
                           setSubmitting(false);
-                          navigate('/auth/signin');
-                        })
-                        .catch(err => {
-                          if (err.response && err.response.data) {
-                            setServerError(err.response.data.message || 'Đăng ký không thành công.');
-                          } else {
-                            setServerError('Đăng ký không thành công.');
-                          }
-                          setSubmitting(false);
-                        });
+                        },
+                      });
                     }}
                   >
                     {({ errors, handleBlur, handleChange, handleSubmit, isSubmitting, touched, values }) => (
-                      <form noValidate onSubmit={handleSubmit}>
-                        <div className="form-group mb-3">
-                          <input
-                            className="form-control"
-                            name="username"
-                            onBlur={handleBlur}
-                            onChange={handleChange}
+                      <Form noValidate onSubmit={handleSubmit} aria-label="Signup Form">
+                        {/* Username */}
+                        <Form.Group controlId="username" className="mb-3">
+                          <Form.Label>
+                            Username <span style={{ color: 'red' }}>*</span>
+                          </Form.Label>
+                          <Form.Control
                             type="text"
-                            value={values.username}
+                            name="username"
                             placeholder="Username"
-                          />
-                          {touched.username && errors.username && <small className="text-danger form-text">{errors.username}</small>}
-                        </div>
-                        <div className="form-group mb-3">
-                          <input
-                            className="form-control"
-                            name="email"
                             onBlur={handleBlur}
                             onChange={handleChange}
-                            type="email"
-                            value={values.email}
-                            placeholder="Email Address"
+                            value={values.username}
+                            isInvalid={touched.username && !!errors.username}
+                            aria-label="Username"
+                            required
                           />
-                          {touched.email && errors.email && <small className="text-danger form-text">{errors.email}</small>}
-                        </div>
-                        <div className="form-group mb-4">
-                          <input
-                            className="form-control"
-                            name="password"
-                            onBlur={handleBlur}
-                            onChange={handleChange}
-                            type="password"
-                            value={values.password}
-                            placeholder="Password"
-                          />
-                          {touched.password && errors.password && <small className="text-danger form-text">{errors.password}</small>}
-                        </div>
+                          <Form.Control.Feedback type="invalid">
+                            {errors.username}
+                          </Form.Control.Feedback>
+                        </Form.Group>
 
-                        <div className="form-group mb-3 text-start">
-                          <label>Roles:</label>
+                        {/* Email */}
+                        <Form.Group controlId="email" className="mb-3">
+                          <Form.Label>
+                            Email <span style={{ color: 'red' }}>*</span>
+                          </Form.Label>
+                          <Form.Control
+                            type="email"
+                            name="email"
+                            placeholder="Email Address"
+                            onBlur={handleBlur}
+                            onChange={handleChange}
+                            value={values.email}
+                            isInvalid={touched.email && !!errors.email}
+                            aria-label="Email Address"
+                            required
+                          />
+                          <Form.Control.Feedback type="invalid">
+                            {errors.email}
+                          </Form.Control.Feedback>
+                        </Form.Group>
+
+                        {/* Password */}
+                        <Form.Group controlId="password" className="mb-4">
+                          <Form.Label>
+                            Password <span style={{ color: 'red' }}>*</span>
+                          </Form.Label>
+                          <Form.Control
+                            type="password"
+                            name="password"
+                            placeholder="Password"
+                            onBlur={handleBlur}
+                            onChange={handleChange}
+                            value={values.password}
+                            isInvalid={touched.password && !!errors.password}
+                            aria-label="Password"
+                            required
+                          />
+                          <Form.Control.Feedback type="invalid">
+                            {errors.password}
+                          </Form.Control.Feedback>
+                        </Form.Group>
+
+                        {/* Roles */}
+                        <Form.Group controlId="roles" className="mb-3 text-start">
+                          <Form.Label>
+                            Roles <span style={{ color: 'red' }}>*</span>
+                          </Form.Label>
                           <div>
-                            <input
+                            <Form.Check
                               type="checkbox"
                               name="roles"
-                              value="USER"
-                              checked={values.roles.includes('USER')}
+                              value="ADMIN"
+                              label="ADMIN"
+                              checked={values.roles.includes('ADMIN')}
                               onChange={handleChange}
-                            /> USER
-                          </div>
-                          <div>
-                            <input
+                              aria-label="Select ADMIN role"
+                            />
+                            <Form.Check
                               type="checkbox"
                               name="roles"
                               value="STUDENT"
+                              label="STUDENT"
                               checked={values.roles.includes('STUDENT')}
                               onChange={handleChange}
-                            /> STUDENT
-                          </div>
-                          <div>
-                            <input
+                              aria-label="Select STUDENT role"
+                            />
+                            <Form.Check
                               type="checkbox"
                               name="roles"
                               value="INSTRUCTOR"
+                              label="INSTRUCTOR"
                               checked={values.roles.includes('INSTRUCTOR')}
                               onChange={handleChange}
-                            /> INSTRUCTOR
+                              aria-label="Select INSTRUCTOR role"
+                            />
                           </div>
-                          {touched.roles && errors.roles && <small className="text-danger form-text">{errors.roles}</small>}
-                        </div>
+                          {touched.roles && errors.roles && (
+                            <Form.Control.Feedback type="invalid" style={{ display: 'block' }}>
+                              {errors.roles}
+                            </Form.Control.Feedback>
+                          )}
+                        </Form.Group>
 
-                        {serverError && (
-                          <Col sm={12}>
-                            <Alert variant="danger">{serverError}</Alert>
-                          </Col>
-                        )}
-
-                        {successMessage && (
-                          <Col sm={12}>
-                            <Alert variant="success">{successMessage}</Alert>
-                          </Col>
-                        )}
-
-                        <Row>
-                          <Col mt={2}>
-                            <Button
-                              className="btn-block mb-4"
-                              variant="primary"
-                              disabled={isSubmitting}
-                              size="large"
-                              type="submit"
-                            >
-                              Sign up
-                            </Button>
-                          </Col>
-                        </Row>
-                      </form>
+                        <Button
+                          className="btn-block mb-4"
+                          variant="primary"
+                          disabled={isSubmitting}
+                          type="submit"
+                          aria-label="Sign up"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Spinner
+                                as="span"
+                                animation="border"
+                                size="sm"
+                                role="status"
+                                aria-hidden="true"
+                              />{' '}
+                              Signing up...
+                            </>
+                          ) : (
+                            'Sign up'
+                          )}
+                        </Button>
+                      </Form>
                     )}
                   </Formik>
                   <p className="mb-2">
                     Already have an account?{' '}
-                    <NavLink to="/auth/signin" className="f-w-400">
+                    <NavLink to="/auth/signin" className="f-w-400" aria-label="Login">
                       Login
                     </NavLink>
                   </p>
@@ -177,7 +209,7 @@ const SignUp1 = () => {
           </Card>
         </div>
       </div>
-    </React.Fragment>
+    </>
   );
 };
 

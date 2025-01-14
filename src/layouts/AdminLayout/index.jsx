@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import React, { useContext, useEffect, useRef } from 'react';
+import { Outlet } from 'react-router-dom'; // Import Outlet
 
 import Navigation from './Navigation';
 import NavBar from './NavBar';
@@ -10,7 +11,7 @@ import useOutsideClick from '../../hooks/useOutsideClick';
 import { ConfigContext } from '../../contexts/ConfigContext';
 import * as actionType from '../../store/actions';
 
-const AdminLayout = ({ children }) => {
+const AdminLayout = () => {
   const windowSize = useWindowSize();
   const ref = useRef();
   const configContext = useContext(ConfigContext);
@@ -56,7 +57,7 @@ const AdminLayout = ({ children }) => {
           <div className="pcoded-content">
             <div className="pcoded-inner-content">
               <Breadcrumb />
-              {children}
+              <Outlet /> {/* Sử dụng Outlet thay vì {children} */}
             </div>
           </div>
         </div>
@@ -80,12 +81,9 @@ const AdminLayout = ({ children }) => {
     );
 
     mainContainer = (
-      <div
-        role="button"
-        tabIndex="0"
-        className="pcoded-outside"
-        onClick={() => mobileOutClickHandler}
-        onKeyDown={() => mobileOutClickHandler}
+      <div role="button" tabIndex="0" className="pcoded-outside" 
+      onClick={mobileOutClickHandler} 
+      onKeyDown={mobileOutClickHandler}
       >
         {mainContainer}
       </div>

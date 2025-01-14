@@ -1,112 +1,95 @@
 // src/services/courseService.js
-
-import api from "../untils/api";
+import createCRUDService from './baseService';
+import api from '../untils/api';
+import { ENDPOINTS } from '../config/endpoint';
+import { handleError } from '../untils/errorHandler';
 
 /**
- * CourseService handles all API interactions related to courses.
+ * CourseService xử lý tất cả các tương tác API liên quan đến Courses.
  */
+const courseCRUD = createCRUDService(ENDPOINTS.COURSES.BASE);
+
 const CourseService = {
-    /**
-     * Fetch all courses from the API.
-     * @returns {Promise<Array>} The list of courses.
-     */
-    fetchCourses: async () => {
-        try {
-            const response = await api.get("/courses");
-            return response.data;
-        } catch (error) {
-            console.error("Error fetching courses:", error);
-            throw error;
-        }
-    },
+  ...courseCRUD,
 
-    /**
-     * Fetch a single course by ID from the API.
-     * @param {number} courseId - The ID of the course.
-     * @returns {Promise<Object>} The course data.
-     */
-    fetchCourseById: async (courseId) => {
-        try {
-            const response = await api.get(`/courses/${courseId}`);
-            return response.data;
-        } catch (error) {
-            console.error("Error fetching course by ID:", error);
-            throw new Error("Failed to fetch course. Please try again.");
-        }
-    },
+  // fetch all courses
+  fetchAllCourses: async ({ signal }) => {
+    try {
+      const response = await api.get(ENDPOINTS.COURSES.BASE, { signal });
+      return response.data; // GET /api/courses
+    } catch (error) {
+      console.error('Error fetching all courses:', error);
+      throw handleError(error);
+    }
+  },
 
-    /**
-     * Create a new course.
-     * @param {Object} courseData - The course data to add.
-     * @returns {Promise<Object>} The added course.
-     */
-    addCourse: async (courseData) => {
-        try {
-            const response = await api.post("/courses", courseData);
-            return response.data;
-        } catch (error) {
-            console.error("Error adding course:", error);
-            throw error;
-        }
-    },
+  // fetch courses by instructor => GET /api/instructors/{instructorId}/courses
+  fetchCoursesByInstructor: async ({ instructorId, signal }) => {
+    try {
+      const response = await api.get(ENDPOINTS.INSTRUCTORS.BY_ID_COURSES(instructorId), { signal });
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching courses for instructor ${instructorId}:`, error);
+      throw handleError(error);
+    }
+  },
 
-    /**
-     * Edit an existing course.
-     * @param {number} courseId - The ID of the course to edit.
-     * @param {Object} updatedData - The updated course data.
-     * @returns {Promise<Object>} The updated course.
-     */
-    editCourse: async (courseId, updatedData) => {
-        try {
-            const response = await api.put(`/courses/${courseId}`, updatedData);
-            return response.data;
-        } catch (error) {
-            console.error("Error editing course:", error);
-            throw error;
-        }
-    },
+  // addCourseForInstructor => POST /api/courses/instructor/{id}/courses
+  addCourseForInstructor: async ({ instructorId, data, signal }) => {
+    try {
+      const url = ENDPOINTS.INSTRUCTORS.BY_ID_COURSES(instructorId); // "/api/instructors/10/courses"
+      const response = await api.post(url, data, { signal });
+      return response.data;
+    } catch (error) {
+      console.error(`Error adding course for instructor ${instructorId}:`, error);
+      throw handleError(error);
+    }
+  },
 
-    /**
-     * Delete a course.
-     * @param {number} courseId - The ID of the course to delete.
-     * @returns {Promise<void>} Resolves when the course is deleted.
-     */
-    deleteCourse: async (courseId) => {
-        try {
-            await api.delete(`/courses/${courseId}`);
-        } catch (error) {
-            console.error("Error deleting course:", error);
-            throw error;
-        }
-    },
+  // override editCourse => PUT /api/courses/{id}
+  editCourse: async ({ id, data, signal }) => {
+    try {
+      const response = await api.put(ENDPOINTS.COURSES.BY_ID(id), data, { signal });
+      return response.data;
+    } catch (error) {
+      console.error(`Error editing course ${id}:`, error);
+      throw handleError(error);
+    }
+  },
 
-    /**
-     * Enable a course (set status to active).
-     * @param {number} courseId - The ID of the course to enable.
-     * @returns {Promise<void>} Resolves when the course is enabled.
-     */
-    enableCourse: async (courseId) => {
-        try {
-            await api.put(`/courses/${courseId}/enable`);
-        } catch (error) {
-            console.error("Error enabling course:", error);
-            throw error;
-        }
-    },
+  // fetch detail => GET /api/courses/{id}
+  fetchCourseById: async ({ id, signal }) => {
+    try {
+      const response = await api.get(ENDPOINTS.COURSES.BY_ID(id), { signal });
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching course ${id}:`, error);
+      throw handleError(error);
+    }
+  },
 
-    /**
-     * Disable a course (set status to inactive).
-     * @param {number} courseId - The ID of the course to disable.
-     * @returns {Promise<void>} Resolves when the course is disabled.
-     */
-    disableCourse: async (courseId) => {
-        try {
-            await api.put(`/courses/${courseId}/disable`);
-        } catch (error) {
-            console.error("Error disabling course:", error);
-            throw error;
-        }
-    },
+  // disable => PUT /api/courses/{id}/disable
+  // enable => PUT /api/courses/{id}/enable
+  // etc...
+
+  // Thêm 2 hàm
+  approveCourse: async (courseId) => {
+    // Gọi API: PUT /api/courses/{id}/approve (hoặc POST tùy backend)
+    const response = await api.put(`${ENDPOINTS.COURSES.BY_ID(courseId)}/approve`);
+    return response.data;
+  },
+  rejectCourse: async (courseId, reason) => {
+    // Gọi API: PUT /api/courses/{id}/reject
+    const response = await api.put(`${ENDPOINTS.COURSES.BY_ID(courseId)}/reject`, { reason });
+    return response.data;
+  },
+  // fetchPendingCourses
+  fetchPendingCourses: async ({ signal }) => {
+    // Gọi API: GET /api/courses/pending
+    // Tùy logic backend
+    const response = await api.get(`${ENDPOINTS.COURSES.BASE}/pending`, { signal });
+    return response.data;
+  }
 };
 
 export default CourseService;

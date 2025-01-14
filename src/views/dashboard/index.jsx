@@ -1,12 +1,23 @@
 // src/views/dashboard/index.jsx
 
 import React from 'react';
-import { Grid, Card, CardContent, Typography, Avatar, Box, LinearProgress, Tabs, Tab, Button } from '@mui/material';
+import {
+  Grid2, // Sử dụng Grid2 thay vì Grid
+  Card,
+  CardContent,
+  Typography,
+  Avatar,
+  Box,
+  LinearProgress,
+  Tabs,
+  Tab,
+  Button
+} from '@mui/material';
 import { Link } from 'react-router-dom';
-
 import avatar1 from '../../assets/images/user/avatar-1.jpg';
 import avatar2 from '../../assets/images/user/avatar-2.jpg';
 import avatar3 from '../../assets/images/user/avatar-3.jpg';
+import Statistics from '../../components/statistics/Statistics'; // Import component Statistics
 
 const dashSalesData = [
   { title: 'Daily Sales', amount: '$249.95', icon: 'arrow_upward', value: 50, color: 'primary' },
@@ -32,17 +43,30 @@ const DashDefault = () => {
 
   return (
     <Box sx={{ flexGrow: 1, padding: 2 }}>
-      <Grid container spacing={2}>
+      {/* Thống Kê */}
+      <Statistics />
+
+      <Grid2 container spacing={2} sx={{ mt: 2 }}>
+        {/* Các Card hiện tại */}
         {dashSalesData.map((data, index) => (
-          <Grid item xs={12} md={6} lg={4} key={index}>
+          <Grid2 item xs={12} md={6} lg={4} key={index}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   {data.title}
                 </Typography>
                 <Box display="flex" alignItems="center">
-                  <Avatar sx={{ bgcolor: data.color === 'primary' ? 'primary.main' : 'error.main', mr: 2 }}>
-                    {data.icon === 'arrow_upward' ? <i className="fa fa-arrow-up" /> : <i className="fa fa-arrow-down" />}
+                  <Avatar
+                    sx={{
+                      bgcolor: data.color === 'primary' ? 'primary.main' : 'error.main',
+                      mr: 2
+                    }}
+                  >
+                    {data.icon === 'arrow_upward' ? (
+                      <i className="fa fa-arrow-up" />
+                    ) : (
+                      <i className="fa fa-arrow-down" />
+                    )}
                   </Avatar>
                   <Typography variant="h5" component="div">
                     {data.amount}
@@ -56,11 +80,11 @@ const DashDefault = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Grid2>
         ))}
 
         {/* Recent Users */}
-        <Grid item xs={12} md={6} lg={8}>
+        <Grid2 item xs={12} md={6} lg={8}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -73,8 +97,15 @@ const DashDefault = () => {
                     <Typography variant="subtitle1">{user.name}</Typography>
                   </Box>
                   <Box display="flex" alignItems="center">
-                    <i className={`fa fa-caret-${user.trend === 'up' ? 'up' : 'down'}`} style={{ color: user.color === 'success' ? 'green' : 'red' }} />
-                    <Typography variant="body2" color={user.color === 'success' ? 'green' : 'red'} sx={{ ml: 1 }}>
+                    <i
+                      className={`fa fa-caret-${user.trend === 'up' ? 'up' : 'down'}`}
+                      style={{ color: user.color === 'success' ? 'green' : 'red' }}
+                    />
+                    <Typography
+                      variant="body2"
+                      color={user.color === 'success' ? 'green' : 'red'}
+                      sx={{ ml: 1 }}
+                    >
                       {user.change}
                     </Typography>
                   </Box>
@@ -85,10 +116,10 @@ const DashDefault = () => {
               </Button>
             </CardContent>
           </Card>
-        </Grid>
+        </Grid2>
 
         {/* Additional Widgets */}
-        <Grid item xs={12} md={6} lg={4}>
+        <Grid2 item xs={12} md={6} lg={4}>
           <Card sx={{ mb: 2 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -132,9 +163,9 @@ const DashDefault = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Grid2>
 
-        <Grid item xs={12} md={6} lg={4}>
+        <Grid2 item xs={12} md={6} lg={4}>
           {/* Social Cards */}
           <Card sx={{ mb: 2 }}>
             <CardContent>
@@ -195,15 +226,17 @@ const DashDefault = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Grid2>
 
-        <Grid item xs={12} md={6} lg={8}>
+        <Grid2 item xs={12} md={6} lg={8}>
           {/* Rating Card */}
           <Card>
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Box>
-                  <Typography variant="h4">4.7 <Typography variant="subtitle1" component="span">★</Typography></Typography>
+                  <Typography variant="h4">
+                    4.7 <Typography variant="subtitle1" component="span">★</Typography>
+                  </Typography>
                 </Box>
                 <Box display="flex" alignItems="center">
                   <Typography variant="body1" color="success.main">+0.4%</Typography>
@@ -214,8 +247,14 @@ const DashDefault = () => {
                 {[5, 4, 3, 2, 1].map((star) => (
                   <Box key={star} display="flex" alignItems="center" mb={1}>
                     <Typography variant="body2" sx={{ width: '20px' }}>{star}★</Typography>
-                    <LinearProgress variant="determinate" value={star === 5 ? 70 : star === 4 ? 35 : star === 3 ? 25 : star === 2 ? 10 : 0} sx={{ flexGrow: 1, mr: 2 }} />
-                    <Typography variant="body2">{star === 5 ? 384 : star === 4 ? 145 : star === 3 ? 24 : star === 2 ? 1 : 0}</Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={star === 5 ? 70 : star === 4 ? 35 : star === 3 ? 25 : star === 2 ? 10 : 0}
+                      sx={{ flexGrow: 1, mr: 2 }}
+                    />
+                    <Typography variant="body2">
+                      {star === 5 ? 384 : star === 4 ? 145 : star === 3 ? 24 : star === 2 ? 1 : 0}
+                    </Typography>
                   </Box>
                 ))}
               </Box>
@@ -225,7 +264,13 @@ const DashDefault = () => {
           {/* User Activity with Tabs */}
           <Card>
             <CardContent>
-              <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
+              <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                indicatorColor="primary"
+                textColor="primary"
+                centered
+              >
                 <Tab label="Today" />
                 <Tab label="This Week" />
                 <Tab label="All" />
@@ -238,8 +283,15 @@ const DashDefault = () => {
                       <Typography variant="subtitle1">{user.name}</Typography>
                     </Box>
                     <Box display="flex" alignItems="center">
-                      <i className={`fa fa-caret-${user.trend === 'up' ? 'up' : 'down'}`} style={{ color: user.color === 'success' ? 'green' : 'red' }} />
-                      <Typography variant="body2" color={user.color === 'success' ? 'green' : 'red'} sx={{ ml: 1 }}>
+                      <i
+                        className={`fa fa-caret-${user.trend === 'up' ? 'up' : 'down'}`}
+                        style={{ color: user.color === 'success' ? 'green' : 'red' }}
+                      />
+                      <Typography
+                        variant="body2"
+                        color={user.color === 'success' ? 'green' : 'red'}
+                        sx={{ ml: 1 }}
+                      >
                         {user.change}
                       </Typography>
                     </Box>
@@ -251,8 +303,8 @@ const DashDefault = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Grid2>
+      </Grid2>
     </Box>
   );
 };
