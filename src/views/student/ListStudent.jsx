@@ -1,298 +1,371 @@
-// src/views/student/ListStudent.jsx
-
-import React, { useState, useEffect, useContext } from 'react';
-import { Row, Col, Card, Table, Button, Spinner, Alert } from 'react-bootstrap';
+import React, { useState, useContext } from 'react';
+import { 
+  Card, 
+  Table, 
+  Button, 
+  Spinner, 
+  Alert, 
+  Form, 
+  InputGroup,
+  Badge,
+  Row,
+  Col,
+  OverlayTrigger,
+  Tooltip,
+  Modal
+} from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { UPLOAD_PATH } from '../../config/endpoint';
-
-// Import services
-import StudentService from '../../services/studentService';
-
-// Import NotificationContext
+import { 
+  Search, 
+  Filter, 
+  UserCheck,
+  UserX,
+  Eye,
+  GraduationCap,
+  Calendar,
+  Mail,
+  Phone,
+  MapPin,
+  AlertTriangle,
+  BarChart2
+} from 'lucide-react';
+import useStudent from '../../hooks/useStudents';
 import { NotificationContext } from '../../contexts/NotificationContext';
-
-// (Tuỳ bạn) Nếu bạn có một AddStudentModal, import nó:
-// import AddStudentModal from './AddStudentModal';
 
 const ListStudent = () => {
   const navigate = useNavigate();
   const { addNotification } = useContext(NotificationContext);
+  const { students, isLoading, isError, error, refetch } = useStudent();
 
-  const [studentData, setStudentData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Bộ lọc
+  // State for filters and search
   const [statusFilter, setStatusFilter] = useState('');
   const [searchFilter, setSearchFilter] = useState('');
-  
+  const [genderFilter, setGenderFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: 'firstName', direction: 'asc' });
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+
   // Pagination state
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
-  // (Nếu bạn có modal thêm student)
-  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  // Handle sorting
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
 
-  // Lấy dữ liệu student khi mount
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await StudentService.fetchStudents(); 
-        setStudentData(data);
-      } catch (error) {
-        alert('Failed to load students. Please try again later.', 'danger');
-      } finally {
-        setLoading(false);
+  // Filter and sort students
+  const filteredStudents = React.useMemo(() => {
+    if (!students) return [];
+
+    return students.filter(student => {
+      const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
+      const matchName = searchFilter ? fullName.includes(searchFilter.toLowerCase()) : true;
+      const matchStatus = statusFilter ? student.statusStudent === statusFilter : true;
+      const matchGender = genderFilter ? student.gender === genderFilter : true;
+      const matchCategory = categoryFilter ? student.categoryPrefer === categoryFilter : true;
+
+      return matchName && matchStatus && matchGender && matchCategory;
+    }).sort((a, b) => {
+      if (sortConfig.key === 'name') {
+        const nameA = `${a.firstName} ${a.lastName}`;
+        const nameB = `${b.firstName} ${b.lastName}`;
+        return sortConfig.direction === 'asc' ? 
+          nameA.localeCompare(nameB) : 
+          nameB.localeCompare(nameA);
       }
-    };
-    loadData();
-  }, [addNotification]);
-
-  // Hàm Enable Student
-  const handleEnableStudent = async (studentId) => {
-    try {
-      await StudentService.enableStudent(studentId);
-      addNotification('Student enabled successfully!', 'success');
-      const updatedData = await StudentService.fetchStudents(); // Re-fetch data
-      setStudentData(updatedData);
-    } catch (error) {
-      addNotification('Failed to enable student. Please try again.', 'danger');
-    }
-  };
-
-  // Hàm Disable Student
-  const handleDisableStudent = async (studentId) => {
-    try {
-      await StudentService.disableStudent(studentId);
-      addNotification('Student disabled successfully!', 'success');
-      const updatedData = await StudentService.fetchStudents(); // Re-fetch data
-      setStudentData(updatedData);
-    } catch (error) {
-      addNotification('Failed to disable student. Please try again.', 'danger');
-    }
-  };
-
-  // Hàm Delete Student
-  const handleDeleteStudent = async (id) => {
-    if (window.confirm('Are you sure you want to delete this student?')) {
-      try {
-        await StudentService.deleteStudent(id);
-        // Loại bỏ khỏi list
-        setStudentData((prev) => prev.filter((stu) => stu.id !== id));
-        addNotification('Student deleted successfully!', 'success');
-      } catch (error) {
-        addNotification('Failed to delete student. Please try again.', 'danger');
+      
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
       }
-    }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [students, searchFilter, statusFilter, genderFilter, categoryFilter, sortConfig]);
+
+  // Get current students for pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentStudents = filteredStudents.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+
+  // View student details
+  const handleViewDetails = (student) => {
+    setSelectedStudent(student);
+    setShowDetailsModal(true);
   };
 
-  // Bộ lọc 
-  const filteredStudents = studentData.filter((stu) => {
-    // Lọc theo status
-    const matchStatus = statusFilter ? (stu.statusStudent === statusFilter) : true;
-    // Lọc theo search name (VD: firstName + lastName)
-    const fullName = (stu.firstName + ' ' + stu.lastName).toLowerCase();
-    const matchName = searchFilter
-      ? fullName.includes(searchFilter.toLowerCase())
-      : true;
-    return matchStatus && matchName;
-  });
-
-  // Tính toán phân trang
-  const startIndex = (page - 1) * itemsPerPage;
-  const currentPageStudents = filteredStudents.slice(startIndex, startIndex + itemsPerPage);
-
-  // Chuyển trang
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-  };
-
-  // Bấm nút thêm Student => tuỳ logic:
-  const handleShowAddStudentModal = () => setShowAddStudentModal(true);
-  const handleCloseAddStudentModal = () => setShowAddStudentModal(false);
-
-  // Sorting (tuỳ) - có thể thêm code sort theo cột if needed
-
-  // Loading hiển thị spinner
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="text-center my-5">
-        <Spinner animation="border" />
-        <p>Loading students...</p>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading students...</span>
+        </Spinner>
+        <p className="mt-3">Loading students...</p>
       </div>
     );
   }
 
+  if (isError) {
+    return (
+      <Alert variant="danger" className="d-flex align-items-center">
+        <AlertTriangle size={18} className="me-2" />
+        {error?.message || 'Failed to load students'}
+        <Button variant="link" onClick={() => refetch()} className="ms-auto">
+          Try again
+        </Button>
+      </Alert>
+    );
+  }
+
   return (
-    <Row>
-      <Col>
-        <Card>
-          <Card.Header className="d-flex justify-content-between align-items-center">
-            <Card.Title as="h5">Student List</Card.Title>
-            {/* Nút Add Student (nếu dùng modal) */}
-            <Button variant="success" onClick={handleShowAddStudentModal}>
-              Add Student
-            </Button>
-            {/* Hoặc nếu bạn muốn chuyển trang:
-              <Button variant="success" onClick={() => navigate('/dashboard/student/add-student')}>
-                Add Student
-              </Button>
-            */}
-          </Card.Header>
+    <Card>
+      <Card.Header>
+        <div className="d-flex justify-content-between align-items-center">
+          <div>
+            <Card.Title className="mb-0">Student Management</Card.Title>
+            <small className="text-muted">
+              Total Students: {filteredStudents.length}
+            </small>
+          </div>
+          <Button 
+            variant="outline-primary"
+            onClick={() => navigate('/dashboard/student/statistics')}
+          >
+            <BarChart2 size={16} className="me-2" />
+            Statistics
+          </Button>
+        </div>
+      </Card.Header>
 
-          <Card.Body>
-            {/* Lọc + Tìm kiếm */}
-            <div className="filters mb-3 d-flex gap-3">
-              <select
-                className="form-select"
-                onChange={(e) => setStatusFilter(e.target.value)}
-                value={statusFilter}
-              >
-                <option value="">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-              </select>
-
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search First/Last Name"
+      <Card.Body>
+        {/* Filters */}
+        <Row className="mb-4 g-3">
+          <Col md={6} lg={3}>
+            <InputGroup>
+              <InputGroup.Text>
+                <Search size={18} />
+              </InputGroup.Text>
+              <Form.Control
+                placeholder="Search by name..."
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
               />
-            </div>
+            </InputGroup>
+          </Col>
 
-            {/* Table hiển thị Student */}
-            <Table responsive striped bordered hover>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Avatar</th>
-                  <th>First Name</th>
-                  <th>Last Name</th>
-                  <th>Gender</th>
-                  <th>Phone</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentPageStudents.length > 0 ? (
-                  currentPageStudents.map((student) => (
-                    <tr key={student.id}>
-                      <td>{student.id}</td>
-                      <td>
-                        {student.avatar ? (
-                          <img
-                            src={student.avatar}
-                            alt={`${student.firstName} ${student.lastName}`}
-                            width="50"
-                            height="50"
-                          />
-                        ) : (
-                          <img
-                            src="/virtualcourse/images/default-profile.png"
-                            alt="Default"
-                            width="50"
-                            height="50"
-                          />
-                        )}
-                      </td>
-                      <td>{student.firstName}</td>
-                      <td>{student.lastName}</td>
-                      <td>{student.gender}</td>
-                      <td>{student.phone}</td>
-                      <td>
-                        <span
-                          className={`badge ${
-                            student.statusStudent === 'ACTIVE' ? 'bg-success' : 'bg-danger'
-                          }`}
-                        >
-                          {student.statusStudent}
-                        </span>
-                      </td>
-                      <td>
-                        {/* Edit => /dashboard/student/edit-student/:id */}
+          <Col md={6} lg={3}>
+            <Form.Select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </Form.Select>
+          </Col>
+
+          <Col md={6} lg={3}>
+            <Form.Select
+              value={genderFilter}
+              onChange={(e) => setGenderFilter(e.target.value)}
+            >
+              <option value="">All Genders</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </Form.Select>
+          </Col>
+
+          <Col md={6} lg={3}>
+            <Form.Select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="">All Categories</option>
+              <option value="PROGRAMMING">Programming</option>
+              <option value="DESIGN">Design</option>
+              <option value="BUSINESS">Business</option>
+              <option value="MARKETING">Marketing</option>
+            </Form.Select>
+          </Col>
+        </Row>
+
+        {/* Students Table */}
+        <div className="table-responsive">
+          <Table hover bordered>
+            <thead>
+              <tr>
+                <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
+                  Name {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                </th>
+                <th onClick={() => handleSort('email')} style={{ cursor: 'pointer' }}>
+                  Email {sortConfig.key === 'email' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                </th>
+                <th>Status</th>
+                <th>Verified</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentStudents.map(student => (
+                <tr key={student.id}>
+                  <td>
+                    <div className="d-flex align-items-center">
+                      <div 
+                        className="rounded-circle me-2 d-flex align-items-center justify-content-center"
+                        style={{ 
+                          width: '32px', 
+                          height: '32px',
+                          backgroundColor: '#e9ecef'
+                        }}
+                      >
+                        <GraduationCap size={16} />
+                      </div>
+                      {student.firstName} {student.lastName}
+                    </div>
+                  </td>
+                  <td>{student.email}</td>
+                  <td>
+                    <Badge bg={student.statusStudent === 'ACTIVE' ? 'success' : 'danger'}>
+                      {student.statusStudent}
+                    </Badge>
+                  </td>
+                  <td>
+                    {student.verifiedPhone ? (
+                      <UserCheck size={16} className="text-success" />
+                    ) : (
+                      <UserX size={16} className="text-danger" />
+                    )}
+                  </td>
+                  <td>
+                    <div className="d-flex gap-2">
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={<Tooltip>View Details</Tooltip>}
+                      >
                         <Button
                           variant="info"
-                          size=""
-                          className="me-2"
-                          onClick={() => navigate(`/dashboard/student/edit-student/${student.id}`)}
-                        >
-                          Edit
-                        </Button>
-
-                        {/* Enable/Disable */}
-                        {student.statusStudent === 'ACTIVE' ? (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleDisableStudent(student.id)}
-                          >
-                            Disable
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="success"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleEnableStudent(student.id)}
-                          >
-                            Enable
-                          </Button>
-                        )}
-
-                        {/* Delete */}
-                        <Button
-                          variant="danger"
                           size="sm"
-                          onClick={() => handleDeleteStudent(student.id)}
+                          onClick={() => handleViewDetails(student)}
                         >
-                          Delete
+                          <Eye size={14} />
                         </Button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="8" className="text-center">
-                      No students found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </Table>
+                      </OverlayTrigger>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
 
-            {/* Pagination controls (Đơn giản) */}
-            <div className="pagination-controls d-flex justify-content-between align-items-center">
-              <Button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <span>Page {page}</span>
-              <Button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page * itemsPerPage >= filteredStudents.length}
-              >
-                Next
-              </Button>
+        {/* Pagination */}
+        <div className="d-flex justify-content-between align-items-center mt-4">
+          <div>
+            Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredStudents.length)} of {filteredStudents.length} students
+          </div>
+          <div className="d-flex gap-2">
+            <Button
+              variant="outline-primary"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline-primary"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      </Card.Body>
+
+      {/* Student Details Modal */}
+      <Modal
+        show={showDetailsModal}
+        onHide={() => setShowDetailsModal(false)}
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Student Details</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedStudent && (
+            <div>
+              <Row className="mb-4">
+                <Col md={6}>
+                  <h5 className="mb-3">Personal Information</h5>
+                  <p>
+                    <GraduationCap size={16} className="me-2" />
+                    <strong>Name:</strong> {selectedStudent.firstName} {selectedStudent.lastName}
+                  </p>
+                  <p>
+                    <Mail size={16} className="me-2" />
+                    <strong>Email:</strong> {selectedStudent.email}
+                  </p>
+                  <p>
+                    <Phone size={16} className="me-2" />
+                    <strong>Phone:</strong> {selectedStudent.phone || 'Not provided'}
+                  </p>
+                  <p>
+                    <Calendar size={16} className="me-2" />
+                    <strong>Date of Birth:</strong> {selectedStudent.dob ? new Date(selectedStudent.dob).toLocaleDateString() : 'Not provided'}
+                  </p>
+                </Col>
+                <Col md={6}>
+                  <h5 className="mb-3">Additional Information</h5>
+                  <p>
+                    <MapPin size={16} className="me-2" />
+                    <strong>Address:</strong> {selectedStudent.address || 'Not provided'}
+                  </p>
+                  <p>
+                    <Filter size={16} className="me-2" />
+                    <strong>Preferred Category:</strong> {selectedStudent.categoryPrefer || 'Not specified'}
+                  </p>
+                  <p>
+                    <strong>Status:</strong>{' '}
+                    <Badge bg={selectedStudent.statusStudent === 'ACTIVE' ? 'success' : 'danger'}>
+                      {selectedStudent.statusStudent}
+                    </Badge>
+                  </p>
+                  <p>
+                    <strong>Phone Verified:</strong>{' '}
+                    {selectedStudent.verifiedPhone ? (
+                      <Badge bg="success">Yes</Badge>
+                    ) : (
+                      <Badge bg="warning">No</Badge>
+                    )}
+                  </p>
+                </Col>
+              </Row>
+              {selectedStudent.bio && (
+                <div>
+                  <h5>Bio</h5>
+                  <p>{selectedStudent.bio}</p>
+                </div>
+              )}
             </div>
-          </Card.Body>
-        </Card>
-      </Col>
-
-      {/* Modal AddStudent nếu có:
-      {showAddStudentModal && (
-        <AddStudentModal
-          show={showAddStudentModal}
-          handleClose={handleCloseAddStudentModal}
-          setStudents={setStudentData}
-        />
-      )} 
-      */}
-    </Row>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDetailsModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </Card>
   );
 };
 

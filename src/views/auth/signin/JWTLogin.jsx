@@ -1,15 +1,14 @@
 // src/views/auth/JWTLogin.jsx
+
 import React from 'react';
 import { Row, Col, Button, Form, Spinner } from 'react-bootstrap';
 import * as Yup from 'yup';
 import { Formik } from 'formik';
 import { useNavigate } from 'react-router-dom';
-
-// Dùng custom hook
 import useAuth from '../../../hooks/useAuth';
 
 const JWTLogin = () => {
-  const { login } = useAuth(); // mutation login
+  const { login } = useAuth();
 
   return (
     <Formik
@@ -24,7 +23,6 @@ const JWTLogin = () => {
           .required('Password is required'),
       })}
       onSubmit={(values, { setSubmitting }) => {
-        // Gọi mutation
         login(values, {
           onSettled: () => {
             setSubmitting(false);

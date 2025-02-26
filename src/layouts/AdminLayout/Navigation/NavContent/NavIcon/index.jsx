@@ -1,22 +1,17 @@
-import PropTypes from 'prop-types';
+// src/layouts/AdminLayout/NavBar/NavIcon.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const NavIcon = ({ items }) => {
-  let navIcons = false;
-  if (items.icon) {
-    navIcons = (
-      <span className="pcoded-micon">
-        <i className={items.icon} />
-      </span>
-    );
-  }
-
-  return <React.Fragment>{navIcons}</React.Fragment>;
+  return (
+    <span className="pcoded-micon">
+      <i data-feather={items.icon} style={{ color: 'red' }}></i>
+    </span>
+  );
 };
 
 NavIcon.propTypes = {
-  items: PropTypes.object,
-  icon: PropTypes.string
+  items: PropTypes.object.isRequired,
 };
 
 export default NavIcon;

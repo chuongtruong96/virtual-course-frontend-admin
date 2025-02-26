@@ -1,8 +1,8 @@
 // src/services/TransactionService.js
 
-import api from '../untils/api';
-import { ENDPOINTS } from '../config/endpoint';
-import { handleError } from '../untils/errorHandler';
+import api from '../utils/api';
+import { ENDPOINTS } from '../config/endpoints';
+import { handleError } from '../utils/errorHandler';
 
 /**
  * TransactionService xử lý tất cả các tương tác API liên quan đến Transactions.
@@ -77,7 +77,7 @@ const TransactionService = {
       console.error(`Error fetching transaction history for wallet ${walletId}:`, error);
       throw handleError(error);
     }
-  },
+  }
 };
 
 export default TransactionService;

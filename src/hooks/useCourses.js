@@ -3,107 +3,71 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import CourseService from '../services/courseService';
 import { useContext } from 'react';
 import { NotificationContext } from '../contexts/NotificationContext';
-import { useNavigate } from 'react-router-dom';
 
-const useCourses = (instructorId) => {
+const useCourses = (type = 'all') => {
   const queryClient = useQueryClient();
   const { addNotification } = useContext(NotificationContext);
-  const navigate = useNavigate();
 
-  // 1) Fetch courses
+  // Fetch courses based on type
   const {
-    data: courses,
+    data,
     isLoading,
     isError,
     error,
+    refetch
   } = useQuery({
-    queryKey: instructorId ? ['courses', instructorId] : ['courses', 'all'],
+    queryKey: ['courses', type],
     queryFn: () => {
-      if (instructorId) {
-        return CourseService.fetchCoursesByInstructor({ instructorId, signal: undefined });
-      } else {
-        return CourseService.fetchAllCourses({ signal: undefined });
+      switch (type) {
+        case 'pending':
+          return CourseService.fetchPendingCourses();
+        case 'all':
+          return CourseService.fetchAll();
+        default:
+          return CourseService.fetchCoursesByStatus(type);
       }
     },
-    staleTime: 5 * 60 * 1000,
-    cacheTime: 30 * 60 * 1000,
     onError: (err) => {
-      console.error('Error fetching courses:', err);
-      addNotification('Không thể tải danh sách khóa học.', 'danger');
+      console.error('Error in useCourses hook:', err);
+      addNotification('Failed to fetch courses. Please try again.', 'error');
     },
   });
 
-  // 2) Add course mutation
-  const addCourseMutation = useMutation({
-    mutationFn: CourseService.addCourseForInstructor,
+  // Approve course mutation
+  const approveMutation = useMutation({
+    mutationFn: ({ courseId, notes }) => CourseService.approveCourse(courseId, notes),
     onSuccess: () => {
-      if (instructorId) {
-        queryClient.invalidateQueries(['courses', instructorId]);
-      } else {
-        queryClient.invalidateQueries(['courses', 'all']);
-      }
-      addNotification('Khóa học đã được thêm thành công!', 'success');
-      navigate('/dashboard/course/list-course'); 
+      queryClient.invalidateQueries(['courses']);
+      addNotification('Course approved successfully!', 'success');
     },
     onError: (error) => {
-      console.error('Failed to add course:', error);
-      addNotification('Không thể thêm khóa học. Vui lòng thử lại.', 'danger');
-    },
+      console.error('Error approving course:', error);
+      addNotification('Failed to approve course. Please try again.', 'error');
+    }
   });
 
-  // 3) Delete course mutation
-  const deleteCourseMutation = useMutation({
-    mutationFn: CourseService.delete,
+  // Reject course mutation
+  const rejectMutation = useMutation({
+    mutationFn: ({ courseId, reason }) => CourseService.rejectCourse(courseId, reason),
     onSuccess: () => {
-      if (instructorId) {
-        queryClient.invalidateQueries(['courses', instructorId]);
-      } else {
-        queryClient.invalidateQueries(['courses', 'all']);
-      }
-      addNotification('Khóa học đã được xóa thành công!', 'success');
+      queryClient.invalidateQueries(['courses']);
+      addNotification('Course rejected successfully.', 'success');
     },
     onError: (error) => {
-      console.error('Failed to delete course:', error);
-      addNotification('Không thể xóa khóa học.', 'danger');
-    },
-  });
-
-  // 4) Toggle course status mutation
-  const toggleCourseStatusMutation = useMutation({
-    mutationFn: async ({ courseId, currentStatus }) => {
-      if (currentStatus === 'ACTIVE') {
-        return CourseService.disable({ id: courseId, signal: undefined });
-      } else {
-        return CourseService.enable({ id: courseId, signal: undefined });
-      }
-    },
-    onSuccess: () => {
-      if (instructorId) {
-        queryClient.invalidateQueries(['courses', instructorId]);
-      } else {
-        queryClient.invalidateQueries(['courses', 'all']);
-      }
-      addNotification('Thay đổi trạng thái khóa học thành công!', 'success');
-    },
-    onError: (error) => {
-      console.error('Failed to toggle course status:', error);
-      addNotification('Không thể thay đổi trạng thái khóa học.', 'danger');
-    },
+      console.error('Error rejecting course:', error);
+      addNotification('Failed to reject course. Please try again.', 'error');
+    }
   });
 
   return {
-    courses: courses || [],
+    courses: type === 'all' ? data : undefined,
+    pendingCourses: type === 'pending' ? data : undefined,
     isLoading,
     isError,
     error,
-
-    addCourse: addCourseMutation.mutate,
-    deleteCourse: deleteCourseMutation.mutate,
-    toggleCourseStatus: toggleCourseStatusMutation.mutate,
-
-    addCourseStatus: addCourseMutation.status,
-    deleteCourseStatus: deleteCourseMutation.status,
-    toggleCourseStatusStatus: toggleCourseStatusMutation.status,
+    refetch,
+    approveCourse: approveMutation.mutate,
+    rejectCourse: rejectMutation.mutate,
   };
 };
 

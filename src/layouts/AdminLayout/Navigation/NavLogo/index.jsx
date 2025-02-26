@@ -19,10 +19,10 @@ const NavLogo = () => {
       <div className="navbar-brand header-logo">
         <Link to="#" className="b-brand">
           <div className="b-bg">
-            <i className="feather icon-trending-up" />
+          <i data-feather="trending-up" style={{ color: '#000' }}></i>
           </div>
-          <span className="b-title">VIRTUAL COURSE</span>
-        </Link>
+          <span className="b-title" style={{ color: '#000' }}>VIRTUAL COURSE</span>
+          </Link>
         <Link to="#" className={toggleClass.join(' ')} id="mobile-collapse" onClick={() => dispatch({ type: actionType.COLLAPSE_MENU })}>
           <span />
         </Link>

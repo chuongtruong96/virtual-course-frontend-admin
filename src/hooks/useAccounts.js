@@ -1,80 +1,46 @@
-// src/hooks/useAccounts.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import AccountService from '../services/accountService';
 import { useContext } from 'react';
 import { NotificationContext } from '../contexts/NotificationContext';
+import AdminService from '../services/adminService';
 
-const useAccounts = () => {
+const useAccounts = (status = 'all') => {
   const queryClient = useQueryClient();
   const { addNotification } = useContext(NotificationContext);
 
-  // Fetch all accounts
   const {
     data: accounts,
     isLoading,
     isError,
     error,
+    refetch
   } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: ({ signal }) => AccountService.fetchAll({ signal }), // Truyền signal đúng cách
+    queryKey: ['accounts', status],
+    queryFn: () => AdminService.getAccountsByStatus(status),
     onError: (err) => {
       console.error('Error fetching accounts:', err);
-      addNotification('Không thể tải danh sách tài khoản.', 'danger');
-    },
+      addNotification('Failed to load accounts', 'error');
+    }
   });
 
-  // Enable account
-  const enableAccountMutation = useMutation({
-    mutationFn: (accountId) => AccountService.enableAccount({ id: accountId }),
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ accountId, status }) => AdminService.updateAccountStatus(accountId, status),
     onSuccess: () => {
       queryClient.invalidateQueries(['accounts']);
-      addNotification('Account đã được kích hoạt!', 'success');
+      addNotification('Account status updated successfully', 'success');
     },
-    onError: (error) => {
-      console.error('Failed to enable account:', error);
-      addNotification('Không thể kích hoạt account.', 'danger');
-    },
-  });
-
-  // Disable account
-  const disableAccountMutation = useMutation({
-    mutationFn: (accountId) => AccountService.disableAccount({ id: accountId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['accounts']);
-      addNotification('Account đã được vô hiệu hóa!', 'success');
-    },
-    onError: (error) => {
-      console.error('Failed to disable account:', error);
-      addNotification('Không thể vô hiệu hóa account.', 'danger');
-    },
-  });
-
-  // Delete account
-  const deleteAccountMutation = useMutation({
-    mutationFn: (id) => AccountService.deleteAccount({ id }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['accounts']);
-      addNotification('Account đã được xóa thành công!', 'success');
-    },
-    onError: (error) => {
-      console.error('Failed to delete account:', error);
-      addNotification('Không thể xóa account.', 'danger');
-    },
+    onError: (err) => {
+      console.error('Error updating account status:', err);
+      addNotification('Failed to update account status', 'error');
+    }
   });
 
   return {
-    accounts,
+    accounts: accounts || [],
     isLoading,
     isError,
     error,
-
-    enableAccount: enableAccountMutation.mutate,
-    disableAccount: disableAccountMutation.mutate,
-    deleteAccount: deleteAccountMutation.mutate,
-
-    enableAccountStatus: enableAccountMutation.status,
-    disableAccountStatus: disableAccountMutation.status,
-    deleteAccountStatus: deleteAccountMutation.status,
+    refetch,
+    updateStatus: updateStatusMutation.mutate
   };
 };
 

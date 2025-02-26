@@ -1,45 +1,55 @@
-// src/views/notification/NotificationList.jsx
-
 import React, { useState, useEffect, useContext } from 'react';
-import { fetchNotifications, markAsRead, deleteNotification } from '../../services/notificationService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Table, Spinner, Alert, Button, Badge, Modal } from 'react-bootstrap';
 import { NotificationContext } from '../../contexts/NotificationContext';
+import NotificationService from '../../services/notificationService';
 
 const NotificationList = () => {
   const { addNotification } = useContext(NotificationContext);
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const queryClient = useQueryClient();
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [userId] = useState(''); // Replace this with the actual userId from context or localStorage
 
-  useEffect(() => {
-    const getNotifications = async () => {
-      try {
-        const userId = '';/* Lấy ID người dùng hiện tại từ context hoặc localStorage */
-        const data = await fetchNotifications(userId);
-        setNotifications(data);
-      } catch (err) {
-        console.error("Error fetching notifications:", err);
-        addNotification('Failed to load notifications.', 'danger');
-        setError('Failed to load notifications.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Fetch notifications
+  const {
+    data: notifications = [],
+    isLoading,
+    isError,
+    error
+  } = useQuery(['notifications', userId], () => NotificationService.fetchNotifications(userId), {
+    onError: () => {
+      addNotification('Failed to load notifications.', 'danger');
+    }
+  });
 
-    getNotifications();
-  }, [addNotification]);
-
-  const handleMarkAsRead = async (id) => {
-    try {
-      await markAsRead(id);
-      setNotifications(prev => prev.map(notif => notif.id === id ? { ...notif, isRead: true } : notif));
+  // Mark as read mutation
+  const markAsReadMutation = useMutation(NotificationService.markAsRead, {
+    onSuccess: () => {
       addNotification('Notification marked as read.', 'success');
-    } catch (err) {
-      console.error("Error marking notification as read:", err);
+      queryClient.invalidateQueries(['notifications', userId]);
+    },
+    onError: () => {
       addNotification('Failed to mark as read.', 'danger');
     }
+  });
+
+  // Delete mutation
+  const deleteNotificationMutation = useMutation(NotificationService.deleteNotification, {
+    onSuccess: () => {
+      addNotification('Notification deleted successfully.', 'success');
+      queryClient.invalidateQueries(['notifications', userId]);
+      setShowDeleteModal(false);
+      setSelectedNotification(null);
+    },
+    onError: () => {
+      addNotification('Failed to delete notification.', 'danger');
+    }
+  });
+
+  const handleMarkAsRead = (id) => {
+    markAsReadMutation.mutate(id);
   };
 
   const handleDelete = (notification) => {
@@ -47,16 +57,9 @@ const NotificationList = () => {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = async () => {
-    try {
-      await deleteNotification(selectedNotification.id);
-      setNotifications(prev => prev.filter(notif => notif.id !== selectedNotification.id));
-      addNotification('Notification deleted successfully.', 'success');
-      setShowDeleteModal(false);
-      setSelectedNotification(null);
-    } catch (err) {
-      console.error("Error deleting notification:", err);
-      addNotification('Failed to delete notification.', 'danger');
+  const confirmDelete = () => {
+    if (selectedNotification) {
+      deleteNotificationMutation.mutate(selectedNotification.id);
     }
   };
 
@@ -65,7 +68,7 @@ const NotificationList = () => {
     setSelectedNotification(null);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="text-center">
         <Spinner animation="border" />
@@ -74,8 +77,8 @@ const NotificationList = () => {
     );
   }
 
-  if (error) {
-    return <Alert variant="danger">{error}</Alert>;
+  if (isError) {
+    return <Alert variant="danger">{error?.message || 'Error fetching notifications.'}</Alert>;
   }
 
   return (
@@ -107,11 +110,20 @@ const NotificationList = () => {
                 </td>
                 <td>
                   {!notif.isRead && (
-                    <Button variant="success" size="sm" className="me-2" onClick={() => handleMarkAsRead(notif.id)}>
+                    <Button
+                      variant="success"
+                      size="sm"
+                      className="me-2"
+                      onClick={() => handleMarkAsRead(notif.id)}
+                    >
                       Mark as Read
                     </Button>
                   )}
-                  <Button variant="danger" size="sm" onClick={() => handleDelete(notif)}>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDelete(notif)}
+                  >
                     Delete
                   </Button>
                 </td>
@@ -123,8 +135,7 @@ const NotificationList = () => {
         <Alert variant="info">No notifications found.</Alert>
       )}
 
-      {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={handleCloseDeleteModal}>
+      <Modal show={showDeleteModal} onHide={handleCloseDeleteModal} centered>
         <Modal.Header closeButton>
           <Modal.Title>Delete Notification</Modal.Title>
         </Modal.Header>

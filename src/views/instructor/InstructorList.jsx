@@ -1,241 +1,174 @@
-// src/views/instructor/InstructorList.jsx
-
-import React, { useState, useContext, useMemo } from 'react';
-import {
-  Modal, Row, Col, Button, Spinner, Alert, Form,
-  InputGroup
-} from 'react-bootstrap';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { FaPlus, FaSearch } from 'react-icons/fa';
-
+import {
+  Card,
+  Grid,
+  Button,
+  TextField,
+  InputAdornment,
+  Box,
+  Typography,
+  Alert,
+  CircularProgress,
+  FormControl,
+  Select,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText
+} from '@mui/material';
+import {
+  Search,
+  Filter,
+  AlertTriangle
+} from 'lucide-react';
 import useInstructors from '../../hooks/useInstructors';
-import { NotificationContext } from '../../contexts/NotificationContext';
-import AddInstructorModal from './AddInstructor';
 import InstructorCard from './InstructorCard';
-import InstructorDetail from './InstructorDetail';
-
-import '../../styles/table.css';
 
 const InstructorList = () => {
   const navigate = useNavigate();
-  const { addNotification } = useContext(NotificationContext);
-  const queryClient = useQueryClient();
+  const { instructors, isLoading, isError, error, approveInstructor, rejectInstructor } = useInstructors('all'); // Changed from pendingInstructors to instructors
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [rejectDialog, setRejectDialog] = useState({ open: false, instructor: null });
+  const [rejectReason, setRejectReason] = useState('');
 
-  const {
-    instructors,
-    isLoading,
-    isError,
-    error,
-    enableInstructor,
-    disableInstructor,
-    deleteInstructor
-  } = useInstructors();
+  const filteredInstructors = instructors?.filter(instructor =>
+    (instructor.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    instructor.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    instructor.email?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (statusFilter === 'all' || instructor.status === statusFilter)
+  ) || [];
 
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
-
-  // Modal AddInstructor
-  const [showAddInstructorModal, setShowAddInstructorModal] = useState(false);
-
-  // Modal InstructorDetail
-  const [selectedInstructor, setSelectedInstructor] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-
-  // Filters
-  const [statusFilter, setStatusFilter] = useState('');
-  const [instructorFilter, setInstructorFilter] = useState('');
-
-  // Dữ liệu đã filter
-  const filteredInstructors = useMemo(() => {
-    let data = instructors || [];
-    if (statusFilter) {
-      data = data.filter((inst) => inst.status === statusFilter);
-    }
-    if (instructorFilter) {
-      const lower = instructorFilter.toLowerCase();
-      data = data.filter(
-        (inst) =>
-          inst.firstName.toLowerCase().includes(lower) ||
-          inst.lastName.toLowerCase().includes(lower)
-      );
-    }
-    return data;
-  }, [instructors, statusFilter, instructorFilter]);
-
-  // Phân trang
-  const totalPages = Math.ceil(filteredInstructors.length / itemsPerPage);
-  const currentPageInstructors = filteredInstructors.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
-
-  // Xử lý Enable/Disable/Delete
-  const handleEnableInstructor = (id) => {
-    enableInstructor(id);
+  const handleApprove = (instructor) => {
+    approveInstructor(instructor.id);
   };
 
-  const handleDisableInstructor = (id) => {
-    disableInstructor(id);
-  };
-
-  const handleDeleteInstructor = (id) => {
-    if (window.confirm('Are you sure you want to delete this instructor?')) {
-      deleteInstructor(id);
+  const handleReject = () => {
+    if (rejectDialog.instructor) {
+      rejectInstructor({
+        instructorId: rejectDialog.instructor.id,
+        reason: rejectReason
+      });
+      setRejectDialog({ open: false, instructor: null });
+      setRejectReason('');
     }
   };
 
-  // Detail modal
-  const handleShowInstructorDetail = (instructor) => {
-    setSelectedInstructor(instructor);
-    setShowDetailModal(true);
+  const openRejectDialog = (instructor) => {
+    setRejectDialog({ open: true, instructor });
   };
-
-  const handleCloseInstructorDetail = () => {
-    setSelectedInstructor(null);
-    setShowDetailModal(false);
-  };
-
-  // Thêm Instructor
-  const handleShowAddInstructorModal = () => setShowAddInstructorModal(true);
-  const handleCloseAddInstructorModal = () => setShowAddInstructorModal(false);
-
-  // Chuyển trang
-  const handlePageChange = (newPage) => setPage(newPage);
 
   if (isLoading) {
     return (
-      <div className="text-center my-5">
-        <Spinner animation="border" role="status" aria-label="Loading Instructors">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-        <p className="mt-3">Loading instructors...</p>
-      </div>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   if (isError) {
     return (
-      <Alert variant="danger">
-        {error?.message || 'Failed to load instructors. Please try again later.'}
+      <Alert severity="error">
+        {error?.message || 'Failed to load instructors'}
       </Alert>
     );
   }
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h3>Instructor List</h3>
-        <Button
-          variant="success"
-          onClick={handleShowAddInstructorModal}
-          aria-label="Add Instructor"
+    <Card>
+      <Box p={3}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h5" component="h2">
+            Pending Instructors
+          </Typography>
+          <Box display="flex" gap={2}>
+            <TextField
+              placeholder="Search instructors..."
+              size="small"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={20} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                displayEmpty
+                startAdornment={
+                  <InputAdornment position="start">
+                    <Filter size={20} />
+                  </InputAdornment>
+                }
+              >
+                <MenuItem value="all">All Status</MenuItem>
+                <MenuItem value="PENDING">Pending</MenuItem>
+                <MenuItem value="ACTIVE">Active</MenuItem>
+                <MenuItem value="INACTIVE">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </Box>
+
+        {filteredInstructors.length === 0 ? (
+          <Alert severity="info">
+            No instructors found matching your criteria
+          </Alert>
+        ) : (
+          <Grid container spacing={3}>
+            {filteredInstructors.map((instructor) => (
+              <Grid item xs={12} md={6} key={instructor.id}>
+                <InstructorCard
+                  instructor={instructor}
+                  onApprove={() => handleApprove(instructor)}
+                  onReject={() => openRejectDialog(instructor)}
+                  onViewDetail={() => navigate(`/dashboard/instructor/detail/${instructor.id}`)}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        )}
+
+        {/* Reject Dialog */}
+        <Dialog
+          open={rejectDialog.open}
+          onClose={() => setRejectDialog({ open: false, instructor: null })}
         >
-          <FaPlus /> Add Instructor
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <div className="filters mb-3 d-flex flex-wrap gap-3">
-        <Form.Select
-          aria-label="Filter by Status"
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">All Status</option>
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="INACTIVE">INACTIVE</option>
-        </Form.Select>
-
-        <InputGroup style={{ maxWidth: '300px' }}>
-          <Form.Control
-            placeholder="Search by First or Last Name"
-            value={instructorFilter}
-            onChange={(e) => {
-              setInstructorFilter(e.target.value);
-              setPage(1);
-            }}
-            aria-label="Search First or Last Name"
-          />
-          <InputGroup.Text>
-            <FaSearch />
-          </InputGroup.Text>
-        </InputGroup>
-      </div>
-
-      {/* Danh sách instructors => Mỗi instructor 1 row => Col=12 */}
-      {currentPageInstructors.length > 0 ? (
-        currentPageInstructors.map((inst) => (
-          <Row key={inst.id} className="mb-3">
-            <Col xs={12}>
-              <InstructorCard
-                instructor={inst}
-                onEdit={() => navigate(`/dashboard/instructor/edit/${inst.id}`)}
-                onDelete={() => handleDeleteInstructor(inst.id)}
-                onEnable={() => handleEnableInstructor(inst.id)}
-                onDisable={() => handleDisableInstructor(inst.id)}
-                onViewDetail={() => handleShowInstructorDetail(inst)}
-              />
-            </Col>
-          </Row>
-        ))
-      ) : (
-        <Alert variant="warning" className="text-center">
-          No instructors found.
-        </Alert>
-      )}
-
-      {/* Pagination */}
-      <div className="d-flex justify-content-between align-items-center mt-4">
-        <Button
-          onClick={() => handlePageChange(page - 1)}
-          disabled={page === 1}
-          aria-label="Previous Page"
-        >
-          Previous
-        </Button>
-        <span>
-          Page {page} of {totalPages}
-        </span>
-        <Button
-          onClick={() => handlePageChange(page + 1)}
-          disabled={page === totalPages}
-          aria-label="Next Page"
-        >
-          Next
-        </Button>
-      </div>
-
-      {/* Modal AddInstructor */}
-      <AddInstructorModal
-        show={showAddInstructorModal}
-        handleClose={handleCloseAddInstructorModal}
-        accountId={null}
-      />
-
-      {/* Modal InstructorDetail */}
-      {selectedInstructor && (
-        <Modal
-          show={showDetailModal}
-          onHide={handleCloseInstructorDetail}
-          size="lg"
-          aria-labelledby="instructor-detail-modal"
-          centered
-        >
-          <Modal.Header closeButton>
-            <Modal.Title id="instructor-detail-modal">
-              Instructor Details
-            </Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <InstructorDetail instructor={selectedInstructor} />
-          </Modal.Body>
-        </Modal>
-      )}
-    </div>
+          <DialogTitle>Reject Instructor Application</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Please provide a reason for rejecting {rejectDialog.instructor?.firstName} {rejectDialog.instructor?.lastName}'s application.
+            </DialogContentText>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Rejection Reason"
+              fullWidth
+              multiline
+              rows={4}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setRejectDialog({ open: false, instructor: null })}>
+              Cancel
+            </Button>
+            <Button onClick={handleReject} color="error" disabled={!rejectReason.trim()}>
+              Reject
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    </Card>
   );
 };
 

@@ -2,19 +2,17 @@
 
 import React, { createContext, useState, useCallback } from 'react';
 import { Toast, ToastContainer } from 'react-bootstrap';
-import { v4 as uuidv4 } from 'uuid'; // Import UUID
+import { v4 as uuidv4 } from 'uuid'; // Import uuidv4
 
-// Create the NotificationContext
 export const NotificationContext = createContext();
 
-// NotificationProvider Component
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]); // For NavRight aggregation
   const [toasts, setToasts] = useState([]); // For transient toasts
 
   // Function to add a notification
   const addNotification = useCallback((message, type = 'success') => {
-    const id = uuidv4(); // Unique ID
+    const id = uuidv4(); // Generate unique ID
     const newNotification = { id, message, type, timestamp: new Date() };
     setNotifications((prev) => [newNotification, ...prev]);
 
@@ -24,7 +22,7 @@ export const NotificationProvider = ({ children }) => {
 
   // Function to add a transient toast
   const addToast = useCallback((message, type = 'success') => {
-    const id = uuidv4(); // Unique ID
+    const id = uuidv4(); // Generate unique ID
     const newToast = { id, message, type };
     setToasts((prev) => [newToast, ...prev]);
 
@@ -42,8 +40,6 @@ export const NotificationProvider = ({ children }) => {
   return (
     <NotificationContext.Provider value={{ notifications, addNotification, removeNotification }}>
       {children}
-
-      {/* Toast Container for Transient Notifications */}
       <ToastContainer position="top-end" className="p-3">
         {toasts.map((toast) => (
           <Toast
@@ -60,3 +56,5 @@ export const NotificationProvider = ({ children }) => {
     </NotificationContext.Provider>
   );
 };
+
+export default NotificationProvider;

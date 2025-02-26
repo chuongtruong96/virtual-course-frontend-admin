@@ -8,7 +8,7 @@ const useNotifications = (userId) => {
   const queryClient = useQueryClient();
   const { addNotification } = useContext(NotificationContext);
 
-  // Fetch notifications for user
+  // Fetch notifications for a user
   const {
     data: notifications,
     isLoading,
@@ -16,7 +16,7 @@ const useNotifications = (userId) => {
     error,
   } = useQuery({
     queryKey: ['notifications', userId],
-    queryFn: () => NotificationService.fetchNotificationsByUser({ userId, signal: undefined }),
+    queryFn: () => NotificationService.fetchNotifications({ userId, signal: undefined }),
     enabled: !!userId,
     onError: (err) => {
       console.error('Error fetching notifications:', err);
@@ -24,7 +24,7 @@ const useNotifications = (userId) => {
     },
   });
 
-  // Create notification mutation
+  // Mutation: Create notification
   const createNotificationMutation = useMutation({
     mutationFn: NotificationService.createNotification,
     onSuccess: () => {
@@ -37,7 +37,7 @@ const useNotifications = (userId) => {
     },
   });
 
-  // Mark as read mutation
+  // Mutation: Mark as read
   const markAsReadMutation = useMutation({
     mutationFn: NotificationService.markAsRead,
     onSuccess: () => {
@@ -50,7 +50,7 @@ const useNotifications = (userId) => {
     },
   });
 
-  // Delete notification mutation
+  // Mutation: Delete notification
   const deleteNotificationMutation = useMutation({
     mutationFn: NotificationService.deleteNotification,
     onSuccess: () => {
@@ -68,11 +68,9 @@ const useNotifications = (userId) => {
     isLoading,
     isError,
     error,
-
     createNotification: createNotificationMutation.mutate,
     markAsRead: markAsReadMutation.mutate,
     deleteNotification: deleteNotificationMutation.mutate,
-
     createNotificationStatus: createNotificationMutation.status,
     markAsReadStatus: markAsReadMutation.status,
     deleteNotificationStatus: deleteNotificationMutation.status,

@@ -2,15 +2,18 @@
 
 import { QueryClient } from '@tanstack/react-query';
 
-// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Define default behavior for queries
+      // Retry failed requests 1 time
+      retry: 1,
+      // Refetch on window focus
+      refetchOnWindowFocus: true,
+      // Stale time (in milliseconds)
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 30 * 60 * 1000, // 30 minutes
-      retry: 2, // Retry failed requests twice
-      refetchOnWindowFocus: false, // Disable refetch on window focus
+    },
+    mutations: {
+      // You can set global mutation options here
     },
   },
 });

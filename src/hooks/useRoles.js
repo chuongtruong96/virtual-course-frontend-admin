@@ -1,10 +1,14 @@
-// src/hooks/useRoles.js
+// src/hooks/useRole.js
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import RoleService from '../services/roleService';
 import { useContext } from 'react';
 import { NotificationContext } from '../contexts/NotificationContext';
 
-const useRoles = () => {
+/**
+ * Custom hook to handle role-related actions.
+ */
+const useRole = () => {
   const queryClient = useQueryClient();
   const { addNotification } = useContext(NotificationContext);
 
@@ -14,47 +18,45 @@ const useRoles = () => {
     isLoading,
     isError,
     error,
-  } = useQuery({
-    queryKey: ['roles'],
-    queryFn: () => RoleService.fetchAll({ signal: undefined }),
+  } = useQuery(['roles'], RoleService.fetchAll, {
     onError: (err) => {
       console.error('Error fetching roles:', err);
       addNotification('Không thể tải danh sách vai trò.', 'danger');
     },
   });
 
-  // Add role mutation
-  const addRoleMutation = useMutation({
-    mutationFn: RoleService.add,
+  // Create Role Mutation
+  const createRoleMutation = useMutation(RoleService.createRole, {
     onSuccess: () => {
       queryClient.invalidateQueries(['roles']);
-      addNotification('Vai trò đã được thêm thành công!', 'success');
+      addNotification('Tạo vai trò thành công!', 'success');
     },
     onError: (error) => {
-      console.error('Failed to add role:', error);
-      addNotification('Không thể thêm vai trò. Vui lòng thử lại.', 'danger');
+      console.error('Failed to create role:', error);
+      addNotification('Không thể tạo vai trò.', 'danger');
     },
   });
 
-  // Edit role mutation
-  const editRoleMutation = useMutation({
-    mutationFn: RoleService.edit,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['roles']);
-      addNotification('Vai trò đã được cập nhật thành công!', 'success');
-    },
-    onError: (error) => {
-      console.error('Failed to edit role:', error);
-      addNotification('Không thể cập nhật vai trò.', 'danger');
-    },
-  });
+  // Update Role Mutation
+  const updateRoleMutation = useMutation(
+    ({ id, data }) => RoleService.updateRole(id, data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['roles']);
+        addNotification('Cập nhật vai trò thành công!', 'success');
+      },
+      onError: (error) => {
+        console.error('Failed to update role:', error);
+        addNotification('Không thể cập nhật vai trò.', 'danger');
+      },
+    }
+  );
 
-  // Delete role mutation
-  const deleteRoleMutation = useMutation({
-    mutationFn: RoleService.deleteRole,
+  // Delete Role Mutation
+  const deleteRoleMutation = useMutation(RoleService.deleteRole, {
     onSuccess: () => {
       queryClient.invalidateQueries(['roles']);
-      addNotification('Vai trò đã được xóa thành công!', 'success');
+      addNotification('Xóa vai trò thành công!', 'success');
     },
     onError: (error) => {
       console.error('Failed to delete role:', error);
@@ -62,20 +64,32 @@ const useRoles = () => {
     },
   });
 
+  // Find Role by Name
+  const findRoleByName = (roleName) =>
+    useQuery(['role', roleName], () => RoleService.findByName(roleName), {
+      enabled: !!roleName,
+      onError: (err) => {
+        console.error('Error finding role by name:', err);
+        addNotification('Không thể tìm vai trò theo tên.', 'danger');
+      },
+    });
+
   return {
     roles,
     isLoading,
     isError,
     error,
 
-    addRole: addRoleMutation.mutate,
-    editRole: editRoleMutation.mutate,
+    createRole: createRoleMutation.mutate,
+    updateRole: updateRoleMutation.mutate,
     deleteRole: deleteRoleMutation.mutate,
+    findRoleByName,
 
-    addRoleStatus: addRoleMutation.status,
-    editRoleStatus: editRoleMutation.status,
+    // Statuses
+    createRoleStatus: createRoleMutation.status,
+    updateRoleStatus: updateRoleMutation.status,
     deleteRoleStatus: deleteRoleMutation.status,
   };
 };
 
-export default useRoles;
+export default useRole;

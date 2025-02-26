@@ -1,38 +1,31 @@
 import PropTypes from 'prop-types';
 import React, { useContext, useEffect, useRef } from 'react';
-import { Outlet } from 'react-router-dom'; // Import Outlet
-
+import { Outlet } from 'react-router-dom';
 import Navigation from './Navigation';
 import NavBar from './NavBar';
 import Breadcrumb from './Breadcrumb';
-
 import useWindowSize from '../../hooks/useWindowSize';
 import useOutsideClick from '../../hooks/useOutsideClick';
 import { ConfigContext } from '../../contexts/ConfigContext';
 import * as actionType from '../../store/actions';
+import feather from 'feather-icons'; // optionally call feather.replace() here too
 
 const AdminLayout = () => {
   const windowSize = useWindowSize();
   const ref = useRef();
-  const configContext = useContext(ConfigContext);
-
-  const { collapseMenu, headerFixedLayout } = configContext.state;
-  const { dispatch } = configContext;
+  const { state: { collapseMenu, headerFixedLayout }, dispatch } = useContext(ConfigContext);
 
   useEffect(() => {
     if (windowSize.width > 992 && windowSize.width <= 1024) {
       dispatch({ type: actionType.COLLAPSE_MENU });
     }
-
     if (windowSize.width < 992) {
       dispatch({ type: actionType.CHANGE_LAYOUT, layout: 'vertical' });
     }
   }, [dispatch, windowSize]);
 
   useOutsideClick(ref, () => {
-    if (collapseMenu) {
-      dispatch({ type: actionType.COLLAPSE_MENU });
-    }
+    if (collapseMenu) dispatch({ type: actionType.COLLAPSE_MENU });
   });
 
   const mobileOutClickHandler = () => {
@@ -41,64 +34,64 @@ const AdminLayout = () => {
     }
   };
 
-  let mainClass = ['pcoded-wrapper'];
-
+  // Common header (Navigation and NavBar)
   let common = (
-    <React.Fragment>
+    <>
       <Navigation />
       <NavBar />
-    </React.Fragment>
+    </>
   );
 
+  // Main content container with Breadcrumb and Outlet for nested routes
   let mainContainer = (
-    <React.Fragment>
-      <div className="pcoded-main-container">
-        <div className={mainClass.join(' ')}>
-          <div className="pcoded-content">
-            <div className="pcoded-inner-content">
-              <Breadcrumb />
-              <Outlet /> {/* Sử dụng Outlet thay vì {children} */}
-            </div>
+    <div className="pcoded-main-container">
+      <div className="pcoded-wrapper">
+        <div className="pcoded-content">
+          <div className="pcoded-inner-content">
+            <Breadcrumb />
+            <Outlet />
           </div>
         </div>
       </div>
-    </React.Fragment>
+    </div>
   );
 
+  // For mobile view, adjust wrappers and click handlers
   if (windowSize.width < 992) {
     let outSideClass = ['nav-outside'];
-    if (collapseMenu) {
-      outSideClass = [...outSideClass, 'mob-backdrop'];
-    }
-    if (headerFixedLayout) {
-      outSideClass = [...outSideClass, 'mob-fixed'];
-    }
+    if (collapseMenu) outSideClass.push('mob-backdrop');
+    if (headerFixedLayout) outSideClass.push('mob-fixed');
 
-    common = (
-      <div className={outSideClass.join(' ')} ref={ref}>
-        {common}
-      </div>
-    );
+    common = <div className={outSideClass.join(' ')} ref={ref}>{common}</div>;
 
     mainContainer = (
-      <div role="button" tabIndex="0" className="pcoded-outside" 
-      onClick={mobileOutClickHandler} 
-      onKeyDown={mobileOutClickHandler}
+      <div
+        role="button"
+        tabIndex="0"
+        className="pcoded-outside"
+        onClick={mobileOutClickHandler}
+        onKeyDown={mobileOutClickHandler}
       >
         {mainContainer}
       </div>
     );
   }
 
+  // Optionally, re-run feather replacement when layout updates
+  useEffect(() => {
+    feather.replace();
+  }, [collapseMenu, windowSize]);
+
   return (
-    <React.Fragment>
+    <>
       {common}
       {mainContainer}
-    </React.Fragment>
+    </>
   );
 };
 
 AdminLayout.propTypes = {
-  children: PropTypes.node
+  children: PropTypes.node,
 };
+
 export default AdminLayout;

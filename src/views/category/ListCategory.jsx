@@ -1,211 +1,323 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Button, Spinner, Alert, Card, Row, Col, Form, Image } from 'react-bootstrap';
-import CategoryService from '../../services/categoryService';
+import { 
+  Card, 
+  Table, 
+  Button, 
+  Spinner, 
+  Alert, 
+  Form, 
+  InputGroup,
+  Badge,
+  Image,
+  Row,
+  Col,
+  Modal,
+  OverlayTrigger,
+  Tooltip
+} from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import { 
+  Grid, 
+  Search, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Image as ImageIcon,
+  Book,
+  AlertTriangle,
+  CheckCircle,
+  XCircle
+} from 'lucide-react';
 import { NotificationContext } from '../../contexts/NotificationContext';
-import { UPLOAD_PATH } from '../../config/endpoint';
+import CategoryService from '../../services/categoryService';
+import { UPLOAD_PATH } from '../../config/endpoints';
 
 const ListCategory = () => {
+  const navigate = useNavigate();
+  const { addNotification } = useContext(NotificationContext);
+  
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { addNotification } = useContext(NotificationContext);
-  const navigate = useNavigate();
-
-  const [statusFilter, setStatusFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await CategoryService.fetchAll({ signal: null });
-        setCategories(data);
-      } catch (err) {
-        console.error('Error fetching categories:', err);
-        const message = err.response?.data?.message || 'Failed to load categories.';
-        setError(message);
-        addNotification(message, 'danger');
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchCategories();
+  }, []);
 
-    fetchData();
-  }, [addNotification]);
-
-  const handleAddCategory = () => navigate('/dashboard/category/add-category');
-  
-  const handleEditCategory = (id) => navigate(`/dashboard/category/edit-category/${id}`);
-  
-  const handleDeleteCategory = async (id) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
-      try {
-        await CategoryService.deleteCategory({ id, signal: null });
-        setCategories(categories.filter((cat) => cat.id !== id));
-        addNotification('Category deleted successfully!', 'success');
-      } catch (err) {
-        console.error('Error deleting category:', err);
-        const message = err.response?.data?.message || 'Failed to delete category.';
-        addNotification(message, 'danger');
-      }
+  const fetchCategories = async () => {
+    try {
+      const data = await CategoryService.fetchAll();
+      setCategories(data);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      setError('Failed to load categories');
+      addNotification('Failed to load categories', 'danger');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSort = (field, order) => {
-    const sortedCategories = [...categories].sort((a, b) => {
-      if (a[field] < b[field]) return order === 'asc' ? -1 : 1;
-      if (a[field] > b[field]) return order === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setCategories(sortedCategories);
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
   };
 
-  const filteredCategories = categories.filter((category) => {
-    const matchesStatus = statusFilter ? category.status === statusFilter : true;
-    const matchesName = categoryFilter
-      ? category.name.toLowerCase().includes(categoryFilter.toLowerCase())
-      : true;
-    return matchesStatus && matchesName;
-  });
+  const sortedCategories = React.useMemo(() => {
+    let sortedItems = [...categories];
+    if (sortConfig.key) {
+      sortedItems.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortedItems;
+  }, [categories, sortConfig]);
+
+  const filteredCategories = sortedCategories.filter(category =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    category.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleDelete = async () => {
+    if (!selectedCategory) return;
+    
+    try {
+      await CategoryService.deleteCategory(selectedCategory.id);
+      setCategories(categories.filter(cat => cat.id !== selectedCategory.id));
+      addNotification('Category deleted successfully', 'success');
+      setShowDeleteModal(false);
+      setSelectedCategory(null);
+    } catch (err) {
+      console.error('Error deleting category:', err);
+      addNotification('Failed to delete category', 'danger');
+    }
+  };
+
+  const confirmDelete = (category) => {
+    setSelectedCategory(category);
+    setShowDeleteModal(true);
+  };
 
   if (loading) {
     return (
       <div className="text-center my-5">
-        <Spinner animation="border" role="status" aria-label="Loading Categories">
-          <span className="visually-hidden">Loading...</span>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading categories...</span>
         </Spinner>
         <p className="mt-3">Loading categories...</p>
       </div>
     );
   }
 
-  return (
-    <Row>
-      <Col>
-        <Card>
-          <Card.Header className="d-flex justify-content-between align-items-center">
-            <Card.Title as="h5">Category List</Card.Title>
-            <Button onClick={handleAddCategory} variant="primary" aria-label="Add Category">
-              Add Category
-            </Button>
-          </Card.Header>
-          <Card.Body>
-            {error && <Alert variant="danger">{error}</Alert>}
-
-            {/* Filters */}
-            <Form className="filters mb-3 d-flex gap-3" aria-label="Category Filters">
-              <Form.Select
-                onChange={(e) => setStatusFilter(e.target.value)}
-                value={statusFilter}
-                aria-label="Filter by Status"
-              >
-                <option value="">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-              </Form.Select>
-
-              <Form.Control
-                type="text"
-                placeholder="Search Name"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                aria-label="Search by Name"
+  const renderGridView = () => (
+    <Row className="g-4">
+      {filteredCategories.map(category => (
+        <Col key={category.id} xs={12} md={6} lg={4}>
+          <Card className="h-100 shadow-sm hover-shadow">
+            <div className="position-relative">
+              <Card.Img
+                variant="top"
+                src={category.image ? `${UPLOAD_PATH.CATEGORY}/${category.image}` : '/virtualcourse/images/default-category.png'}
+                alt={category.name}
+                style={{ height: '200px', objectFit: 'cover' }}
               />
-            </Form>
-
-            {/* Sorting Controls */}
-            <div className="sorting-controls mb-3 d-flex gap-2" aria-label="Sorting Controls">
-              <Button variant="outline-primary" onClick={() => handleSort('name', 'asc')} aria-label="Sort Name A-Z">
-                Sort Name A-Z
-              </Button>
-              <Button variant="outline-primary" onClick={() => handleSort('name', 'desc')} aria-label="Sort Name Z-A">
-                Sort Name Z-A
-              </Button>
-              <Button variant="outline-primary" onClick={() => handleSort('description', 'asc')} aria-label="Sort Description A-Z">
-                Sort Description A-Z
-              </Button>
-              <Button variant="outline-primary" onClick={() => handleSort('description', 'desc')} aria-label="Sort Description Z-A">
-                Sort Description Z-A
-              </Button>
+              <div className="position-absolute top-0 end-0 p-2">
+                <Badge bg="primary" className="me-2">
+                  <Book size={14} className="me-1" />
+                  {category.courses?.length || 0} Courses
+                </Badge>
+              </div>
             </div>
-
-            {/* Table */}
-            <Table responsive striped bordered hover aria-label="Category List Table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Image</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCategories.length > 0 ? (
-                  filteredCategories.map((category) => (
-                    <tr key={category.id}>
-                      <td>{category.name}</td>
-                      <td>{category.description || 'N/A'}</td>
-                      <td>
-                        {category.image ? (
-                          <Image
-                            src={`${UPLOAD_PATH.CATEGORY}/${category.image}`}
-                            alt={category.name}
-                            width={50}
-                            height={50}
-                            rounded
-                          />
-                        ) : (
-                          <Image
-                            src="/virtualcourse/images/default-image.png"
-                            alt="Default"
-                            width={50}
-                            height={50}
-                            rounded
-                          />
-                        )}
-                      </td>
-                      <td>
-                        <span
-                          className={`badge ${
-                            category.status === 'ACTIVE' ? 'bg-success' : 'bg-danger'
-                          }`}
-                        >
-                          {category.status}
-                        </span>
-                      </td>
-                      <td>
-                        <Button
-                          variant="warning"
-                          onClick={() => handleEditCategory(category.id)}
-                          className="me-2"
-                          aria-label={`Edit category ${category.name}`}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="danger"
-                          onClick={() => handleDeleteCategory(category.id)}
-                          aria-label={`Delete category ${category.name}`}
-                        >
-                          Delete
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="text-center">
-                      No categories found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </Table>
-          </Card.Body>
-        </Card>
-      </Col>
+            <Card.Body>
+              <Card.Title>{category.name}</Card.Title>
+              <Card.Text className="text-muted">
+                {category.description || 'No description available'}
+              </Card.Text>
+            </Card.Body>
+            <Card.Footer className="bg-transparent border-top-0">
+              <div className="d-flex justify-content-between align-items-center">
+                <div className="btn-group">
+                  <OverlayTrigger placement="top" overlay={<Tooltip>Edit Category</Tooltip>}>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => navigate(`/dashboard/category/edit-category/${category.id}`)}
+                    >
+                      <Edit2 size={16} />
+                    </Button>
+                  </OverlayTrigger>
+                  <OverlayTrigger placement="top" overlay={<Tooltip>Delete Category</Tooltip>}>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => confirmDelete(category)}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </OverlayTrigger>
+                </div>
+              </div>
+            </Card.Footer>
+          </Card>
+        </Col>
+      ))}
     </Row>
+  );
+
+  const renderTableView = () => (
+    <Table responsive hover>
+      <thead>
+        <tr>
+          <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
+            Name {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+          </th>
+          <th>Description</th>
+          <th>Image</th>
+          <th>Courses</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {filteredCategories.map(category => (
+          <tr key={category.id}>
+            <td>{category.name}</td>
+            <td>{category.description || 'No description'}</td>
+            <td>
+              <Image
+                src={category.image ? `${UPLOAD_PATH.CATEGORY}/${category.image}` : '/virtualcourse/images/default-category.png'}
+                alt={category.name}
+                width={50}
+                height={50}
+                rounded
+              />
+            </td>
+            <td>
+              <Badge bg="primary">
+                <Book size={14} className="me-1" />
+                {category.courses?.length || 0}
+              </Badge>
+            </td>
+            <td>
+              <Button
+                variant="outline-primary"
+                size="sm"
+                className="me-2"
+                onClick={() => navigate(`/dashboard/category/edit-category/${category.id}`)}
+              >
+                <Edit2 size={16} />
+              </Button>
+              <Button
+                variant="outline-danger"
+                size="sm"
+                onClick={() => confirmDelete(category)}
+              >
+                <Trash2 size={16} />
+              </Button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+
+  return (
+    <Card>
+      <Card.Header>
+        <div className="d-flex justify-content-between align-items-center">
+          <Card.Title className="mb-0">Categories</Card.Title>
+          <Button
+            variant="primary"
+            onClick={() => navigate('/dashboard/category/add-category')}
+          >
+            <Plus size={16} className="me-1" />
+            Add Category
+          </Button>
+        </div>
+      </Card.Header>
+      <Card.Body>
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <InputGroup style={{ maxWidth: '300px' }}>
+            <InputGroup.Text>
+              <Search size={16} />
+            </InputGroup.Text>
+            <Form.Control
+              placeholder="Search categories..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </InputGroup>
+          <div className="btn-group">
+            <OverlayTrigger placement="top" overlay={<Tooltip>Grid View</Tooltip>}>
+              <Button
+                variant={viewMode === 'grid' ? 'primary' : 'outline-primary'}
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid size={16} />
+              </Button>
+            </OverlayTrigger>
+            <OverlayTrigger placement="top" overlay={<Tooltip>Table View</Tooltip>}>
+              <Button
+                variant={viewMode === 'table' ? 'primary' : 'outline-primary'}
+                onClick={() => setViewMode('table')}
+              >
+                <ImageIcon size={16} />
+              </Button>
+            </OverlayTrigger>
+          </div>
+        </div>
+
+        {error ? (
+          <Alert variant="danger">
+            <AlertTriangle size={16} className="me-2" />
+            {error}
+          </Alert>
+        ) : filteredCategories.length === 0 ? (
+          <Alert variant="info">No categories found</Alert>
+        ) : (
+          viewMode === 'grid' ? renderGridView() : renderTableView()
+        )}
+      </Card.Body>
+
+      {/* Delete Confirmation Modal */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete the category "{selectedCategory?.name}"?
+          {selectedCategory?.courses?.length > 0 && (
+            <Alert variant="warning" className="mt-3">
+              <AlertTriangle size={16} className="me-2" />
+              This category has {selectedCategory.courses.length} associated courses.
+              Deleting it may affect these courses.
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            <XCircle size={16} className="me-1" />
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            <CheckCircle size={16} className="me-1" />
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </Card>
   );
 };
 

@@ -1,8 +1,8 @@
 // src/services/ticketService.js
 
-import api from '../untils/api'; // Sửa từ 'untils' thành 'utils'
-import { ENDPOINTS } from '../config/endpoint'; // Sửa từ 'endpoint' thành 'endpoints'
-import { handleError } from '../untils/errorHandler'; // Sửa từ 'untils' thành 'utils'
+import api from '../utils/api'; // Sửa từ 'untils' thành 'utils'
+import { ENDPOINTS } from '../config/endpoints'; // Sửa từ 'endpoint' thành 'endpoints'
+import { handleError } from '../utils/errorHandler'; // Sửa từ 'untils' thành 'utils'
 
 const TICKET_BASE = ENDPOINTS.TICKETS.BASE;
 
@@ -82,7 +82,7 @@ const ticketService = {
       console.error(`Error closing ticket ${ticketId}:`, error);
       throw handleError(error);
     }
-  },
+  }
 };
 
 export default ticketService;

@@ -1,14 +1,13 @@
-// src/hooks/useCategories.js
+// src/hooks/useCategory.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import CategoryService from '../services/categoryService';
 import { useContext } from 'react';
 import { NotificationContext } from '../contexts/NotificationContext';
 
-const useCategories = () => {
+const useCategory = () => {
   const queryClient = useQueryClient();
   const { addNotification } = useContext(NotificationContext);
 
-  // Fetch all categories
   const {
     data: categories,
     isLoading,
@@ -16,45 +15,43 @@ const useCategories = () => {
     error,
   } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => CategoryService.fetchAll({ signal: undefined }),
+    queryFn: CategoryService.fetchAll,
     onError: (err) => {
       console.error('Error fetching categories:', err);
       addNotification('Không thể tải danh sách danh mục.', 'danger');
     },
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Add category mutation
-  const addCategoryMutation = useMutation({
-    mutationFn: CategoryService.addCategory,
+  const createCategoryMutation = useMutation(CategoryService.createCategory, {
     onSuccess: () => {
       queryClient.invalidateQueries(['categories']);
-      addNotification('Danh mục đã được thêm thành công!', 'success');
+      addNotification('Tạo danh mục thành công!', 'success');
     },
     onError: (error) => {
-      console.error('Failed to add category:', error);
-      addNotification('Không thể thêm danh mục. Vui lòng thử lại.', 'danger');
+      console.error('Failed to create category:', error);
+      addNotification('Không thể tạo danh mục.', 'danger');
     },
   });
 
-  // Edit category mutation
-  const editCategoryMutation = useMutation({
-    mutationFn: CategoryService.editCategory,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['categories']);
-      addNotification('Danh mục đã được cập nhật thành công!', 'success');
-    },
-    onError: (error) => {
-      console.error('Failed to edit category:', error);
-      addNotification('Không thể cập nhật danh mục.', 'danger');
-    },
-  });
+  const updateCategoryMutation = useMutation(
+    ({ id, data }) => CategoryService.updateCategory(id, data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['categories']);
+        addNotification('Cập nhật danh mục thành công!', 'success');
+      },
+      onError: (error) => {
+        console.error('Failed to update category:', error);
+        addNotification('Không thể cập nhật danh mục.', 'danger');
+      },
+    }
+  );
 
-  // Delete category mutation
-  const deleteCategoryMutation = useMutation({
-    mutationFn: CategoryService.deleteCategory,
+  const deleteCategoryMutation = useMutation(CategoryService.deleteCategory, {
     onSuccess: () => {
       queryClient.invalidateQueries(['categories']);
-      addNotification('Danh mục đã được xóa thành công!', 'success');
+      addNotification('Xóa danh mục thành công!', 'success');
     },
     onError: (error) => {
       console.error('Failed to delete category:', error);
@@ -67,15 +64,13 @@ const useCategories = () => {
     isLoading,
     isError,
     error,
-
-    addCategory: addCategoryMutation.mutate,
-    editCategory: editCategoryMutation.mutate,
+    createCategory: createCategoryMutation.mutate,
+    updateCategory: updateCategoryMutation.mutate,
     deleteCategory: deleteCategoryMutation.mutate,
-
-    addCategoryStatus: addCategoryMutation.status,
-    editCategoryStatus: editCategoryMutation.status,
+    createCategoryStatus: createCategoryMutation.status,
+    updateCategoryStatus: updateCategoryMutation.status,
     deleteCategoryStatus: deleteCategoryMutation.status,
   };
 };
 
-export default useCategories;
+export default useCategory;

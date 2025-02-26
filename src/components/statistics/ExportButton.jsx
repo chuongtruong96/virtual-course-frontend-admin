@@ -1,5 +1,3 @@
-// src/components/Statistics/ExportButton.jsx
-
 import React from 'react';
 import { Button } from '@mui/material';
 import html2canvas from 'html2canvas';
@@ -29,13 +27,7 @@ const ExportButton = ({ chartId, fileName }) => {
   };
 
   return (
-    <Button
-      variant="contained"
-      color="secondary"
-      onClick={handleExport}
-      startIcon={<GetAppIcon />}
-      sx={{ mt: 2 }}
-    >
+    <Button variant="contained" color="secondary" onClick={handleExport} startIcon={<GetAppIcon />} sx={{ mt: 2 }}>
       Export as PDF
     </Button>
   );

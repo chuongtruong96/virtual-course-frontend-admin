@@ -1,94 +1,174 @@
-// src/services/courseService.js
-import createCRUDService from './baseService';
-import api from '../untils/api';
-import { ENDPOINTS } from '../config/endpoint';
-import { handleError } from '../untils/errorHandler';
-
-/**
- * CourseService xử lý tất cả các tương tác API liên quan đến Courses.
- */
-const courseCRUD = createCRUDService(ENDPOINTS.COURSES.BASE);
+import api from '../utils/api';
+import ENDPOINTS from '../config/endpoints';
 
 const CourseService = {
-  ...courseCRUD,
-
-  // fetch all courses
-  fetchAllCourses: async ({ signal }) => {
+  // General course operations
+  fetchAll: async () => {
     try {
-      const response = await api.get(ENDPOINTS.COURSES.BASE, { signal });
-      return response.data; // GET /api/courses
+      const response = await api.get(ENDPOINTS.COURSES.BASE);
+      return response.data;
     } catch (error) {
       console.error('Error fetching all courses:', error);
-      throw handleError(error);
+      throw error;
     }
   },
 
-  // fetch courses by instructor => GET /api/instructors/{instructorId}/courses
-  fetchCoursesByInstructor: async ({ instructorId, signal }) => {
+  fetchById: async (id) => {
     try {
-      const response = await api.get(ENDPOINTS.INSTRUCTORS.BY_ID_COURSES(instructorId), { signal });
+      if (!id) {
+        throw new Error('Course ID is required');
+      }
+      const response = await api.get(ENDPOINTS.COURSES.BY_ID(id));
       return response.data;
     } catch (error) {
-      console.error(`Error fetching courses for instructor ${instructorId}:`, error);
-      throw handleError(error);
+      console.error('Error fetching course:', error);
+      throw error;
     }
   },
 
-  // addCourseForInstructor => POST /api/courses/instructor/{id}/courses
-  addCourseForInstructor: async ({ instructorId, data, signal }) => {
+  fetchPendingCourses: async () => {
     try {
-      const url = ENDPOINTS.INSTRUCTORS.BY_ID_COURSES(instructorId); // "/api/instructors/10/courses"
-      const response = await api.post(url, data, { signal });
+      const response = await api.get(ENDPOINTS.ADMIN.COURSES.PENDING);
       return response.data;
     } catch (error) {
-      console.error(`Error adding course for instructor ${instructorId}:`, error);
-      throw handleError(error);
+      console.error('Error fetching pending courses:', error);
+      throw error;
     }
   },
 
-  // override editCourse => PUT /api/courses/{id}
-  editCourse: async ({ id, data, signal }) => {
+  // src/services/courseService.js
+  approveCourse: async ({ courseId, notes }) => {
     try {
-      const response = await api.put(ENDPOINTS.COURSES.BY_ID(id), data, { signal });
+      if (!courseId) {
+        throw new Error('Course ID is required');
+      }
+
+      // Convert courseId to number if it's a string
+      const id = Number(courseId);
+      if (isNaN(id)) {
+        throw new Error('Invalid course ID format');
+      }
+
+      // Log the request details
+      console.log('Approving course:', {
+        courseId: id,
+        notes,
+        url: ENDPOINTS.ADMIN.COURSES.APPROVE(id)
+      });
+
+      const response = await api.post(
+        ENDPOINTS.ADMIN.COURSES.APPROVE(id),
+        { notes: notes || '' }
+      );
+
+      // Log successful response
+      console.log('Course approval response:', response.data);
+
       return response.data;
     } catch (error) {
-      console.error(`Error editing course ${id}:`, error);
-      throw handleError(error);
+      // Enhanced error logging
+      console.error('Error approving course:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config
+      });
+
+      // Throw appropriate error based on response
+      if (error.response?.status === 404) {
+        throw new Error(`Course with ID ${courseId} not found`);
+      } else if (error.response?.status === 401) {
+        throw new Error('Unauthorized. Please check your authentication');
+      } else if (error.response?.status === 403) {
+        throw new Error('You do not have permission to approve courses');
+      }
+
+      throw new Error(
+        error.response?.data?.message || 
+        error.message || 
+        'Failed to approve course'
+      );
     }
   },
 
-  // fetch detail => GET /api/courses/{id}
-  fetchCourseById: async ({ id, signal }) => {
+  rejectCourse: async ({ courseId, reason }) => {
     try {
-      const response = await api.get(ENDPOINTS.COURSES.BY_ID(id), { signal });
+      if (!courseId) {
+        throw new Error('Course ID is required');
+      }
+
+      // Convert courseId to number if it's a string
+      const id = Number(courseId);
+      if (isNaN(id)) {
+        throw new Error('Invalid course ID format');
+      }
+
+      // Log request details
+      console.log('Rejecting course:', {
+        courseId: id,
+        reason,
+        url: ENDPOINTS.ADMIN.COURSES.REJECT(id)
+      });
+
+      const response = await api.post(
+        ENDPOINTS.ADMIN.COURSES.REJECT(id),
+        { reason: reason || '' }
+      );
+
       return response.data;
     } catch (error) {
-      console.error(`Error fetching course ${id}:`, error);
-      throw handleError(error);
+      console.error('Error rejecting course:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+
+      if (error.response?.status === 404) {
+        throw new Error(`Course with ID ${courseId} not found`);
+      }
+
+      throw new Error(
+        error.response?.data?.message || 
+        error.message || 
+        'Failed to reject course'
+      );
     }
   },
 
-  // disable => PUT /api/courses/{id}/disable
-  // enable => PUT /api/courses/{id}/enable
-  // etc...
+  getApprovalHistory: async (courseId) => {
+    try {
+      if (!courseId) {
+        throw new Error('Course ID is required');
+      }
 
-  // Thêm 2 hàm
-  approveCourse: async (courseId) => {
-    // Gọi API: PUT /api/courses/{id}/approve (hoặc POST tùy backend)
-    const response = await api.put(`${ENDPOINTS.COURSES.BY_ID(courseId)}/approve`);
-    return response.data;
+      // Convert courseId to string if it's a number
+      const id = courseId.toString();
+
+      const response = await api.get(ENDPOINTS.ADMIN.COURSES.APPROVAL_HISTORY(id));
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching approval history:', {
+        error: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      throw new Error(error.response?.data?.message || error.message || 'Failed to fetch approval history');
+    }
   },
-  rejectCourse: async (courseId, reason) => {
-    // Gọi API: PUT /api/courses/{id}/reject
-    const response = await api.put(`${ENDPOINTS.COURSES.BY_ID(courseId)}/reject`, { reason });
-    return response.data;
-  },
-  // fetchPendingCourses
-  fetchPendingCourses: async ({ signal }) => {
-    // Gọi API: GET /api/courses/pending
-    // Tùy logic backend
-    const response = await api.get(`${ENDPOINTS.COURSES.BASE}/pending`, { signal });
-    return response.data;
+
+  // Helper method to validate courseId
+  validateCourseId: (courseId) => {
+    if (!courseId) {
+      throw new Error('Course ID is required');
+    }
+    
+    // Ensure courseId is a valid number or string
+    const id = courseId.toString();
+    if (!id.match(/^\d+$/)) {
+      throw new Error('Invalid course ID format');
+    }
+    
+    return id;
   }
 };
 

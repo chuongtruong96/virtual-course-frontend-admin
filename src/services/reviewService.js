@@ -1,9 +1,9 @@
 // src/services/ReviewService.js
 
 import createCRUDService from './baseService';
-import api from '../untils/api';
-import { ENDPOINTS } from '../config/endpoint';
-import { handleError } from '../untils/errorHandler';
+import api from '../utils/api';
+import { ENDPOINTS } from '../config/endpoints';
+import { handleError } from '../utils/errorHandler';
 
 /**
  * ReviewService xử lý tất cả các tương tác API liên quan đến Reviews.
@@ -79,7 +79,7 @@ const ReviewService = {
       console.error(`Error deleting review ${reviewId}:`, error);
       throw handleError(error);
     }
-  },
+  }
 };
 
 export default ReviewService;

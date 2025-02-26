@@ -1,53 +1,31 @@
-// src/services/AuthService.js
+// src/services/authService.js
+import api from '../utils/api';
+import ENDPOINTS from '../config/endpoints';
 
-import api from '../untils/api';
-import { ENDPOINTS } from '../config/endpoint';
-import { handleError } from '../untils/errorHandler';
-
-/**
- * AuthService xử lý tất cả các tương tác API liên quan đến Authentication.
- */
 const AuthService = {
   login: async (credentials) => {
-    try {
-      // credentials = { email, password }
-      const response = await api.post(ENDPOINTS.AUTH.LOGIN, credentials);
-      // Backend trả về { token, type, id, username, email, roles, ... } (JwtResponse)
-      return response.data;
-    } catch (error) {
-      console.error('Error logging in:', error);
-      throw handleError(error);
-    }
+    console.log('Sending login request:', credentials);
+    const response = await api.post(ENDPOINTS.AUTH.LOGIN, credentials);
+    console.log('Login response:', response);
+    return response.data;
   },
-
   register: async (userData) => {
-    try {
-      const response = await api.post(ENDPOINTS.AUTH.REGISTER, userData);
-      return response.data;
-    } catch (error) {
-      console.error('Error registering:', error);
-      throw handleError(error);
-    }
+    console.log('Sending register request:', userData);
+    const response = await api.post(ENDPOINTS.AUTH.REGISTER, userData);
+    console.log('Register response:', response);
+    return response.data;
   },
-
   forgotPassword: async (email) => {
-    try {
-      const response = await api.post(ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
-      return response.data;
-    } catch (error) {
-      console.error('Error in forgot password:', error);
-      throw handleError(error);
-    }
+    console.log('Sending forgot password request:', email);
+    const response = await api.post(ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
+    console.log('Forgot password response:', response);
+    return response.data;
   },
-
   resetPassword: async (token, newPassword) => {
-    try {
-      const response = await api.post(ENDPOINTS.AUTH.RESET_PASSWORD, { token, newPassword });
-      return response.data;
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      throw handleError(error);
-    }
+    console.log('Sending reset password request:', { token, newPassword });
+    const response = await api.post(ENDPOINTS.AUTH.RESET_PASSWORD, { token, newPassword });
+    console.log('Reset password response:', response);
+    return response.data;
   },
 };
 
