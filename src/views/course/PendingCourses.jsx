@@ -1,4 +1,3 @@
-// src/views/course/PendingCourses.jsx
 import React, { useState } from 'react';
 import { Card, Table, Button, Modal, Form, Spinner, Badge, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
@@ -51,52 +50,47 @@ const PendingCourses = () => {
     });
   };
 
-  // src/views/course/PendingCourses.jsx
-// src/views/course/PendingCourses.jsx
-const handleApprove = () => {
-  if (!selectedCourse?.id) {
-    console.error('No course selected for approval');
-    return;
-  }
-
-  if (!Object.values(approvalChecklist).every(Boolean)) {
-    alert('Please complete all checklist items before approving');
-    return;
-  }
-
-  try {
-    // Convert ID to number and validate
-    const courseId = Number(selectedCourse.id);
-    if (isNaN(courseId)) {
-      throw new Error('Invalid course ID');
+  const handleApprove = () => {
+    if (!selectedCourse?.id) {
+      console.error('No course selected for approval');
+      return;
     }
 
-    // Log approval attempt
-    console.log('Attempting to approve course:', {
-      courseId,
-      notes
-    });
+    if (!Object.values(approvalChecklist).every(Boolean)) {
+      alert('Please complete all checklist items before approving');
+      return;
+    }
 
-    approveCourse({ 
-      courseId,
-      notes: notes || ''
-    });
-    
-    setShowApproveModal(false);
-    setSelectedCourse(null);
-    setNotes('');
-    setApprovalChecklist({
-      contentComplete: false,
-      pricingAppropriate: false,
-      technicalRequirements: false,
-      instructorVerified: false
-    });
-  } catch (error) {
-    console.error('Error during course approval:', error);
-    alert(error.message || 'Failed to approve course');
-  }
-};
+    try {
+      const courseId = Number(selectedCourse.id);
+      if (isNaN(courseId)) {
+        throw new Error('Invalid course ID');
+      }
 
+      console.log('Attempting to approve course:', {
+        courseId,
+        notes
+      });
+
+      approveCourse({ 
+        courseId,
+        notes: notes || ''
+      });
+      
+      setShowApproveModal(false);
+      setSelectedCourse(null);
+      setNotes('');
+      setApprovalChecklist({
+        contentComplete: false,
+        pricingAppropriate: false,
+        technicalRequirements: false,
+        instructorVerified: false
+      });
+    } catch (error) {
+      console.error('Error during course approval:', error);
+      alert(error.message || 'Failed to approve course');
+    }
+  };
 
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
@@ -148,7 +142,7 @@ const handleApprove = () => {
           <Card.Title>Pending Courses</Card.Title>
         </Card.Header>
         <Card.Body>
-          {!pendingCourses || pendingCourses.length === 0 ? (
+          {(!pendingCourses || !Array.isArray(pendingCourses) || pendingCourses.length === 0) ? (
             <Alert variant="info">
               <p className="mb-0">No pending courses found</p>
             </Alert>
@@ -167,55 +161,57 @@ const handleApprove = () => {
                 </tr>
               </thead>
               <tbody>
-                {pendingCourses.map(course => (
-                  <tr key={course.id}>
-                    <td>{course.titleCourse || 'N/A'}</td>
-                    <td>{renderInstructorName(course.instructor)}</td>
-                    <td>{renderCategory(course.category)}</td>
-                    <td>
-                      <Badge bg="info">{course.level || 'N/A'}</Badge>
-                    </td>
-                    <td>{course.duration ? `${course.duration} hrs` : 'N/A'}</td>
-                    <td>{course.price ? `$${course.price}` : 'N/A'}</td>
-                    <td>{formatSubmissionDate(course.createdAt)}</td>
-                    <td>
-                      <div className="d-flex gap-2">
-                        <Button
-                          variant="success"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCourse(course);
-                            setShowApproveModal(true);
-                          }}
-                          disabled={isApproving}
-                        >
-                          {isApproving ? 'Approving...' : 'Approve'}
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCourse(course);
-                            setShowRejectModal(true);
-                          }}
-                          disabled={isRejecting}
-                        >
-                          {isRejecting ? 'Rejecting...' : 'Reject'}
-                        </Button>
-                        <Button
-                          variant="info"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCourse(course);
-                            setShowHistoryModal(true);
-                          }}
-                        >
-                          History
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {Array.isArray(pendingCourses) &&
+                  pendingCourses.map(course => (
+                    <tr key={course.id}>
+                      <td>{course.titleCourse || 'N/A'}</td>
+                      <td>{renderInstructorName(course.instructor)}</td>
+                      <td>{renderCategory(course.category)}</td>
+                      <td>
+                        <Badge bg="info">{course.level || 'N/A'}</Badge>
+                      </td>
+                      <td>{course.duration ? `${course.duration} hrs` : 'N/A'}</td>
+                      <td>{course.price ? `$${course.price}` : 'N/A'}</td>
+                      <td>{formatSubmissionDate(course.createdAt)}</td>
+                      <td>
+                        <div className="d-flex gap-2">
+                          <Button
+                            variant="success"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCourse(course);
+                              setShowApproveModal(true);
+                            }}
+                            disabled={isApproving}
+                          >
+                            {isApproving ? 'Approving...' : 'Approve'}
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCourse(course);
+                              setShowRejectModal(true);
+                            }}
+                            disabled={isRejecting}
+                          >
+                            {isRejecting ? 'Rejecting...' : 'Reject'}
+                          </Button>
+                          <Button
+                            variant="info"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCourse(course);
+                              setShowHistoryModal(true);
+                            }}
+                          >
+                            History
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                }
               </tbody>
             </Table>
           )}

@@ -8,7 +8,6 @@ export const AuthProvider = ({ children }) => {
     token: null,
     user: null,
   });
-
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
@@ -18,21 +17,26 @@ export const AuthProvider = ({ children }) => {
 
     if (storedUser?.token) {
       try {
+        // Decode the stored token
         const decoded = jwt_decode(storedUser.token);
-
-        if (decoded.exp * 1000 > Date.now()) {
+        // Ensure we always get the user id from the decoded token, falling back to storedUser.id (if ever available)
+        const userId = decoded.accountId || storedUser.id;
+        console.log('Decoded token:', decoded, 'User ID:', userId);
+        if (decoded.exp * 1000 > Date.now() && userId) {
+          // Build the user data ensuring id is always provided
+          const userData = {
+            ...decoded,
+            id: userId,
+            email: storedUser.email || decoded.email || '',
+            username: storedUser.username || decoded.sub || '',
+            roles: storedUser.roles || (decoded.roles ? decoded.roles.map(r => r.authority || r) : []),
+          };
           setAuth({
             token: storedUser.token,
-            user: {
-              ...decoded,
-              id: storedUser.id,
-              email: storedUser.email,
-              username: storedUser.username,
-              roles: storedUser.roles,
-            },
+            user: userData,
           });
         } else {
-          console.warn('Token expired. Removing from localStorage.');
+          console.warn('Token expired or user id missing. Removing from localStorage.');
           localStorage.removeItem('user');
         }
       } catch (error) {
@@ -40,22 +44,24 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('user');
       }
     }
-
     setAuthLoading(false);
   }, []);
 
   const login = (user) => {
     try {
       const decoded = jwt_decode(user.token);
-
-      // Ensure we have the admin role
+      // Check for admin privileges
       if (!user.roles.includes('ROLE_ADMIN')) {
         throw new Error('User does not have admin privileges');
       }
-
+      // Get the id from the decoded token or the passed user object, while favoring decoded.accountId
+      const userId = decoded.accountId || user.id;
+      if (!userId) {
+        throw new Error('User id is missing from the token payload');
+      }
       const userObject = {
         token: user.token,
-        id: user.id,
+        id: userId,
         email: user.email,
         username: user.username,
         roles: user.roles,
@@ -67,7 +73,7 @@ export const AuthProvider = ({ children }) => {
         token: user.token,
         user: {
           ...decoded,
-          id: user.id,
+          id: userId,
           email: user.email,
           username: user.username,
           roles: user.roles,

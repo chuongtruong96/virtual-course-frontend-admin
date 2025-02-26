@@ -1,45 +1,57 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Table, Spinner, Alert, Button, Badge, Modal } from 'react-bootstrap';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import NotificationService from '../../services/notificationService';
+// Assuming there's an authentication context that provides the current user info.
+import { AuthContext } from '../../contexts/AuthContext';
 
 const NotificationList = () => {
   const { addNotification } = useContext(NotificationContext);
+  const { auth  } = useContext(AuthContext); // get the authenticated user
   const queryClient = useQueryClient();
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState(null);
-  const [userId] = useState(''); // Replace this with the actual userId from context or localStorage
+  // Ensure user is authenticated and has a valid id
+  if (!auth?.user?.id) {
+    return <Alert variant="warning">User not authenticated. Please log in.</Alert>;
+  }
+  
+  const userId = auth.user.id;
+  console.log("Using userId for notifications:", userId); // Debug log
 
-  // Fetch notifications
+  // Fetch notifications using the v5 object syntax
   const {
     data: notifications = [],
     isLoading,
     isError,
     error
-  } = useQuery(['notifications', userId], () => NotificationService.fetchNotifications(userId), {
-    onError: () => {
+  } = useQuery({
+    queryKey: ['notifications', userId],
+    queryFn: () => NotificationService.fetchNotifications(userId),
+    onError: (err) => {
+      console.error("Notification fetch error:", err);
       addNotification('Failed to load notifications.', 'danger');
-    }
+    },
+    enabled: !!userId
   });
-
-  // Mark as read mutation
-  const markAsReadMutation = useMutation(NotificationService.markAsRead, {
+  // Mark as read mutation using object syntax (v5-friendly)
+  const markAsReadMutation = useMutation({
+    mutationFn: NotificationService.markAsRead,
     onSuccess: () => {
       addNotification('Notification marked as read.', 'success');
-      queryClient.invalidateQueries(['notifications', userId]);
+      queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
     },
     onError: () => {
       addNotification('Failed to mark as read.', 'danger');
     }
   });
 
-  // Delete mutation
-  const deleteNotificationMutation = useMutation(NotificationService.deleteNotification, {
+  // Delete mutation using object syntax
+  const deleteNotificationMutation = useMutation({
+    mutationFn: NotificationService.deleteNotification,
     onSuccess: () => {
       addNotification('Notification deleted successfully.', 'success');
-      queryClient.invalidateQueries(['notifications', userId]);
+      queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
       setShowDeleteModal(false);
       setSelectedNotification(null);
     },
@@ -47,6 +59,9 @@ const NotificationList = () => {
       addNotification('Failed to delete notification.', 'danger');
     }
   });
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
 
   const handleMarkAsRead = (id) => {
     markAsReadMutation.mutate(id);
@@ -97,7 +112,7 @@ const NotificationList = () => {
             </tr>
           </thead>
           <tbody>
-            {notifications.map(notif => (
+            {notifications.map((notif) => (
               <tr key={notif.id}>
                 <td>{notif.id}</td>
                 <td>{notif.content}</td>

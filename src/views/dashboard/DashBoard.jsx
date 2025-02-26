@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Grid, Card, CardContent, Typography, Avatar, LinearProgress, Button, FormControl, Select, MenuItem } from '@mui/material';
+import { Box, Grid, Card, CardContent, Typography, Avatar, Button, FormControl, Select, MenuItem } from '@mui/material';
 import { Link } from 'react-router-dom';
 import useAdminDashboard from '../../hooks/useAdminDashboard';
 import StatisticsChart from '../../components/statistics/StatisticsChart';
@@ -11,8 +11,7 @@ import {
   XCircle,
   TrendingUp,
   TrendingDown,
-  Star,
-  Bell
+  Star
 } from 'lucide-react';
 
 const DashDefault = () => {
@@ -145,37 +144,43 @@ const DashDefault = () => {
               <Typography variant="h6" gutterBottom>
                 Pending Course Approvals
               </Typography>
-              {pendingCourses?.map((course) => (
-                <Box key={course.id} sx={{ mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Box>
-                      <Typography variant="subtitle1">{course.titleCourse}</Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        By {course.instructorFirstName} {course.instructorLastName}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Button
-                        size="small"
-                        startIcon={<CheckCircle />}
-                        color="success"
-                        onClick={() => approveCourse({ courseId: course.id, notes: '' })}
-                        sx={{ mr: 1 }}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="small"
-                        startIcon={<XCircle />}
-                        color="error"
-                        onClick={() => rejectCourse({ courseId: course.id, reason: '' })}
-                      >
-                        Reject
-                      </Button>
+              {Array.isArray(pendingCourses) && pendingCourses.length > 0 ? (
+                pendingCourses.map((course) => (
+                  <Box key={course.id} sx={{ mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="subtitle1">{course.titleCourse}</Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          By {course.instructorFirstName} {course.instructorLastName}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Button
+                          size="small"
+                          startIcon={<CheckCircle />}
+                          color="success"
+                          onClick={() => approveCourse({ courseId: course.id, notes: '' })}
+                          sx={{ mr: 1 }}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          size="small"
+                          startIcon={<XCircle />}
+                          color="error"
+                          onClick={() => rejectCourse({ courseId: course.id, reason: '' })}
+                        >
+                          Reject
+                        </Button>
+                      </Box>
                     </Box>
                   </Box>
-                </Box>
-              ))}
+                ))
+              ) : (
+                <Typography variant="body2" color="textSecondary">
+                  No pending courses.
+                </Typography>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -186,37 +191,43 @@ const DashDefault = () => {
               <Typography variant="h6" gutterBottom>
                 Pending Instructor Approvals
               </Typography>
-              {pendingInstructors?.map((instructor) => (
-                <Box key={instructor.id} sx={{ mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Box>
-                      <Typography variant="subtitle1">{instructor.username}</Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        {instructor.email}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Button
-                        size="small"
-                        startIcon={<CheckCircle />}
-                        color="success"
-                        onClick={() => approveInstructor(instructor.id)}
-                        sx={{ mr: 1 }}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="small"
-                        startIcon={<XCircle />}
-                        color="error"
-                        onClick={() => rejectInstructor({ instructorId: instructor.id, reason: '' })}
-                      >
-                        Reject
-                      </Button>
+              {Array.isArray(pendingInstructors) && pendingInstructors.length > 0 ? (
+                pendingInstructors.map((instructor) => (
+                  <Box key={instructor.id} sx={{ mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="subtitle1">{instructor.username}</Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          {instructor.email}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Button
+                          size="small"
+                          startIcon={<CheckCircle />}
+                          color="success"
+                          onClick={() => approveInstructor(instructor.id)}
+                          sx={{ mr: 1 }}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          size="small"
+                          startIcon={<XCircle />}
+                          color="error"
+                          onClick={() => rejectInstructor({ instructorId: instructor.id, reason: '' })}
+                        >
+                          Reject
+                        </Button>
+                      </Box>
                     </Box>
                   </Box>
-                </Box>
-              ))}
+                ))
+              ) : (
+                <Typography variant="body2" color="textSecondary">
+                  No pending instructors.
+                </Typography>
+              )}
             </CardContent>
           </Card>
         </Grid>
