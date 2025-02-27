@@ -82,7 +82,7 @@ const CourseDetail = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Button
           startIcon={<ArrowLeft />}
-          onClick={() => navigate('/dashboard/course/list')}
+          onClick={() => navigate('/dashboard/course/list-course')}
         >
           Back to Courses
         </Button>

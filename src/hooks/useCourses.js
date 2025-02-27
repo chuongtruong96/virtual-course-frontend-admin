@@ -1,6 +1,6 @@
-// src/hooks/useCourses.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import CourseService from '../services/courseService';
+import AdminService from '../services/adminService';
 import { useContext } from 'react';
 import { NotificationContext } from '../contexts/NotificationContext';
 
@@ -17,14 +17,26 @@ const useCourses = (type = 'all') => {
     refetch
   } = useQuery({
     queryKey: ['courses', type],
-    queryFn: () => {
-      switch (type) {
-        case 'pending':
-          return CourseService.fetchPendingCourses();
-        case 'all':
-          return CourseService.fetchAll();
-        default:
-          return CourseService.fetchCoursesByStatus(type);
+    queryFn: async () => {
+      console.log(`Fetching courses with type: ${type}`);
+      try {
+        let result;
+        switch (type) {
+          case 'pending':
+            // Use the admin endpoint specifically for pending courses
+            result = await AdminService.getPendingCourses();
+            console.log('Pending courses result:', result);
+            return result;
+          case 'all':
+            result = await CourseService.fetchAll();
+            return result;
+          default:
+            result = await CourseService.fetchCoursesByStatus(type);
+            return result;
+        }
+      } catch (err) {
+        console.error(`Error fetching ${type} courses:`, err);
+        throw err;
       }
     },
     onError: (err) => {
@@ -35,7 +47,10 @@ const useCourses = (type = 'all') => {
 
   // Approve course mutation
   const approveMutation = useMutation({
-    mutationFn: ({ courseId, notes }) => CourseService.approveCourse(courseId, notes),
+    mutationFn: ({ courseId, notes }) => {
+      console.log('Approving course with ID:', courseId, 'and notes:', notes);
+      return AdminService.approveCourse(courseId, notes);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['courses']);
       addNotification('Course approved successfully!', 'success');
@@ -48,7 +63,10 @@ const useCourses = (type = 'all') => {
 
   // Reject course mutation
   const rejectMutation = useMutation({
-    mutationFn: ({ courseId, reason }) => CourseService.rejectCourse(courseId, reason),
+    mutationFn: ({ courseId, reason }) => {
+      console.log('Rejecting course with ID:', courseId, 'and reason:', reason);
+      return AdminService.rejectCourse(courseId, reason);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['courses']);
       addNotification('Course rejected successfully.', 'success');
@@ -60,7 +78,7 @@ const useCourses = (type = 'all') => {
   });
 
   return {
-    courses: type === 'all' ? data : undefined,
+    courses: data,
     pendingCourses: type === 'pending' ? data : undefined,
     isLoading,
     isError,

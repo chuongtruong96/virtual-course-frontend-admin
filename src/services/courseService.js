@@ -5,7 +5,9 @@ const CourseService = {
   // General course operations
   fetchAll: async () => {
     try {
+      console.log('Fetching all courses');
       const response = await api.get(ENDPOINTS.COURSES.BASE);
+      console.log('All courses response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching all courses:', error);
@@ -26,9 +28,32 @@ const CourseService = {
     }
   },
 
+  fetchCoursesByStatus: async (status) => {
+    try {
+      console.log(`Fetching courses with status: ${status}`);
+      // Use the appropriate endpoint based on status
+      let endpoint;
+      if (status === 'pending') {
+        endpoint = ENDPOINTS.ADMIN.COURSES.PENDING;
+      } else {
+        // Assuming there's an endpoint for filtering by status
+        endpoint = `${ENDPOINTS.COURSES.BASE}?status=${status}`;
+      }
+      
+      const response = await api.get(endpoint);
+      console.log(`Courses with status ${status} response:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching courses with status ${status}:`, error);
+      throw error;
+    }
+  },
+
   fetchPendingCourses: async () => {
     try {
+      console.log('Fetching pending courses');
       const response = await api.get(ENDPOINTS.ADMIN.COURSES.PENDING);
+      console.log('Pending courses response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching pending courses:', error);
@@ -36,7 +61,6 @@ const CourseService = {
     }
   },
 
-  // src/services/courseService.js
   approveCourse: async ({ courseId, notes }) => {
     try {
       if (!courseId) {
@@ -63,7 +87,6 @@ const CourseService = {
 
       // Log successful response
       console.log('Course approval response:', response.data);
-
       return response.data;
     } catch (error) {
       // Enhanced error logging
@@ -84,8 +107,8 @@ const CourseService = {
       }
 
       throw new Error(
-        error.response?.data?.message || 
-        error.message || 
+        error.response?.data?.message ||
+        error.message ||
         'Failed to approve course'
       );
     }
@@ -128,8 +151,8 @@ const CourseService = {
       }
 
       throw new Error(
-        error.response?.data?.message || 
-        error.message || 
+        error.response?.data?.message ||
+        error.message ||
         'Failed to reject course'
       );
     }
@@ -143,7 +166,6 @@ const CourseService = {
 
       // Convert courseId to string if it's a number
       const id = courseId.toString();
-
       const response = await api.get(ENDPOINTS.ADMIN.COURSES.APPROVAL_HISTORY(id));
       return response.data;
     } catch (error) {
@@ -152,6 +174,7 @@ const CourseService = {
         status: error.response?.status,
         data: error.response?.data
       });
+
       throw new Error(error.response?.data?.message || error.message || 'Failed to fetch approval history');
     }
   },
@@ -161,13 +184,13 @@ const CourseService = {
     if (!courseId) {
       throw new Error('Course ID is required');
     }
-    
+
     // Ensure courseId is a valid number or string
     const id = courseId.toString();
     if (!id.match(/^\d+$/)) {
       throw new Error('Invalid course ID format');
     }
-    
+
     return id;
   }
 };

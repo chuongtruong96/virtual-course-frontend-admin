@@ -33,6 +33,7 @@
     "chance": "^1.1.11",
     "chart.js": "^4.4.7",
     "d3": "^7.9.0",
+    "date-fns": "^4.1.0",
     "feather-icons": "^4.29.2",
     "file-saver": "^2.0.5",
     "formik": "^2.4.5",

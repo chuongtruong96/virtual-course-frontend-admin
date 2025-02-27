@@ -1,4 +1,5 @@
 // src/layouts/AdminLayout/NavBar/NavRight/index.jsx
+// src/layouts/AdminLayout/NavBar/NavRight/index.jsx
 import React, { useContext, useState } from 'react';
 import { ListGroup, Dropdown, Badge, Button, Card } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
@@ -13,7 +14,7 @@ import CustomToggle from '../../../../components/CustomToggle';
 const NavRight = () => {
   const [listOpen, setListOpen] = useState(false);
   const { auth, logout } = useContext(AuthContext);
-  const { notifications, removeNotification } = useContext(NotificationContext);
+  const { notifications = [], removeNotification, clearAllNotifications } = useContext(NotificationContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -22,11 +23,13 @@ const NavRight = () => {
   };
 
   const handleMarkAsRead = () => {
-    notifications.forEach((notification) => removeNotification(notification.id));
+    if (notifications && notifications.length > 0) {
+      notifications.forEach((notification) => removeNotification(notification.id));
+    }
   };
 
   const handleClearAll = () => {
-    notifications.forEach((notification) => removeNotification(notification.id));
+    clearAllNotifications();
   };
 
   let userName = 'John Doe';
@@ -48,7 +51,7 @@ const NavRight = () => {
               id="dropdown-notification"
             >
               <i data-feather="bell" style={{ color: 'inherit' }}></i>
-              {notifications.length > 0 && (
+              {notifications && notifications.length > 0 && (
                 <Badge
                   bg="danger"
                   pill
@@ -61,7 +64,7 @@ const NavRight = () => {
             <Dropdown.Menu align="end" className="notification notification-scroll">
               <div className="noti-head d-flex justify-content-between align-items-center p-3">
                 <h6 className="d-inline-block m-b-0">Notifications</h6>
-                {notifications.length > 0 && (
+                {notifications && notifications.length > 0 && (
                   <div>
                     <Button variant="link" className="me-2" onClick={handleMarkAsRead}>
                       Mark as read
@@ -74,7 +77,7 @@ const NavRight = () => {
               </div>
               <PerfectScrollbar style={{ maxHeight: '300px' }}>
                 <ListGroup as="ul" bsPrefix=" " variant="flush" className="noti-body">
-                  {notifications.length > 0 ? (
+                  {notifications && notifications.length > 0 ? (
                     notifications.map((notification) => (
                       <ListGroup.Item
                         key={notification.id}
@@ -93,7 +96,7 @@ const NavRight = () => {
                           />
                           <Card.Body className="p-0 ms-2 flex-grow-1">
                             <p>
-                              <strong>Notification</strong>
+                              <strong>{notification.type || 'Notification'}</strong>
                               <span className="n-time text-muted ms-2">
                                 <i data-feather="clock" className="me-1"></i>
                                 {new Date(notification.timestamp).toLocaleTimeString()}
@@ -123,7 +126,7 @@ const NavRight = () => {
                 </ListGroup>
               </PerfectScrollbar>
               <div className="noti-footer p-3 text-center">
-                <Link to="#">Show all</Link>
+                <Link to="/notifications">View all</Link>
               </div>
             </Dropdown.Menu>
           </Dropdown>
