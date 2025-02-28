@@ -1,42 +1,224 @@
-import React, { useState } from 'react';
-import { Card, Table, Button, Modal, Form, Spinner, Badge, Alert } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Card,
+  CardHeader,
+  CardContent,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  CircularProgress,
+  Alert,
+  Chip,
+  Divider,
+  FormControlLabel,
+  Checkbox,
+  Stepper,
+  Step,
+  StepLabel,
+  Rating,
+  IconButton,
+  Tooltip,
+  Grid,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  Radio,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
+} from '@mui/material';
+import {
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Clock,
+  ChevronDown,
+  Info,
+  Search,
+  BookOpen,
+  DollarSign,
+  User,
+  Calendar,
+  FileText,
+  Award
+} from 'lucide-react';
 import useCourseApproval from '../../hooks/useCourseApproval';
 import useCourses from '../../hooks/useCourses';
 
+// Approval criteria for courses
+const APPROVAL_CRITERIA = [
+  {
+    id: 'contentQuality',
+    label: 'Content Quality',
+    description: 'Evaluate the quality, accuracy, and relevance of the course content',
+    required: true,
+    options: [
+      { value: 'exceeds', label: 'Exceeds Requirements', description: 'Content is comprehensive, up-to-date, and highly relevant' },
+      { value: 'meets', label: 'Meets Requirements', description: 'Content is accurate and covers all necessary topics' },
+      { value: 'below', label: 'Below Requirements', description: 'Content has significant gaps or inaccuracies' }
+    ]
+  },
+  {
+    id: 'structureOrganization',
+    label: 'Structure and Organization',
+    description: 'Evaluate how well the course is structured and organized',
+    required: true,
+    options: [
+      { value: 'exceeds', label: 'Exceeds Requirements', description: 'Exceptionally well-structured with clear progression' },
+      { value: 'meets', label: 'Meets Requirements', description: 'Logically organized with reasonable flow' },
+      { value: 'below', label: 'Below Requirements', description: 'Poorly organized or difficult to follow' }
+    ]
+  },
+  {
+    id: 'presentationQuality',
+    label: 'Presentation Quality',
+    description: 'Evaluate the quality of videos, audio, and visual materials',
+    required: true,
+    options: [
+      { value: 'exceeds', label: 'Exceeds Requirements', description: 'High-quality production with excellent visuals and audio' },
+      { value: 'meets', label: 'Meets Requirements', description: 'Clear presentation with acceptable quality' },
+      { value: 'below', label: 'Below Requirements', description: 'Poor quality that hinders learning' }
+    ]
+  },
+  {
+    id: 'pricingValue',
+    label: 'Pricing and Value',
+    description: 'Evaluate if the course pricing is appropriate for the content provided',
+    required: true,
+    options: [
+      { value: 'exceeds', label: 'Exceeds Requirements', description: 'Excellent value for the price' },
+      { value: 'meets', label: 'Meets Requirements', description: 'Fair pricing for the content offered' },
+      { value: 'below', label: 'Below Requirements', description: 'Overpriced for the quality and quantity of content' }
+    ]
+  },
+  {
+    id: 'technicalRequirements',
+    label: 'Technical Requirements',
+    description: 'Evaluate if the course meets platform technical standards',
+    required: false,
+    options: [
+      { value: 'exceeds', label: 'Exceeds Requirements', description: 'Exceeds all technical requirements with additional features' },
+      { value: 'meets', label: 'Meets Requirements', description: 'Meets all required technical specifications' },
+      { value: 'below', label: 'Below Requirements', description: 'Fails to meet one or more technical requirements' }
+    ]
+  }
+];
+
+// Common rejection reasons
+const COMMON_REJECTION_REASONS = [
+  {
+    category: 'Content Issues',
+    reasons: [
+      'Content contains factual errors or outdated information',
+      'Content lacks depth or is too superficial for the topic',
+      'Content does not match the course description or objectives'
+    ]
+  },
+  {
+    category: 'Quality Issues',
+    reasons: [
+      'Poor video/audio quality that impacts learning experience',
+      'Presentation is unclear or difficult to follow',
+      'Materials contain spelling, grammar, or formatting errors'
+    ]
+  },
+  {
+    category: 'Structure Issues',
+    reasons: [
+      'Course structure is illogical or poorly organized',
+      'Missing important sections or modules',
+      'Inadequate assessments or practice opportunities'
+    ]
+  },
+  {
+    category: 'Pricing Issues',
+    reasons: [
+      'Course is significantly overpriced for the content provided',
+      'Length of course does not justify the price point',
+      'Similar content is available at a much lower price point'
+    ]
+  }
+];
+
 const PendingCourses = () => {
   const navigate = useNavigate();
-  const { pendingCourses, isLoading, isError, error } = useCourses('pending');
+  const { pendingCourses, isLoading, isError, error, refetch } = useCourses('pending');
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const { 
+  const {
     approvalHistory,
-    approveCourse, 
+    approveCourse,
     rejectCourse,
     isApproving,
     isRejecting
   } = useCourseApproval(selectedCourse?.id);
 
-  // Modal states
-  const [showApproveModal, setShowApproveModal] = useState(false);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [notes, setNotes] = useState('');
+  // Dialog states
+  const [approveDialog, setApproveDialog] = useState({ open: false, course: null });
+  const [rejectDialog, setRejectDialog] = useState({ open: false, course: null });
+  const [historyDialog, setHistoryDialog] = useState({ open: false, course: null });
+  
+  // Form states
+  const [approvalNotes, setApprovalNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
-  const [approvalChecklist, setApprovalChecklist] = useState({
-    contentComplete: false,
-    pricingAppropriate: false,
-    technicalRequirements: false,
-    instructorVerified: false
-  });
+  const [customRejectionReason, setCustomRejectionReason] = useState('');
+  const [selectedRejectCategory, setSelectedRejectCategory] = useState('');
+  const [activeStep, setActiveStep] = useState(0);
+  const [evaluations, setEvaluations] = useState({});
+  const [overallRating, setOverallRating] = useState(0);
+  
+  // Debug the pendingCourses data when it changes
+  useEffect(() => {
+    if (pendingCourses) {
+      console.log('Pending courses data:', pendingCourses);
+    }
+  }, [pendingCourses]);
 
   const renderInstructorName = (instructor) => {
     if (!instructor) return 'N/A';
-    return `${instructor.firstName || ''} ${instructor.lastName || ''}`.trim() || 'N/A';
+    // Check for different property structures that might exist
+    if (instructor.firstName || instructor.lastName) {
+      return `${instructor.firstName || ''} ${instructor.lastName || ''}`.trim() || 'N/A';
+    } else if (instructor.account && (instructor.account.firstName || instructor.account.lastName)) {
+      return `${instructor.account.firstName || ''} ${instructor.account.lastName || ''}`.trim() || 'N/A';
+    } else if (instructor.username) {
+      return instructor.username;
+    } else if (instructor.name) {
+      return instructor.name;
+    }
+    return 'N/A';
   };
 
   const renderCategory = (category) => {
     if (!category) return 'N/A';
-    return category.name || 'N/A';
+    // Check for different property structures
+    if (typeof category === 'string') return category;
+    return category.name || category.categoryName || 'N/A';
+  };
+
+  const formatPrice = (price) => {
+    if (!price && price !== 0) return 'N/A';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(price);
   };
 
   const formatSubmissionDate = (date) => {
@@ -50,87 +232,180 @@ const PendingCourses = () => {
     });
   };
 
-  const handleApprove = () => {
-    if (!selectedCourse?.id) {
-      console.error('No course selected for approval');
-      return;
-    }
-
-    if (!Object.values(approvalChecklist).every(Boolean)) {
-      alert('Please complete all checklist items before approving');
-      return;
-    }
-
-    try {
-      const courseId = Number(selectedCourse.id);
-      if (isNaN(courseId)) {
-        throw new Error('Invalid course ID');
-      }
-
-      console.log('Attempting to approve course:', {
-        courseId,
-        notes
-      });
-
-      approveCourse({ 
-        courseId,
-        notes: notes || ''
-      });
-      
-      setShowApproveModal(false);
-      setSelectedCourse(null);
-      setNotes('');
-      setApprovalChecklist({
-        contentComplete: false,
-        pricingAppropriate: false,
-        technicalRequirements: false,
-        instructorVerified: false
-      });
-    } catch (error) {
-      console.error('Error during course approval:', error);
-      alert(error.message || 'Failed to approve course');
+  const getLevelColor = (level) => {
+    if (!level) return 'default';
+    
+    switch(level.toLowerCase()) {
+      case 'beginner':
+        return 'success';
+      case 'intermediate':
+        return 'primary';
+      case 'advanced':
+        return 'error';
+      default:
+        return 'default';
     }
   };
 
-  const handleReject = async () => {
-    if (!rejectionReason.trim()) {
+  const handleApproveClick = (course) => {
+    setSelectedCourse(course);
+    setApproveDialog({ open: true, course });
+    setActiveStep(0);
+    setEvaluations({});
+    setOverallRating(0);
+    setApprovalNotes('');
+  };
+
+  const handleRejectClick = (course) => {
+    setSelectedCourse(course);
+    setRejectDialog({ open: true, course });
+    setRejectionReason('');
+    setCustomRejectionReason('');
+    setSelectedRejectCategory('');
+  };
+
+  const handleHistoryClick = (course) => {
+    setSelectedCourse(course);
+    setHistoryDialog({ open: true, course });
+  };
+
+  const handleNext = () => {
+    setActiveStep((prevStep) => prevStep + 1);
+  };
+
+  const handleBack = () => {
+    setActiveStep((prevStep) => prevStep - 1);
+  };
+
+  const handleEvaluationChange = (criteriaId, value) => {
+    setEvaluations(prev => ({
+      ...prev,
+      [criteriaId]: value
+    }));
+  };
+
+  const handleApprove = () => {
+    // Check if all required criteria have been evaluated
+    const requiredCriteria = APPROVAL_CRITERIA.filter(criteria => criteria.required);
+    const allRequiredEvaluated = requiredCriteria.every(criteria => 
+      evaluations[criteria.id] && evaluations[criteria.id] !== 'below'
+    );
+
+    if (!allRequiredEvaluated) {
+      alert('Please evaluate all required criteria and ensure the course meets minimum requirements');
+      return;
+    }
+
+    if (overallRating < 3) {
+      alert('Overall rating must be at least 3 stars for approval');
+      return;
+    }
+
+    if (approveDialog.course) {
+      // Create detailed approval notes
+      const detailedNotes = `
+Overall Rating: ${overallRating}/5 stars
+${Object.entries(evaluations).map(([key, value]) => {
+  const criteria = APPROVAL_CRITERIA.find(c => c.id === key);
+  const option = criteria?.options.find(o => o.value === value);
+  return `${criteria?.label}: ${option?.label}`;
+}).join('\n')}
+
+Additional Notes: ${approvalNotes}
+      `.trim();
+
+      approveCourse({
+        courseId: approveDialog.course.id,
+        notes: detailedNotes
+      });
+      
+      setApproveDialog({ open: false, course: null });
+      
+      // Reset form state after successful submission
+      setTimeout(() => {
+        setSelectedCourse(null);
+        setEvaluations({});
+        setOverallRating(0);
+        setApprovalNotes('');
+        refetch(); // Refresh the course list
+      }, 500);
+    }
+  };
+
+  const handleReject = () => {
+    let finalReason = '';
+
+    if (selectedRejectCategory && rejectionReason) {
+      finalReason = `${selectedRejectCategory}: ${rejectionReason}`;
+    } else if (customRejectionReason) {
+      finalReason = customRejectionReason;
+    } else {
       alert('Please provide a reason for rejection');
       return;
     }
 
-    try {
+    if (!finalReason.trim()) {
+      alert('Please provide a reason for rejection');
+      return;
+    }
+
+    if (rejectDialog.course) {
       rejectCourse({
-        courseId: selectedCourse.id,
-        reason: rejectionReason
+        courseId: rejectDialog.course.id,
+        reason: finalReason
       });
-      setShowRejectModal(false);
-      setSelectedCourse(null);
-      setRejectionReason('');
-    } catch (error) {
-      console.error('Error rejecting course:', error);
+      
+      setRejectDialog({ open: false, course: null });
+      
+      // Reset form state after successful submission
+      setTimeout(() => {
+        setSelectedCourse(null);
+        setRejectionReason('');
+        setCustomRejectionReason('');
+        setSelectedRejectCategory('');
+        refetch(); // Refresh the course list
+      }, 500);
     }
   };
 
-  const handleChecklistChange = (field) => {
-    setApprovalChecklist(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
+  const isStepComplete = (step) => {
+    if (step === 0) {
+      // Check if all required criteria have been evaluated
+      const requiredCriteria = APPROVAL_CRITERIA.filter(criteria => criteria.required);
+      return requiredCriteria.every(criteria => evaluations[criteria.id]);
+    }
+    if (step === 1) {
+      return overallRating > 0;
+    }
+    return true;
+  };
+
+  const canApprove = () => {
+    // Check if all required criteria have been evaluated and meet requirements
+    const requiredCriteria = APPROVAL_CRITERIA.filter(criteria => criteria.required);
+    const allRequiredMet = requiredCriteria.every(criteria => 
+      evaluations[criteria.id] && evaluations[criteria.id] !== 'below'
+    );
+    
+    return allRequiredMet && overallRating >= 3 && approvalNotes.trim().length > 0;
   };
 
   if (isLoading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
-        <Spinner animation="border" />
-      </div>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   if (isError) {
     return (
-      <Alert variant="danger">
-        <h5>Error loading courses</h5>
-        <p>{error?.message || 'An unknown error occurred'}</p>
+      <Alert severity="error" sx={{ mb: 3 }}>
+        <Box display="flex" alignItems="center" mb={1}>
+          <AlertTriangle size={20} style={{ marginRight: 8 }} />
+          <Typography variant="h6">Error Loading Courses</Typography>
+        </Box>
+        <Typography>{error?.message || 'An unknown error occurred'}</Typography>
       </Alert>
     );
   }
@@ -138,252 +413,574 @@ const PendingCourses = () => {
   return (
     <>
       <Card>
-        <Card.Header>
-          <Card.Title>Pending Courses</Card.Title>
-        </Card.Header>
-        <Card.Body>
-          {(!pendingCourses || !Array.isArray(pendingCourses) || pendingCourses.length === 0) ? (
-            <Alert variant="info">
-              <p className="mb-0">No pending courses found</p>
+        <CardHeader 
+          title="Pending Courses" 
+          subheader={`${pendingCourses?.length || 0} courses awaiting review`}
+        />
+        <CardContent>
+        {(!pendingCourses || !Array.isArray(pendingCourses) || pendingCourses.length === 0) ? (
+            <Alert severity="info">
+              <Typography>No pending courses found</Typography>
             </Alert>
           ) : (
-            <Table responsive>
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Instructor</th>
-                  <th>Category</th>
-                  <th>Level</th>
-                  <th>Duration</th>
-                  <th>Price</th>
-                  <th>Submitted Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.isArray(pendingCourses) &&
-                  pendingCourses.map(course => (
-                    <tr key={course.id}>
-                      <td>{course.titleCourse || 'N/A'}</td>
-                      <td>{renderInstructorName(course.instructor)}</td>
-                      <td>{renderCategory(course.category)}</td>
-                      <td>
-                        <Badge bg="info">{course.level || 'N/A'}</Badge>
-                      </td>
-                      <td>{course.duration ? `${course.duration} hrs` : 'N/A'}</td>
-                      <td>{course.price ? `$${course.price}` : 'N/A'}</td>
-                      <td>{formatSubmissionDate(course.createdAt)}</td>
-                      <td>
-                        <div className="d-flex gap-2">
-                          <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCourse(course);
-                              setShowApproveModal(true);
-                            }}
-                            disabled={isApproving}
-                          >
-                            {isApproving ? 'Approving...' : 'Approve'}
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCourse(course);
-                              setShowRejectModal(true);
-                            }}
-                            disabled={isRejecting}
-                          >
-                            {isRejecting ? 'Rejecting...' : 'Reject'}
-                          </Button>
-                          <Button
-                            variant="info"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCourse(course);
-                              setShowHistoryModal(true);
-                            }}
-                          >
-                            History
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                }
-              </tbody>
-            </Table>
+            <TableContainer component={Paper}>
+              <Table sx={{ minWidth: 650 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Title</TableCell>
+                    <TableCell>Instructor</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell>Level</TableCell>
+                    <TableCell>Duration</TableCell>
+                    <TableCell>Price</TableCell>
+                    <TableCell>Submitted Date</TableCell>
+                    <TableCell align="center">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {Array.isArray(pendingCourses) &&
+                    pendingCourses.map(course => (
+                      <TableRow key={course.id} hover>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="medium">
+                            {course.titleCourse || course.title || 'N/A'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{renderInstructorName(course.instructor)}</TableCell>
+                        <TableCell>{renderCategory(course.category || course.categoryName)}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={course.level || 'N/A'} 
+                            size="small" 
+                            color={getLevelColor(course.level)}
+                          />
+                        </TableCell>
+                        <TableCell>{course.duration ? `${course.duration} hrs` : 'N/A'}</TableCell>
+                        <TableCell>{formatPrice(course.basePrice || course.price)}</TableCell>
+                        <TableCell>{formatSubmissionDate(course.createdAt || course.submittedAt)}</TableCell>
+                        <TableCell>
+                          <Box display="flex" justifyContent="center" gap={1}>
+                            <Button
+                              variant="contained"
+                              color="success"
+                              size="small"
+                              startIcon={<CheckCircle size={16} />}
+                              onClick={() => handleApproveClick(course)}
+                              disabled={isApproving}
+                            >
+                              {isApproving ? 'Approving...' : 'Approve'}
+                            </Button>
+                            <Button
+                              variant="contained"
+                              color="error"
+                              size="small"
+                              startIcon={<XCircle size={16} />}
+                              onClick={() => handleRejectClick(course)}
+                              disabled={isRejecting}
+                            >
+                              {isRejecting ? 'Rejecting...' : 'Reject'}
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="info"
+                              size="small"
+                              startIcon={<Clock size={16} />}
+                              onClick={() => handleHistoryClick(course)}
+                            >
+                              History
+                            </Button>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  }
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
-        </Card.Body>
+        </CardContent>
       </Card>
 
-      {/* Approve Modal */}
-      <Modal show={showApproveModal} onHide={() => setShowApproveModal(false)} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Approve Course: {selectedCourse?.titleCourse}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <div className="mb-4">
-            <h6 className="mb-3">Course Details:</h6>
-            <p><strong>Instructor:</strong> {selectedCourse && renderInstructorName(selectedCourse.instructor)}</p>
-            <p><strong>Category:</strong> {selectedCourse && renderCategory(selectedCourse.category)}</p>
-            <p><strong>Level:</strong> {selectedCourse?.level}</p>
-            <p><strong>Duration:</strong> {selectedCourse?.duration} hours</p>
-            <p><strong>Price:</strong> ${selectedCourse?.price}</p>
-          </div>
+      {/* Approve Dialog */}
+      <Dialog
+        open={approveDialog.open}
+        onClose={() => setApproveDialog({ open: false, course: null })}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center">
+            <CheckCircle color="success" size={24} style={{ marginRight: 8 }} />
+            Approve Course
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box mb={3}>
+            <Typography variant="h6" gutterBottom>
+              {approveDialog.course?.titleCourse || approveDialog.course?.title}
+            </Typography>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12} sm={6}>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <User size={16} style={{ marginRight: 8 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Instructor: {approveDialog.course && renderInstructorName(approveDialog.course.instructor)}
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <BookOpen size={16} style={{ marginRight: 8 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Category: {approveDialog.course && renderCategory(approveDialog.course.category || approveDialog.course.categoryName)}
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="center">
+                  <Award size={16} style={{ marginRight: 8 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Level: {approveDialog.course?.level || 'N/A'}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <Clock size={16} style={{ marginRight: 8 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Duration: {approveDialog.course?.duration ? `${approveDialog.course.duration} hours` : 'N/A'}
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <DollarSign size={16} style={{ marginRight: 8 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Price: {formatPrice(approveDialog.course?.basePrice || approveDialog.course?.price)}
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="center">
+                  <Calendar size={16} style={{ marginRight: 8 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Submitted: {formatSubmissionDate(approveDialog.course?.createdAt || approveDialog.course?.submittedAt)}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Box>
 
-          <Form>
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-bold">Approval Checklist</Form.Label>
-              <div className="border rounded p-3">
-                <Form.Check 
-                  type="checkbox"
-                  id="content-complete"
-                  label="Course content is complete and well-structured"
-                  checked={approvalChecklist.contentComplete}
-                  onChange={() => handleChecklistChange('contentComplete')}
-                  className="mb-2"
-                />
-                <Form.Check 
-                  type="checkbox"
-                  id="pricing-appropriate"
-                  label="Pricing is appropriate for the content"
-                  checked={approvalChecklist.pricingAppropriate}
-                  onChange={() => handleChecklistChange('pricingAppropriate')}
-                  className="mb-2"
-                />
-                <Form.Check 
-                  type="checkbox"
-                  id="technical-requirements"
-                  label="Technical requirements are met"
-                  checked={approvalChecklist.technicalRequirements}
-                  onChange={() => handleChecklistChange('technicalRequirements')}
-                  className="mb-2"
-                />
-                <Form.Check 
-                  type="checkbox"
-                  id="instructor-verified"
-                  label="Instructor credentials verified"
-                  checked={approvalChecklist.instructorVerified}
-                  onChange={() => handleChecklistChange('instructorVerified')}
-                />
-              </div>
-            </Form.Group>
+          <Divider sx={{ my: 2 }} />
 
-            <Form.Group>
-              <Form.Label>Approval Notes</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add any notes about the approval..."
+          <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+            <Step key="evaluation">
+              <StepLabel>Criteria Evaluation</StepLabel>
+            </Step>
+            <Step key="overall">
+              <StepLabel>Overall Assessment</StepLabel>
+            </Step>
+            <Step key="notes">
+              <StepLabel>Notes & Confirmation</StepLabel>
+            </Step>
+          </Stepper>
+
+          {activeStep === 0 && (
+            <Box>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Evaluate by Criteria
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Please evaluate the course according to each criterion below. Criteria marked with (*) are required.
+              </Typography>
+
+              {APPROVAL_CRITERIA.map((criteria) => (
+                <Paper key={criteria.id} sx={{ p: 2, mb: 2 }}>
+                  <Box display="flex" alignItems="center" mb={1}>
+                    <Typography variant="subtitle2" fontWeight="bold">
+                      {criteria.label} {criteria.required && <span style={{ color: 'red' }}>*</span>}
+                    </Typography>
+                    <Tooltip title={criteria.description}>
+                      <IconButton size="small">
+                        <Info size={16} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                  <RadioGroup
+                    value={evaluations[criteria.id] || ''}
+                    onChange={(e) => handleEvaluationChange(criteria.id, e.target.value)}
+                  >
+                    {criteria.options.map((option) => (
+                      <FormControlLabel
+                        key={option.value}
+                        value={option.value}
+                        control={<Radio />}
+                        label={
+                          <Box>
+                            <Typography variant="body2">{option.label}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {option.description}
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                    ))}
+                  </RadioGroup>
+                </Paper>
+              ))}
+            </Box>
+          )}
+
+          {activeStep === 1 && (
+            <Box>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Overall Assessment
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Based on the criteria evaluation, please provide an overall assessment of the course.
+                A minimum of 3 stars is required for approval.
+              </Typography>
+
+              <Box display="flex" alignItems="center" mb={3}>
+                <Rating
+                  value={overallRating}
+                  onChange={(event, newValue) => {
+                    setOverallRating(newValue);
+                  }}
+                  size="large"
+                  precision={0.5}
+                />
+                <Typography variant="body2" ml={2}>
+                  {overallRating === 0 && 'Not rated'}
+                  {overallRating > 0 && overallRating < 3 && 'Below requirements'}
+                  {overallRating >= 3 && overallRating < 4 && 'Meets requirements'}
+                  {overallRating >= 4 && 'Excellent'}
+                </Typography>
+              </Box>
+
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Evaluation Summary
+              </Typography>
+              <Paper sx={{ p: 2 }}>
+                {Object.entries(evaluations).map(([key, value]) => {
+                  const criteria = APPROVAL_CRITERIA.find(c => c.id === key);
+                  const option = criteria?.options.find(o => o.value === value);
+                  return (
+                    <Box key={key} display="flex" justifyContent="space-between" mb={1}>
+                      <Typography variant="body2">{criteria?.label}:</Typography>
+                      <Chip 
+                        label={option?.label} 
+                        size="small" 
+                        color={
+                          value === 'exceeds' ? 'success' : 
+                          value === 'meets' ? 'primary' : 
+                          'error'
+                        }
+                      />
+                    </Box>
+                  );
+                })}
+              </Paper>
+            </Box>
+          )}
+
+          {activeStep === 2 && (
+            <Box>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Notes & Confirmation
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Please provide additional notes about your approval decision.
+                This information will be saved in the record and may be shared with the instructor.
+              </Typography>
+
+              <TextField
+                label="Approval Notes"
+                fullWidth
+                multiline
+                rows={4}
+                value={approvalNotes}
+                onChange={(e) => setApprovalNotes(e.target.value)}
+                placeholder="Enter notes about your approval decision..."
                 required
+                variant="outlined"
+                sx={{ mb: 3 }}
               />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowApproveModal(false)}>
+
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Approval Confirmation
+              </Typography>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  When approved, the course will be published and available to students.
+                  Ensure that you have thoroughly evaluated all criteria.
+                </Typography>
+              </Alert>
+
+              <Paper sx={{ p: 2, bgcolor: 'success.light' }}>
+                <Box display="flex" alignItems="center">
+                  <CheckCircle color="success" size={24} style={{ marginRight: 8 }} />
+                  <Typography variant="body1" fontWeight="bold">
+                    Ready for Approval
+                  </Typography>
+                </Box>
+                <Typography variant="body2" mt={1}>
+                  Overall Rating: {overallRating}/5 stars
+                </Typography>
+              </Paper>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setApproveDialog({ open: false, course: null })}>
             Cancel
           </Button>
-          <Button 
-            variant="success" 
-            onClick={handleApprove}
-            disabled={isApproving || !notes.trim() || !Object.values(approvalChecklist).every(Boolean)}
-          >
-            {isApproving ? 'Approving...' : 'Approve Course'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+          {activeStep > 0 && (
+            <Button onClick={handleBack}>
+              Back
+            </Button>
+          )}
+          {activeStep < 2 ? (
+            <Button 
+              onClick={handleNext}
+              variant="contained" 
+              color="primary"
+              disabled={!isStepComplete(activeStep)}
+            >
+              Next
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleApprove}
+              variant="contained" 
+              color="success"
+              disabled={!canApprove()}
+            >
+              Approve Course
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
 
-      {/* Reject Modal */}
-      <Modal show={showRejectModal} onHide={() => setShowRejectModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Reject Course: {selectedCourse?.titleCourse}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <div className="mb-4">
-            <h6 className="mb-3">Course Details:</h6>
-            <p><strong>Instructor:</strong> {selectedCourse && renderInstructorName(selectedCourse.instructor)}</p>
-            <p><strong>Category:</strong> {selectedCourse && renderCategory(selectedCourse.category)}</p>
-            <p><strong>Level:</strong> {selectedCourse?.level}</p>
-            <p><strong>Duration:</strong> {selectedCourse?.duration} hours</p>
-            <p><strong>Price:</strong> ${selectedCourse?.price}</p>
-          </div>
+      {/* Reject Dialog */}
+      <Dialog
+        open={rejectDialog.open}
+        onClose={() => setRejectDialog({ open: false, course: null })}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center">
+            <XCircle color="error" size={24} style={{ marginRight: 8 }} />
+            Reject Course
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box mb={3}>
+            <Typography variant="h6" gutterBottom>
+              {rejectDialog.course?.titleCourse || rejectDialog.course?.title}
+            </Typography>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12} sm={6}>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <User size={16} style={{ marginRight: 8 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Instructor: {rejectDialog.course && renderInstructorName(rejectDialog.course.instructor)}
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <BookOpen size={16} style={{ marginRight: 8 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Category: {rejectDialog.course && renderCategory(rejectDialog.course.category || rejectDialog.course.categoryName)}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <Clock size={16} style={{ marginRight: 8 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Duration: {rejectDialog.course?.duration ? `${rejectDialog.course.duration} hours` : 'N/A'}
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <DollarSign size={16} style={{ marginRight: 8 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Price: {formatPrice(rejectDialog.course?.basePrice || rejectDialog.course?.price)}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Box>
 
-          <Form>
-            <Form.Group>
-              <Form.Label>Rejection Reason</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
+          <Divider sx={{ my: 2 }} />
+
+          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+            Rejection Reason
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Please select a category and reason for rejection or provide a custom reason.
+            This information will be sent to the instructor.
+          </Typography>
+
+          <FormControl fullWidth sx={{ mb: 3 }}>
+            <FormLabel>Select Category</FormLabel>
+            <RadioGroup
+              value={selectedRejectCategory}
+              onChange={(e) => setSelectedRejectCategory(e.target.value)}
+            >
+              {COMMON_REJECTION_REASONS.map((category) => (
+                <FormControlLabel
+                  key={category.category}
+                  value={category.category}
+                  control={<Radio />}
+                  label={category.category}
+                />
+              ))}
+              <FormControlLabel
+                value="custom"
+                control={<Radio />}
+                label="Other Reason"
+              />
+            </RadioGroup>
+          </FormControl>
+
+          {selectedRejectCategory && selectedRejectCategory !== 'custom' && (
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <FormLabel>Select Specific Reason</FormLabel>
+              <RadioGroup
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Explain why the course is being rejected..."
-                required
-              />
-              <Form.Text className="text-muted">
-                Please provide a detailed explanation to help the instructor understand what needs to be improved.
-              </Form.Text>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowRejectModal(false)}>
+              >
+                {COMMON_REJECTION_REASONS
+                  .find(cat => cat.category === selectedRejectCategory)
+                  ?.reasons.map((reason, index) => (
+                    <FormControlLabel
+                      key={index}
+                      value={reason}
+                      control={<Radio />}
+                      label={reason}
+                    />
+                  ))}
+              </RadioGroup>
+            </FormControl>
+          )}
+
+          {selectedRejectCategory === 'custom' && (
+            <TextField
+              label="Custom Rejection Reason"
+              fullWidth
+              multiline
+              rows={4}
+              value={customRejectionReason}
+              onChange={(e) => setCustomRejectionReason(e.target.value)}
+              placeholder="Enter detailed rejection reason..."
+              required
+              variant="outlined"
+              sx={{ mb: 3 }}
+            />
+          )}
+
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              Rejecting the course will change its status to "REJECTED".
+              The instructor will receive a notification with the rejection reason.
+              They will be able to make changes and resubmit the course.
+            </Typography>
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRejectDialog({ open: false, course: null })}>
             Cancel
           </Button>
           <Button 
-            variant="danger" 
             onClick={handleReject}
-            disabled={isRejecting || !rejectionReason.trim()}
+            variant="contained" 
+            color="error"
+            disabled={
+              (selectedRejectCategory !== 'custom' && !rejectionReason) ||
+              (selectedRejectCategory === 'custom' && !customRejectionReason.trim()) ||
+              !selectedRejectCategory
+            }
           >
-            {isRejecting ? 'Rejecting...' : 'Reject Course'}
+            Reject Course
           </Button>
-        </Modal.Footer>
-      </Modal>
+        </DialogActions>
+      </Dialog>
 
-      {/* History Modal */}
-      <Modal show={showHistoryModal} onHide={() => setShowHistoryModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Approval History: {selectedCourse?.titleCourse}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
+      {/* History Dialog */}
+      <Dialog
+        open={historyDialog.open}
+        onClose={() => setHistoryDialog({ open: false, course: null })}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center">
+            <Clock size={24} style={{ marginRight: 8 }} />
+            Course Approval History
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="h6" gutterBottom>
+            {historyDialog.course?.titleCourse || historyDialog.course?.title}
+          </Typography>
+          
+          <Divider sx={{ my: 2 }} />
+          
           {approvalHistory?.length > 0 ? (
-            <div className="timeline">
+            <Box>
               {approvalHistory.map((history, index) => (
-                <div key={index} className="mb-3 pb-3 border-bottom">
-                  <div className="d-flex justify-content-between">
-                    <strong>{history.status}</strong>
-                    <small>{formatSubmissionDate(history.createdAt)}</small>
-                  </div>
-                  <p className="mb-1">
+                <Paper key={index} sx={{ p: 2, mb: 2, bgcolor: 
+                  history.status === 'APPROVED' ? 'success.light' : 
+                  history.status === 'REJECTED' ? 'error.light' : 
+                  'info.light' 
+                }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Box display="flex" alignItems="center">
+                      {history.status === 'APPROVED' && <CheckCircle color="success" size={20} style={{ marginRight: 8 }} />}
+                      {history.status === 'REJECTED' && <XCircle color="error" size={20} style={{ marginRight: 8 }} />}
+                      {history.status !== 'APPROVED' && history.status !== 'REJECTED' && <Info size={20} style={{ marginRight: 8 }} />}
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        {history.status}
+                      </Typography>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatSubmissionDate(history.createdAt)}
+                    </Typography>
+                  </Box>
+                  
+                  <Typography variant="body2" mb={1}>
                     <strong>Reviewer:</strong> {history.reviewer?.username || 'N/A'}
-                  </p>
+                  </Typography>
+                  
                   {history.notes && (
-                    <p className="mb-1">
-                      <strong>Notes:</strong> {history.notes}
-                    </p>
+                    <Box mt={1}>
+                      <Typography variant="body2" fontWeight="medium">
+                        Notes:
+                      </Typography>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+                        {history.notes}
+                      </Typography>
+                    </Box>
                   )}
+                  
                   {history.rejectionReason && (
-                    <p className="mb-1">
-                      <strong>Reason:</strong> {history.rejectionReason}
-                    </p>
+                    <Box mt={1}>
+                      <Typography variant="body2" fontWeight="medium" color="error.main">
+                        Rejection Reason:
+                      </Typography>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+                        {history.rejectionReason}
+                      </Typography>
+                    </Box>
                   )}
-                </div>
+                </Paper>
               ))}
-            </div>
+            </Box>
           ) : (
-            <Alert variant="info">No approval history available</Alert>
+            <Alert severity="info">
+              <Typography>No approval history available for this course</Typography>
+            </Alert>
           )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowHistoryModal(false)}>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHistoryDialog({ open: false, course: null })}>
             Close
           </Button>
-        </Modal.Footer>
-      </Modal>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

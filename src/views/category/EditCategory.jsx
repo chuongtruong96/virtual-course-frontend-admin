@@ -25,6 +25,8 @@ import { UPLOAD_PATH } from '../../config/endpoints';
 
 const EditCategory = () => {
   const { id } = useParams();
+  console.log("Category ID from URL params:", id); // Debug log
+
   const navigate = useNavigate();
   const { addNotification } = useContext(NotificationContext);
   
@@ -47,20 +49,47 @@ const EditCategory = () => {
   }, [id]);
 
   const fetchCategory = async () => {
+    if (!id) {
+      console.error("No category ID provided");
+      setError("No category ID provided");
+      setLoading(false);
+      return;
+    }
+    
+    console.log("Fetching category with ID:", id); // Debug log
     try {
-      const category = await CategoryService.fetchCategoryById(id);
+      // First try to fetch with stats
+      const categoryWithStats = await CategoryService.fetchCategoryWithStatsById(id);
+      console.log("Category with stats:", categoryWithStats); // Debug log
       setFormData({
-        name: category.name,
-        description: category.description || '',
-        image: category.image || ''
+        name: categoryWithStats.category.name,
+        description: categoryWithStats.category.description || '',
+        image: categoryWithStats.category.image || ''
       });
-      if (category.image) {
-        setImagePreview(`${UPLOAD_PATH.CATEGORY}/${category.image}`);
+      if (categoryWithStats.category.image) {
+        setImagePreview(categoryWithStats.category.image);
       }
     } catch (err) {
-      console.error('Error fetching category:', err);
-      setError('Failed to load category');
-      addNotification('Failed to load category', 'danger');
+      console.error("Error fetching category with stats:", err);
+
+      try {
+        // Fallback to regular fetch if with-stats endpoint fails
+        const category = await CategoryService.fetchCategoryById(id);
+        console.log("Category (fallback):", category); // Debug log
+        
+        setFormData({
+          name: category.name,
+          description: category.description || '',
+          image: category.image || ''
+        });
+        if (category.image) {
+          setImagePreview(category.image);
+        }
+      } catch (fetchErr) {
+        console.error('Error fetching category:', fetchErr);
+        setError('Failed to load category');
+        addNotification('Failed to load category', 'danger');
+      }
     } finally {
       setLoading(false);
     }

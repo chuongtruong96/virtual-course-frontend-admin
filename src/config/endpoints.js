@@ -31,6 +31,8 @@ const ENDPOINTS = {
       BASE: `${API_BASE}/admin/accounts`,
       BY_STATUS: `${API_BASE}/admin/accounts/by-status`,
       UPDATE_STATUS: (id) => `${API_BASE}/admin/accounts/${id}/status`,
+      ROLES: (id) => `${API_BASE}/admin/accounts/${id}/roles`, // Thêm endpoint này
+      CREATE: `${API_BASE}/admin/accounts/create`,
     },
 
     COURSES: {
@@ -64,6 +66,8 @@ const ENDPOINTS = {
   CATEGORIES: {
     BASE: `${API_BASE}/categories`,
     BY_ID: (id) => `${API_BASE}/categories/${id}`,
+    WITH_STATS: `${API_BASE}/categories/with-stats`,
+    BY_ID_WITH_STATS: (id) => `${API_BASE}/categories/${id}/with-stats`,
   },
 
   // Courses

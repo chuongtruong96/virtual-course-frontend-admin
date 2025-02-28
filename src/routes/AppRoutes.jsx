@@ -73,7 +73,7 @@ const AppRoutes = () => (
         <Route path="category">
           <Route path="list-category" element={<ListCategory />} />
           <Route path="add-category" element={<AddCategory />} />
-          <Route path="edit-category/:categoryId" element={<EditCategory />} />
+          <Route path="edit-category/:id" element={<EditCategory />} />
         </Route>
 
         {/* COURSE */}

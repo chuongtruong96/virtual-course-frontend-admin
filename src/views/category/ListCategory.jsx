@@ -30,7 +30,6 @@ import {
 } from 'lucide-react';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import CategoryService from '../../services/categoryService';
-import { UPLOAD_PATH } from '../../config/endpoints';
 
 const ListCategory = () => {
   const navigate = useNavigate();
@@ -51,9 +50,10 @@ const ListCategory = () => {
 
   const fetchCategories = async () => {
     try {
-      const data = await CategoryService.fetchAll();
+      const data = await CategoryService.fetchAllWithStats();
+      console.log("Categories with stats:", data); // Debug log
       setCategories(data);
-    } catch (err) {
+    } catch (err) { 
       console.error('Error fetching categories:', err);
       setError('Failed to load categories');
       addNotification('Failed to load categories', 'danger');
@@ -74,10 +74,18 @@ const ListCategory = () => {
     let sortedItems = [...categories];
     if (sortConfig.key) {
       sortedItems.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        // Handle the new structure where category data is nested
+        const aValue = sortConfig.key === 'name' || sortConfig.key === 'description' 
+          ? a.category[sortConfig.key] 
+          : a[sortConfig.key];
+        const bValue = sortConfig.key === 'name' || sortConfig.key === 'description'
+          ? b.category[sortConfig.key]
+          : b[sortConfig.key];
+
+        if (aValue < bValue) {
           return sortConfig.direction === 'asc' ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aValue > bValue) {
           return sortConfig.direction === 'asc' ? 1 : -1;
         }
         return 0;
@@ -86,17 +94,19 @@ const ListCategory = () => {
     return sortedItems;
   }, [categories, sortConfig]);
 
-  const filteredCategories = sortedCategories.filter(category =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCategories = sortedCategories.filter(categoryWithStats =>
+    categoryWithStats.category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    categoryWithStats.category.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDelete = async () => {
     if (!selectedCategory) return;
     
     try {
-      await CategoryService.deleteCategory(selectedCategory.id);
-      setCategories(categories.filter(cat => cat.id !== selectedCategory.id));
+      const categoryId = selectedCategory.category.id;
+      console.log("Deleting category with ID:", categoryId); // Debug log
+      await CategoryService.deleteCategory(categoryId);
+      setCategories(categories.filter(cat => cat.category.id !== categoryId));
       addNotification('Category deleted successfully', 'success');
       setShowDeleteModal(false);
       setSelectedCategory(null);
@@ -107,9 +117,23 @@ const ListCategory = () => {
   };
 
   const confirmDelete = (category) => {
+    console.log("Selected category for deletion:", category); // Debug log
     setSelectedCategory(category);
     setShowDeleteModal(true);
   };
+
+  // In ListCategory.jsx
+const handleEditCategory = (categoryWithStats) => {
+  if (!categoryWithStats || !categoryWithStats.category || !categoryWithStats.category.id) {
+    console.error("Invalid category data:", categoryWithStats);
+    addNotification('Cannot edit category: Invalid data', 'danger');
+    return;
+  }
+  
+  const categoryId = categoryWithStats.category.id;
+  console.log("Navigating to edit category with ID:", categoryId); // Debug log
+  navigate(`/dashboard/category/edit-category/${categoryId}`);
+};
 
   if (loading) {
     return (
@@ -124,27 +148,27 @@ const ListCategory = () => {
 
   const renderGridView = () => (
     <Row className="g-4">
-      {filteredCategories.map(category => (
-        <Col key={category.id} xs={12} md={6} lg={4}>
+      {filteredCategories.map(categoryWithStats => (
+        <Col key={categoryWithStats.category.id} xs={12} md={6} lg={4}>
           <Card className="h-100 shadow-sm hover-shadow">
             <div className="position-relative">
               <Card.Img
                 variant="top"
-                src={category.image ? `${UPLOAD_PATH.CATEGORY}/${category.image}` : '/virtualcourse/images/default-category.png'}
-                alt={category.name}
+                src={categoryWithStats.category.image ? categoryWithStats.category.image : '/virtualcourse/images/default-category.png'}
+                alt={categoryWithStats.category.name}
                 style={{ height: '200px', objectFit: 'cover' }}
               />
               <div className="position-absolute top-0 end-0 p-2">
                 <Badge bg="primary" className="me-2">
                   <Book size={14} className="me-1" />
-                  {category.courses?.length || 0} Courses
+                  {categoryWithStats.courseCount} Courses
                 </Badge>
               </div>
             </div>
             <Card.Body>
-              <Card.Title>{category.name}</Card.Title>
+              <Card.Title>{categoryWithStats.category.name}</Card.Title>
               <Card.Text className="text-muted">
-                {category.description || 'No description available'}
+                {categoryWithStats.category.description || 'No description available'}
               </Card.Text>
             </Card.Body>
             <Card.Footer className="bg-transparent border-top-0">
@@ -154,7 +178,7 @@ const ListCategory = () => {
                     <Button
                       variant="outline-primary"
                       size="sm"
-                      onClick={() => navigate(`/dashboard/category/edit-category/${category.id}`)}
+                      onClick={() => handleEditCategory(categoryWithStats)}
                     >
                       <Edit2 size={16} />
                     </Button>
@@ -163,7 +187,7 @@ const ListCategory = () => {
                     <Button
                       variant="outline-danger"
                       size="sm"
-                      onClick={() => confirmDelete(category)}
+                      onClick={() => confirmDelete(categoryWithStats)}
                     >
                       <Trash2 size={16} />
                     </Button>
@@ -191,14 +215,14 @@ const ListCategory = () => {
         </tr>
       </thead>
       <tbody>
-        {filteredCategories.map(category => (
-          <tr key={category.id}>
-            <td>{category.name}</td>
-            <td>{category.description || 'No description'}</td>
+        {filteredCategories.map(categoryWithStats => (
+          <tr key={categoryWithStats.category.id}>
+            <td>{categoryWithStats.category.name}</td>
+            <td>{categoryWithStats.category.description || 'No description'}</td>
             <td>
               <Image
-                src={category.image ? `${UPLOAD_PATH.CATEGORY}/${category.image}` : '/virtualcourse/images/default-category.png'}
-                alt={category.name}
+                src={categoryWithStats.category.image ? categoryWithStats.category.image : '/virtualcourse/images/default-category.png'}
+                alt={categoryWithStats.category.name}
                 width={50}
                 height={50}
                 rounded
@@ -207,7 +231,7 @@ const ListCategory = () => {
             <td>
               <Badge bg="primary">
                 <Book size={14} className="me-1" />
-                {category.courses?.length || 0}
+                {categoryWithStats.courseCount}
               </Badge>
             </td>
             <td>
@@ -215,14 +239,14 @@ const ListCategory = () => {
                 variant="outline-primary"
                 size="sm"
                 className="me-2"
-                onClick={() => navigate(`/dashboard/category/edit-category/${category.id}`)}
+                onClick={() => handleEditCategory(categoryWithStats)}
               >
                 <Edit2 size={16} />
               </Button>
               <Button
                 variant="outline-danger"
                 size="sm"
-                onClick={() => confirmDelete(category)}
+                onClick={() => confirmDelete(categoryWithStats)}
               >
                 <Trash2 size={16} />
               </Button>
@@ -297,11 +321,11 @@ const ListCategory = () => {
           <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Are you sure you want to delete the category "{selectedCategory?.name}"?
-          {selectedCategory?.courses?.length > 0 && (
+          Are you sure you want to delete the category "{selectedCategory?.category.name}"?
+          {selectedCategory?.courseCount > 0 && (
             <Alert variant="warning" className="mt-3">
               <AlertTriangle size={16} className="me-2" />
-              This category has {selectedCategory.courses.length} associated courses.
+              This category has {selectedCategory.courseCount} associated courses.
               Deleting it may affect these courses.
             </Alert>
           )}

@@ -54,40 +54,27 @@ const AdminService = {
       if (!courseId) {
         throw new Error('Course ID is required');
       }
-
-      // Convert courseId to number if it's a string
-      const id = Number(courseId);
+  
+      // Ensure courseId is a number
+      const id = typeof courseId === 'string' ? parseInt(courseId, 10) : courseId;
+      
       if (isNaN(id)) {
         throw new Error('Invalid course ID format');
       }
-
+  
       // Log the request details
       console.log('Approving course:', {
         courseId: id,
         notes,
         url: ENDPOINTS.ADMIN.COURSES.APPROVE(id)
       });
-
+  
+      // Make the API request
       const response = await api.post(
         ENDPOINTS.ADMIN.COURSES.APPROVE(id),
         { notes: notes || '' }
       );
-
-      // Send notification to course instructor
-      try {
-        if (response.data && response.data.instructorId) {
-          await NotificationService.sendNotification({
-            userId: response.data.instructorId,
-            content: `Your course "${response.data.title || 'Course'}" has been approved.`,
-            type: 'COURSE_APPROVAL',
-            courseId: id
-          });
-        }
-      } catch (notifError) {
-        console.error('Error sending approval notification:', notifError);
-        // Don't throw here - we don't want to fail the approval if notification fails
-      }
-
+      
       // Log successful response
       console.log('Course approval response:', response.data);
       return response.data;
@@ -99,16 +86,12 @@ const AdminService = {
         status: error.response?.status,
         config: error.config
       });
-
-      // Throw appropriate error based on response
+  
+      // Check if the error is a 404 (Not Found)
       if (error.response?.status === 404) {
         throw new Error(`Course with ID ${courseId} not found`);
-      } else if (error.response?.status === 401) {
-        throw new Error('Unauthorized. Please check your authentication');
-      } else if (error.response?.status === 403) {
-        throw new Error('You do not have permission to approve courses');
       }
-
+      
       throw new Error(
         error.response?.data?.message ||
         error.message ||
@@ -299,7 +282,17 @@ const AdminService = {
       console.error('Error updating account status:', error);
       throw new Error(`Failed to update account status: ${error.message}`);
     }
+  },
+  getAccountRoles: async (accountId) => {
+    try {
+      const response = await api.get(`${ENDPOINTS.ADMIN.ACCOUNTS.ROLES(accountId)}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching account roles:', error);
+      return [];
+    }
   }
+
 };
 
 export default AdminService;

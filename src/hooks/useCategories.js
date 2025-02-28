@@ -15,7 +15,7 @@ const useCategory = () => {
     error,
   } = useQuery({
     queryKey: ['categories'],
-    queryFn: CategoryService.fetchAll,
+    queryFn: CategoryService.fetchCategoriesWithStats,
     onError: (err) => {
       console.error('Error fetching categories:', err);
       addNotification('Không thể tải danh sách danh mục.', 'danger');
