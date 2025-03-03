@@ -52,6 +52,52 @@ const NotificationBell = () => {
         markAllAsRead();
     };
     
+    // Hàm để lấy màu badge dựa trên loại thông báo
+    const getBadgeColor = (type) => {
+        // Các loại thông báo cũ
+        if (type === 'COURSE') return 'info';
+        if (type === 'PAYMENT') return 'success';
+        if (type === 'SYSTEM') return 'warning';
+        
+        // Các loại thông báo mới
+        if (type === 'InstApprv' || type === 'CrsApprv') return 'success';
+        if (type === 'InstRejct' || type === 'CrsRejct') return 'danger';
+        if (type === 'SysAlert') return 'warning';
+        if (type === 'Payment' || type === 'WalletCredit' || type === 'WalletDebit') return 'primary';
+        if (type === 'Enrollment' || type === 'CourseUpdate') return 'info';
+        if (type === 'Assignment' || type === 'TestReminder') return 'dark';
+        if (type === 'AccStatus') return 'light';
+        
+        // Mặc định
+        return 'secondary';
+    };
+    
+    // Hàm để hiển thị tên thân thiện cho loại thông báo
+    const getNotificationTypeName = (type) => {
+        switch (type) {
+            case 'COURSE': return 'Course';
+            case 'PAYMENT': return 'Payment';
+            case 'SYSTEM': return 'System';
+            case 'InstApprv': return 'Instructor Approved';
+            case 'InstRejct': return 'Instructor Rejected';
+            case 'CrsApprv': return 'Course Approved';
+            case 'CrsRejct': return 'Course Rejected';
+            case 'CrsSubmt': return 'Course Submitted';
+            case 'CrsRevsn': return 'Course Revision';
+            case 'SysAlert': return 'System Alert';
+            case 'AccStatus': return 'Account Status';
+            case 'Payment': return 'Payment';
+            case 'Enrollment': return 'Enrollment';
+            case 'CourseUpdate': return 'Course Update';
+            case 'Assignment': return 'Assignment';
+            case 'TestReminder': return 'Test Reminder';
+            case 'WalletCredit': return 'Wallet Credit';
+            case 'WalletDebit': return 'Wallet Debit';
+            case 'WalletWithdrawal': return 'Wallet Withdrawal';
+            default: return type;
+        }
+    };
+    
     return (
         <Dropdown show={isOpen} onToggle={handleToggle} align="end">
             <Dropdown.Toggle 
@@ -92,44 +138,49 @@ const NotificationBell = () => {
                 ) : notifications?.length > 0 ? (
                     <>
                         <ListGroup variant="flush">
-                            {notifications.map(notif => (
-                                <ListGroup.Item 
-                                    key={notif.id} 
-                                    action 
-                                    as={Link} 
-                                    to={`/notifications/${notif.id}`}
-                                    className="border-bottom"
-                                >
-                                    <div className="d-flex justify-content-between">
-                                        <div>
-                                            <p className="mb-1 text-truncate" style={{ maxWidth: '250px' }}>
-                                                {notif.content}
-                                            </p>
-                                            <small className="text-muted">
-                                                {formatDate(notif.sentAt)}
-                                            </small>
-                                        </div>
-                                        <Button 
-                                            variant="outline-success" 
-                                            size="sm" 
-                                            onClick={(e) => handleMarkAsRead(e, notif.id)}
-                                        >
-                                            Mark read
-                                        </Button>
-                                    </div>
-                                </ListGroup.Item>
-                            ))}
-                        </ListGroup>
-                        <Dropdown.Item as={Link} to="/notifications" className="text-center">
-                            View all notifications
-                        </Dropdown.Item>
-                    </>
-                ) : (
-                    <Dropdown.Item className="text-center">No new notifications</Dropdown.Item>
-                )}
-            </Dropdown.Menu>
-        </Dropdown>
-    );
+    {notifications.map(notif => (
+        <ListGroup.Item 
+            key={notif.id} 
+            action 
+            as={Link} 
+            to={`/notifications/${notif.id}`}
+            className="border-bottom"
+        >
+            <div className="d-flex justify-content-between">
+                <div>
+                    <div className="d-flex align-items-center mb-1">
+                        <Badge bg={getBadgeColor(notif.type)} className="me-2">
+                            {getNotificationTypeName(notif.type)}
+                        </Badge>
+                    </div>
+                    <p className="mb-1 text-truncate" style={{ maxWidth: '250px' }}>
+                        {notif.content}
+                    </p>
+                    <small className="text-muted">
+                        {formatDate(notif.sentAt)}
+                    </small>
+                </div>
+                <Button 
+                    variant="outline-success" 
+                    size="sm" 
+                    onClick={(e) => handleMarkAsRead(e, notif.id)}
+                >
+                    Mark read
+                </Button>
+            </div>
+        </ListGroup.Item>
+    ))}
+</ListGroup>
+<Dropdown.Item as={Link} to="/notifications" className="text-center">
+    View all notifications
+</Dropdown.Item>
+</>
+) : (
+    <Dropdown.Item className="text-center">No new notifications</Dropdown.Item>
+)}
+</Dropdown.Menu>
+</Dropdown>
+);
 };
 
 export default NotificationBell;

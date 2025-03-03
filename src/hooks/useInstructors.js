@@ -1,10 +1,9 @@
-// src/hooks/useInstructors.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useContext } from 'react';
 import { NotificationContext } from '../contexts/NotificationContext';
 import InstructorService from '../services/instructorService';
 
-const useInstructors = (type = 'all') => {
+export const useInstructors = (type = 'all') => {
   const queryClient = useQueryClient();
   const { addNotification } = useContext(NotificationContext);
 
@@ -32,21 +31,30 @@ const useInstructors = (type = 'all') => {
     }
   });
 
-  // Mutations for instructor approval/rejection
   const approveMutation = useMutation({
-    mutationFn: (instructorId) => InstructorService.approveInstructor(instructorId),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['instructors']);
-      addNotification('Instructor approved successfully', 'success');
+    mutationFn: ({ instructorId, notes, onSuccess }) =>
+        InstructorService.approveInstructor(instructorId, notes),
+    onSuccess: (data, variables) => {
+        queryClient.invalidateQueries(['instructors']);
+        
+        // Refresh danh sách thông báo
+        queryClient.invalidateQueries(['notifications']);
+        
+        addNotification('Instructor approved successfully', 'success');
+        
+        // Gọi callback onSuccess nếu có
+        if (variables.onSuccess) {
+            variables.onSuccess(data);
+        }
     },
     onError: (err) => {
-      console.error('Error approving instructor:', err);
-      addNotification('Failed to approve instructor', 'error');
+        console.error('Error approving instructor:', err);
+        addNotification('Failed to approve instructor', 'error');
     }
-  });
+});
 
   const rejectMutation = useMutation({
-    mutationFn: ({ instructorId, reason }) => 
+    mutationFn: ({ instructorId, reason }) =>
       InstructorService.rejectInstructor(instructorId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries(['instructors']);
@@ -59,8 +67,7 @@ const useInstructors = (type = 'all') => {
   });
 
   return {
-    instructors: type === 'all' ? data : undefined,
-    pendingInstructors: type === 'pending' ? data : undefined,
+    instructors: data,
     isLoading,
     isError,
     error,
@@ -69,5 +76,3 @@ const useInstructors = (type = 'all') => {
     rejectInstructor: rejectMutation.mutate
   };
 };
-
-export default useInstructors;

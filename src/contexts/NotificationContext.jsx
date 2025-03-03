@@ -1,5 +1,4 @@
-// src/contexts/NotificationContext.jsx
-import React, { createContext, useState, useCallback } from 'react';
+import React, { createContext, useState, useCallback, useContext } from 'react';
 import { Toast, ToastContainer } from 'react-bootstrap';
 
 export const NotificationContext = createContext();
@@ -56,4 +55,13 @@ export const NotificationProvider = ({ children }) => {
             </ToastContainer>
         </NotificationContext.Provider>
     );
+};
+
+// Custom hook for using notifications
+export const useNotification = () => {
+    const context = useContext(NotificationContext);
+    if (!context) {
+        throw new Error('useNotification must be used within a NotificationProvider');
+    }
+    return context;
 };

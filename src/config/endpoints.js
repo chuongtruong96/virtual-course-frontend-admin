@@ -1,8 +1,18 @@
-export const API_BASE = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:8080/api';
+// In src/config/endpoints.js:
 
-// Base for uploads (images, files, etc.)
+// Base URLs
+export const API_BASE = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:8080/api';
+export const APP_BASE = import.meta.env.VITE_APP_BASE_NAME ? `/${import.meta.env.VITE_APP_BASE_NAME}` : '';
 export const UPLOAD_BASE = 'http://localhost:8080/uploads';
 
+// Default images paths - using APP_BASE to ensure correct paths with basename
+export const DEFAULT_IMAGES = {
+  INSTRUCTOR: `${APP_BASE}/images/instructor/default-instructor.jpg`,
+  STUDENT: `${APP_BASE}/images/student/default-student.jpg`,
+  COURSE: `${APP_BASE}/images/course/default-course.jpg`,
+  CATEGORY: `${APP_BASE}/images/category/default-category.jpg`,
+  AVATAR: `${APP_BASE}/images/avatar/default-avatar.jpg`,
+};
 // Sub-paths for uploads
 export const UPLOAD_PATH = {
   CATEGORY: `${UPLOAD_BASE}/category`,
@@ -31,7 +41,7 @@ const ENDPOINTS = {
       BASE: `${API_BASE}/admin/accounts`,
       BY_STATUS: `${API_BASE}/admin/accounts/by-status`,
       UPDATE_STATUS: (id) => `${API_BASE}/admin/accounts/${id}/status`,
-      ROLES: (id) => `${API_BASE}/admin/accounts/${id}/roles`, // Thêm endpoint này
+      ROLES: (id) => `${API_BASE}/admin/accounts/${id}/roles`,
       CREATE: `${API_BASE}/admin/accounts/create`,
     },
 
@@ -49,6 +59,13 @@ const ENDPOINTS = {
       PENDING: `${API_BASE}/admin/instructors/pending`,
       APPROVE: (id) => `${API_BASE}/admin/instructors/${id}/approve`,
       REJECT: (id) => `${API_BASE}/admin/instructors/${id}/reject`,
+      UPDATE_STATUS: (id) => `${API_BASE}/admin/instructors/${id}/status`,
+      VERIFY: (id) => `${API_BASE}/admin/instructors/${id}/verify`,
+      PERFORMANCE: (id) => `${API_BASE}/admin/instructors/${id}/performance`,
+    },
+    
+    REVIEWS: {
+      MODERATE: (reviewId) => `${API_BASE}/admin/reviews/${reviewId}/moderate`,
     },
   },
 
@@ -59,7 +76,11 @@ const ENDPOINTS = {
     DETAILS: (id) => `${API_BASE}/instructors/${id}/instructor-details`,
     STATISTICS: (id) => `${API_BASE}/instructors/${id}/instructor-statistics`,
     PROFILE: (id) => `${API_BASE}/instructors/${id}/instructor-profile`,
-    COURSES: (id) => `${API_BASE}/courses/${id}/instructor-courses`,
+    COURSES: (id) => `${API_BASE}/instructors/${id}/courses`,
+    TESTS: (id) => `${API_BASE}/instructors/${id}/tests`,
+    REVIEWS: (id) => `${API_BASE}/instructors/${id}/reviews`,
+    PERFORMANCE_METRICS: (id) => `${API_BASE}/instructors/${id}/performance-metrics`,
+    DOCUMENTS: (id) => `${API_BASE}/instructors/${id}/documents`,
   },
 
   // Categories
@@ -77,6 +98,7 @@ const ENDPOINTS = {
     DETAILS: (id) => `${API_BASE}/courses/${id}/details`,
     DETAILS_FOR_STUDENT: (courseId, studentId) =>
       `${API_BASE}/courses/${courseId}/details-for-student?studentId=${studentId}`,
+    DELETE: (id) => `${API_BASE}/courses/${id}`,
   },
 
   // Enrollments
@@ -118,8 +140,12 @@ const ENDPOINTS = {
 
   // Tests
   TESTS: {
+    BASE: `${API_BASE}/tests`,
+    BY_ID: (id) => `${API_BASE}/tests/${id}`,
     QUESTIONS: (testId) => `${API_BASE}/tests/${testId}/questions`,
     SUBMIT: `${API_BASE}/tests/submit`,
+    UPDATE_STATUS: (id) => `${API_BASE}/tests/${id}/status`,
+    DELETE: (id) => `${API_BASE}/tests/${id}`,
   },
 
   // Transactions
@@ -128,39 +154,49 @@ const ENDPOINTS = {
     DETAILS: (transactionId) => `${API_BASE}/transactions/history/details/${transactionId}`,
   },
 
+  // Reviews
+  REVIEWS: {
+    BASE: `${API_BASE}/reviews`,
+    BY_COURSE: (courseId) => `${API_BASE}/reviews/course/${courseId}`,
+    BY_ID: (id) => `${API_BASE}/reviews/${id}`,
+    REPLY: (id) => `${API_BASE}/reviews/${id}/reply`,
+  },
+
   // Notifications
   NOTIFICATIONS: {
     BASE: `${API_BASE}/notifications`,
-    BY_ID: (id) => `${API_BASE}/notifications/${id}`,
+    ALL: `${API_BASE}/notifications/all`,
+    ALL_PAGINATED: `${API_BASE}/notifications/all/paginated`, // Đảm bảo endpoint này đúng
     BY_USER: (userId) => `${API_BASE}/notifications/user/${userId}`,
     BY_USER_PAGINATED: (userId, page, size) => 
-        `${API_BASE}/notifications/user/${userId}/paginated?page=${page}&size=${size}`,
-    BY_COURSE: (courseId) => `${API_BASE}/notifications/course/${courseId}`,
-    BY_COURSE_PAGINATED: (courseId, page, size) => 
-        `${API_BASE}/notifications/course/${courseId}/paginated?page=${page}&size=${size}`,
+      `${API_BASE}/notifications/user/${userId}/paginated?page=${page}&size=${size}`,
+    BY_ID: (id) => `${API_BASE}/notifications/${id}`,
     MARK_AS_READ: (id) => `${API_BASE}/notifications/${id}/read`,
     MARK_ALL_READ: (userId) => `${API_BASE}/notifications/user/${userId}/mark-all-read`,
     MARK_ALL_READ_BY_TYPE: (userId, type) => 
-        `${API_BASE}/notifications/user/${userId}/type/${type}/mark-all-read`,
+      `${API_BASE}/notifications/user/${userId}/type/${type}/mark-all-read`,
+    DELETE_ALL_READ: (userId) => `${API_BASE}/notifications/user/${userId}/delete-all-read`,
     UNREAD: (userId) => `${API_BASE}/notifications/user/${userId}/unread`,
     UNREAD_PAGINATED: (userId, page, size) => 
-        `${API_BASE}/notifications/user/${userId}/unread/paginated?page=${page}&size=${size}`,
+      `${API_BASE}/notifications/user/${userId}/unread/paginated?page=${page}&size=${size}`,
     COUNT_UNREAD: (userId) => `${API_BASE}/notifications/user/${userId}/count-unread`,
     RECENT: (userId) => `${API_BASE}/notifications/user/${userId}/recent`,
     RECENT_PAGINATED: (userId, page, size) => 
-        `${API_BASE}/notifications/user/${userId}/recent/paginated?page=${page}&size=${size}`,
+      `${API_BASE}/notifications/user/${userId}/recent/paginated?page=${page}&size=${size}`,
     BY_TYPE: (userId, type) => `${API_BASE}/notifications/user/${userId}/type/${type}`,
     BY_TYPE_PAGINATED: (userId, type, page, size) => 
-        `${API_BASE}/notifications/user/${userId}/type/${type}/paginated?page=${page}&size=${size}`,
+      `${API_BASE}/notifications/user/${userId}/type/${type}/paginated?page=${page}&size=${size}`,
+    BY_COURSE: (courseId) => `${API_BASE}/notifications/course/${courseId}`,
+    BY_COURSE_PAGINATED: (courseId, page, size) => 
+      `${API_BASE}/notifications/course/${courseId}/paginated?page=${page}&size=${size}`,
     BY_PAYMENT: (paymentId) => `${API_BASE}/notifications/payment/${paymentId}`,
     SEARCH: (userId, searchTerm) => 
-        `${API_BASE}/notifications/user/${userId}/search?searchTerm=${encodeURIComponent(searchTerm)}`,
+      `${API_BASE}/notifications/user/${userId}/search?searchTerm=${encodeURIComponent(searchTerm)}`,
     SEARCH_PAGINATED: (userId, searchTerm, page, size) => 
-        `${API_BASE}/notifications/user/${userId}/search/paginated?searchTerm=${encodeURIComponent(searchTerm)}&page=${page}&size=${size}`,
+      `${API_BASE}/notifications/user/${userId}/search/paginated?searchTerm=${encodeURIComponent(searchTerm)}&page=${page}&size=${size}`,
     BY_DATE_RANGE: (userId, startDate, endDate) => 
-        `${API_BASE}/notifications/user/${userId}/date-range?startDate=${startDate}&endDate=${endDate}`,
+      `${API_BASE}/notifications/user/${userId}/date-range?startDate=${startDate}&endDate=${endDate}`,
     STATISTICS: (userId) => `${API_BASE}/notifications/user/${userId}/statistics`,
-    DELETE_ALL_READ: (userId) => `${API_BASE}/notifications/user/${userId}/delete-all-read`,
     UPDATE_CONTENT: (id) => `${API_BASE}/notifications/${id}/content`,
     SEND: `${API_BASE}/notifications/send`,
     SEND_MULTIPLE: `${API_BASE}/notifications/send-multiple`,
@@ -186,13 +222,6 @@ const ENDPOINTS = {
   // Progress
   PROGRESS: {
     COMPLETE_LECTURE: `${API_BASE}/progress/complete-lecture`,
-  },
-
-  // Reviews
-  REVIEWS: {
-    BASE: `${API_BASE}/reviews`,
-    BY_COURSE: (courseId) => `${API_BASE}/reviews/course/${courseId}`,
-    BY_ID: (id) => `${API_BASE}/reviews/${id}`,
   },
 
   // Tickets

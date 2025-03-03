@@ -33,6 +33,7 @@ const approveMutation = useMutation({
   onSuccess: () => {
     queryClient.invalidateQueries(['courses']);
     queryClient.invalidateQueries(['course-approval-history', courseId]);
+    queryClient.invalidateQueries(['notifications']);
     addNotification('Course approved successfully! An email notification has been sent to the instructor.', 'success');
   },
   onError: (error) => {
