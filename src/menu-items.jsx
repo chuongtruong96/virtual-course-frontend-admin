@@ -96,11 +96,24 @@ const menuItems = {
           ]
         },
         {
-          id: 'review-list',
+          id: 'review-management',
           title: 'Reviews',
-          type: 'item',
+          type: 'collapse',
           icon: 'star',
-          url: '/dashboard/review/list',
+          children: [
+            {
+              id: 'review-list',
+              title: 'All Reviews',
+              type: 'item',
+              url: '/dashboard/reviews',
+            },
+            {
+              id: 'review-statistics',
+              title: 'Review Statistics',
+              type: 'item',
+              url: '/dashboard/reviews/statistics',
+            }
+          ]
         }
       ]
     },

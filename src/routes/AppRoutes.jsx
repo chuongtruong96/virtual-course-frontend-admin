@@ -29,9 +29,12 @@ const CourseDetail = lazy(() => import('../views/course/CourseDetail'));
 const AccountList = lazy(() => import('../views/account/AccountList'));
 
 // Reviews & Support
-const ListReview = lazy(() => import('../views/review/ListReview'));
+const ListReview = lazy(() => import('../views/review/AdminReviewList'));
+const ReviewDetail = lazy(() => import('../views/review/ReviewDetail'));
+const ReviewStatistics = lazy(() => import('../views/review/ReviewStatistics'));
 const ListTicket = lazy(() => import('../views/ticket/ListTicket'));
 const NotificationList = lazy(() => import('../views/notification/NotificationList'));
+
 
 const AppRoutes = () => (
   <Suspense fallback={<Loader />}>
@@ -86,7 +89,11 @@ const AppRoutes = () => (
         </Route>
 
         {/* REVIEW */}
-        <Route path="review/list" element={<ListReview />} />
+        <Route path="reviews">
+          <Route path="" element={<ListReview />} />
+          <Route path=":reviewId" element={<ReviewDetail />} />
+          <Route path="statistics" element={<ReviewStatistics />} />
+        </Route>
 
         {/* TICKET */}
         <Route path="ticket/list" element={<ListTicket />} />

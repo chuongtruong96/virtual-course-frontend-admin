@@ -65,7 +65,17 @@ const ENDPOINTS = {
     },
     
     REVIEWS: {
-      MODERATE: (reviewId) => `${API_BASE}/admin/reviews/${reviewId}/moderate`,
+      BASE: `${API_BASE}/admin/reviews`,
+      BY_ID: (id) => `${API_BASE}/admin/reviews/${id}`,
+      STATISTICS: `${API_BASE}/admin/reviews/statistics`,
+      MODERATE: (reviewId) => `${API_BASE}/admin/reviews/${reviewId}`,
+      REPLY: (reviewId) => `${API_BASE}/admin/reviews/${reviewId}/reply`,
+      BY_COURSE: (courseId) => `${API_BASE}/admin/reviews/course/${courseId}`,
+      BY_STUDENT: (studentId) => `${API_BASE}/admin/reviews/student/${studentId}`,
+      BY_INSTRUCTOR: (instructorId) => `${API_BASE}/admin/reviews/instructor/${instructorId}`,
+      FEATURED: `${API_BASE}/admin/reviews/featured`,
+      TOGGLE_FEATURED: (reviewId) => `${API_BASE}/admin/reviews/${reviewId}/featured`,
+      UPDATE_STATUS: (reviewId) => `${API_BASE}/admin/reviews/${reviewId}/status`,
     },
   },
 
@@ -154,15 +164,6 @@ const ENDPOINTS = {
     DETAILS: (transactionId) => `${API_BASE}/transactions/history/details/${transactionId}`,
   },
 
-  // Reviews
-  REVIEWS: {
-    BASE: `${API_BASE}/reviews`,
-    BY_COURSE: (courseId) => `${API_BASE}/reviews/course/${courseId}`,
-    BY_ID: (id) => `${API_BASE}/reviews/${id}`,
-    REPLY: (id) => `${API_BASE}/reviews/${id}/reply`,
-  },
-
-  // Notifications
   // Notifications
 NOTIFICATIONS: {
   BASE: `${API_BASE}/notifications`,

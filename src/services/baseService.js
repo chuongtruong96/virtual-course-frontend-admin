@@ -1,6 +1,6 @@
 // src/services/baseService.js
 import api from '../utils/api';
-import { handleError } from '../utils/errorHandler';
+import { handleApiError } from '../utils/errorHandler';
 
 /**
  * Creates a basic CRUD service based on the provided base endpoint.
@@ -12,7 +12,7 @@ const createCRUDService = (baseEndpoint) => ({
       return response.data;
     } catch (error) {
       console.error(`Error fetching all from ${baseEndpoint}:`, error);
-      throw handleError(error);
+      throw handleApiError(error);
     }
   },
   fetchById: async ({ id }) => {
@@ -21,7 +21,7 @@ const createCRUDService = (baseEndpoint) => ({
       return response.data;
     } catch (error) {
       console.error(`Error fetching ID ${id} from ${baseEndpoint}:`, error);
-      throw handleError(error);
+      throw handleApiError(error);
     }
   },
   add: async (data) => {
@@ -30,7 +30,7 @@ const createCRUDService = (baseEndpoint) => ({
       return response.data;
     } catch (error) {
       console.error(`Error adding to ${baseEndpoint}:`, error);
-      throw handleError(error);
+      throw handleApiError(error);
     }
   },
   edit: async ({ id, data }) => {
@@ -39,7 +39,7 @@ const createCRUDService = (baseEndpoint) => ({
       return response.data;
     } catch (error) {
       console.error(`Error editing ID ${id} from ${baseEndpoint}:`, error);
-      throw handleError(error);
+      throw handleApiError(error);
     }
   },
   delete: async ({ id }) => {
@@ -47,7 +47,7 @@ const createCRUDService = (baseEndpoint) => ({
       await api.delete(`${baseEndpoint}/${id}`);
     } catch (error) {
       console.error(`Error deleting ID ${id} from ${baseEndpoint}:`, error);
-      throw handleError(error);
+      throw handleApiError(error);
     }
   },
 });

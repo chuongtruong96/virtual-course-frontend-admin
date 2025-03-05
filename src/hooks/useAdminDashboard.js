@@ -31,6 +31,7 @@ const useAdminDashboard = (filter = 'allTime', model = 'all') => {
     isLoading: trendsLoading,
     isError: trendsError,
     error: trendsErrorData
+    
   } = useQuery({
     queryKey: ['admin-trends', filter],
     queryFn: () => AdminService.getTrends(filter),
