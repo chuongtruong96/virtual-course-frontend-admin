@@ -9,7 +9,12 @@ import {
   Avatar,
   Divider,
   Badge,
-  Tooltip
+  Tooltip,
+  Collapse,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText
 } from '@mui/material';
 import {
   Eye,
@@ -21,25 +26,33 @@ import {
   Calendar,
   BookOpen,
   Users,
-  Star
+  Star,
+  Briefcase,
+  GraduationCap,
+  Code,
+  Facebook,
+  Linkedin,
+  Instagram,
+  Globe
 } from 'lucide-react';
 import { UPLOAD_PATH, DEFAULT_IMAGES } from '../../config/endpoints';
 import { format } from 'date-fns';
 
-const InstructorCard = React.memo(({ 
-  instructor, 
-  onApprove, 
-  onReject, 
+const InstructorCard = React.memo(({
+  instructor,
+  onApprove,
+  onReject,
   onViewDetail,
   props,
-  metrics 
+  metrics
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   
-  // Đường dẫn đến hình ảnh mặc định
+  // Default image path
   const defaultImagePath = '/images/instructor/default-instructor.jpg';
   
-  // Kiểm tra xem hình ảnh mặc định có tồn tại không
+  // Check if default image exists
   useEffect(() => {
     const img = new Image();
     img.src = defaultImagePath;
@@ -51,26 +64,24 @@ const InstructorCard = React.memo(({
     };
   }, []);
 
-  // In InstructorCard.jsx, update the getImageUrl function:
-
   const [imageError, setImageError] = useState(false);
-
-// Determine image URL with fallback logic
-const getImageUrl = () => {
-  if (imageError || !instructor.photo) {
-    return DEFAULT_IMAGES.INSTRUCTOR;
-  }
   
-  return instructor.photo.startsWith('http')
-    ? instructor.photo
-    : `${UPLOAD_PATH.INSTRUCTOR}/${instructor.photo}`;
-};
+  // Determine image URL with fallback logic
+  const getImageUrl = () => {
+    if (imageError || !instructor.photo) {
+      return DEFAULT_IMAGES.INSTRUCTOR;
+    }
+    return instructor.photo.startsWith('http')
+      ? instructor.photo
+      : `${UPLOAD_PATH.INSTRUCTOR}/${instructor.photo}`;
+  };
 
-// Add this to handle image loading errors
-const handleImageError = () => {
-  console.log("Default image does not exist or failed to load");
-  setImageError(true);
-};
+  // Handle image loading errors
+  const handleImageError = () => {
+    console.log("Default image does not exist or failed to load");
+    setImageError(true);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'ACTIVE': return 'success';
@@ -79,6 +90,10 @@ const handleImageError = () => {
       case 'REJECTED': return 'error';
       default: return 'default';
     }
+  };
+
+  const toggleExpanded = () => {
+    setExpanded(!expanded);
   };
 
   return (
@@ -105,15 +120,14 @@ const handleImageError = () => {
 
       {/* Header Section */}
       <Box display="flex" gap={2}>
-      <Avatar
-  src={getImageUrl()}
-  alt={`${instructor.firstName} ${instructor.lastName}`}
-  sx={{ width: 80, height: 80 }}
-  onError={handleImageError}
->
-  {instructor.firstName?.[0]}
-</Avatar>
-        
+        <Avatar
+          src={getImageUrl()}
+          alt={`${instructor.firstName} ${instructor.lastName}`}
+          sx={{ width: 80, height: 80 }}
+          onError={handleImageError}
+        >
+          {instructor.firstName?.[0]}
+        </Avatar>
         <Box flex={1}>
           <Box display="flex" justifyContent="space-between" alignItems="flex-start">
             <Box>
@@ -130,7 +144,6 @@ const handleImageError = () => {
                 sx={{ mt: 0.5 }}
               />
             </Box>
-
             {/* Course Count */}
             {instructor.courseCount > 0 && (
               <Tooltip title={`${instructor.courseCount} courses`}>
@@ -214,9 +227,9 @@ const handleImageError = () => {
       {instructor.bio && (
         <>
           <Divider sx={{ my: 2 }} />
-          <Typography 
-            variant="body2" 
-            color="text.secondary" 
+          <Typography
+            variant="body2"
+            color="text.secondary"
             sx={{
               display: '-webkit-box',
               WebkitLineClamp: 2,
@@ -230,27 +243,167 @@ const handleImageError = () => {
         </>
       )}
 
+      {/* Expandable Section for Education, Experience, Skills */}
+      <Button 
+        size="small" 
+        onClick={toggleExpanded} 
+        sx={{ mt: 1, textTransform: 'none' }}
+      >
+        {expanded ? 'Show Less' : 'Show More'}
+      </Button>
+      
+      <Collapse in={expanded} timeout="auto" unmountOnExit>
+        <Divider sx={{ my: 1 }} />
+        
+        {/* Education Section */}
+        {instructor.educations && instructor.educations.length > 0 && (
+          <Box mt={2}>
+            <Typography variant="subtitle2" display="flex" alignItems="center" gutterBottom>
+              <GraduationCap size={16} style={{ marginRight: 8 }} />
+              Education
+            </Typography>
+            <List dense disablePadding>
+              {instructor.educations.slice(0, 2).map((edu, index) => (
+                <ListItem key={index} sx={{ py: 0.5 }}>
+                  <ListItemText
+                    primary={edu.degree}
+                    secondary={
+                      <>
+                        {edu.university}
+                        {edu.startYear && edu.endYear && (
+                          <span> • {edu.startYear} - {edu.endYear}</span>
+                        )}
+                      </>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        )}
+        
+        {/* Experience Section */}
+        {instructor.experiences && instructor.experiences.length > 0 && (
+          <Box mt={2}>
+            <Typography variant="subtitle2" display="flex" alignItems="center" gutterBottom>
+              <Briefcase size={16} style={{ marginRight: 8 }} />
+              Experience
+            </Typography>
+            <List dense disablePadding>
+              {instructor.experiences.slice(0, 2).map((exp, index) => (
+                <ListItem key={index} sx={{ py: 0.5 }}>
+                  <ListItemText
+                    primary={exp.position}
+                    secondary={
+                      <>
+                        {exp.company}
+                        {exp.startYear && exp.endYear && (
+                          <span> • {exp.startYear} - {exp.endYear}</span>
+                        )}
+                      </>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        )}
+        
+        {/* Skills Section */}
+        {instructor.skills && instructor.skills.length > 0 && (
+          <Box mt={2}>
+            <Typography variant="subtitle2" display="flex" alignItems="center" gutterBottom>
+              <Code size={16} style={{ marginRight: 8 }} />
+              Skills
+            </Typography>
+            <Box display="flex" flexWrap="wrap" gap={1}>
+              {instructor.skills.map((skill, index) => (
+                <Chip 
+                  key={index} 
+                  label={skill.skillName} 
+                  size="small" 
+                  variant="outlined" 
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
+        
+        {/* Social Links */}
+        {instructor.social && (
+          <Box mt={2} display="flex" gap={1} justifyContent="center">
+            {instructor.social.facebookUrl && (
+              <Tooltip title="Facebook">
+                <IconButton 
+                  size="small" 
+                  component="a" 
+                  href={instructor.social.facebookUrl} 
+                  target="_blank"
+                >
+                  <Facebook size={20} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {instructor.social.linkedinUrl && (
+              <Tooltip title="LinkedIn">
+                <IconButton 
+                  size="small" 
+                  component="a" 
+                  href={instructor.social.linkedinUrl} 
+                  target="_blank"
+                >
+                  <Linkedin size={20} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {instructor.social.instagramUrl && (
+              <Tooltip title="Instagram">
+                <IconButton 
+                  size="small" 
+                  component="a" 
+                  href={instructor.social.instagramUrl} 
+                  target="_blank"
+                >
+                  <Instagram size={20} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {instructor.social.googleUrl && (
+              <Tooltip title="Website">
+                <IconButton 
+                  size="small" 
+                  component="a" 
+                  href={instructor.social.googleUrl} 
+                  target="_blank"
+                >
+                  <Globe size={20} />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        )}
+      </Collapse>
+
       {/* Actions Section */}
-      <Box 
-        display="flex" 
-        gap={1} 
-        mt={3} 
-        justifyContent="space-between" 
+      <Box
+        display="flex"
+        gap={1}
+        mt={3}
+        justifyContent="space-between"
         alignItems="center"
       >
-        <Typography 
-          variant="caption" 
-          color="text.secondary" 
-          display="flex" 
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          display="flex"
           alignItems="center"
         >
           <Calendar size={14} style={{ marginRight: 4 }} />
-          {instructor.createdAt ? 
-            format(new Date(instructor.createdAt), 'MMM dd, yyyy') : 
+          {instructor.createdAt ?
+            format(new Date(instructor.createdAt), 'MMM dd, yyyy') :
             'N/A'
           }
         </Typography>
-
         <Box display="flex" gap={1}>
           <Button
             variant="outlined"
@@ -260,7 +413,6 @@ const handleImageError = () => {
           >
             View
           </Button>
-
           {instructor.status === 'PENDING' && (
             <>
               <Button
@@ -289,8 +441,6 @@ const handleImageError = () => {
   );
 });
 
-// In InstructorCard.jsx, update the PropTypes definition:
-
 InstructorCard.propTypes = {
   instructor: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
@@ -306,7 +456,37 @@ InstructorCard.propTypes = {
     status: PropTypes.string.isRequired,
     verifiedPhone: PropTypes.bool,
     courseCount: PropTypes.number,
-    createdAt: PropTypes.string
+    createdAt: PropTypes.string,
+    // New props
+    educations: PropTypes.arrayOf(
+      PropTypes.shape({
+        degree: PropTypes.string,
+        university: PropTypes.string,
+        startYear: PropTypes.number,
+        endYear: PropTypes.number,
+        description: PropTypes.string
+      })
+    ),
+    experiences: PropTypes.arrayOf(
+      PropTypes.shape({
+        position: PropTypes.string,
+        company: PropTypes.string,
+        startYear: PropTypes.number,
+        endYear: PropTypes.number,
+        description: PropTypes.string
+      })
+    ),
+    skills: PropTypes.arrayOf(
+      PropTypes.shape({
+        skillName: PropTypes.string
+      })
+    ),
+    social: PropTypes.shape({
+      facebookUrl: PropTypes.string,
+      googleUrl: PropTypes.string,
+      instagramUrl: PropTypes.string,
+      linkedinUrl: PropTypes.string
+    })
   }).isRequired,
   metrics: PropTypes.shape({
     totalStudents: PropTypes.number,

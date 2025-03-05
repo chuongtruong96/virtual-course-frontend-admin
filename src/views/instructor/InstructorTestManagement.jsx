@@ -1,73 +1,122 @@
+import React, { useState } from 'react';
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Grid,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Alert,
+  Tooltip
+} from '@mui/material';
+import { Eye, CheckCircle, XCircle } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../../utils/api';
+import ENDPOINTS from '../../config/endpoints'; // Import ENDPOINTS
+
 const InstructorTestManagement = ({ instructorId }) => {
-    const [tests, setTests] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [selectedTest, setSelectedTest] = useState(null);
-    const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
-    
-    useEffect(() => {
-      const fetchTests = async () => {
-        setIsLoading(true);
-        try {
-          const response = await fetch(`/api/admin/instructors/${instructorId}/tests`);
-          const data = await response.json();
-          setTests(data);
-        } catch (error) {
-          console.error("Failed to fetch instructor tests:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      
-      fetchTests();
-    }, [instructorId]);
-    
-    const handlePreviewTest = (test) => {
-      setSelectedTest(test);
-      setPreviewDialogOpen(true);
-    };
-    
-    const handleUpdateTestStatus = async (testId, status) => {
-      try {
-        await fetch(`/api/admin/tests/${testId}/status`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ status }),
-        });
-        
-        // Update local state
-        setTests(tests.map(test => 
-          test.id === testId ? { ...test, statusTest: status } : test
-        ));
-      } catch (error) {
-        console.error("Failed to update test status:", error);
-      }
-    };
-    
-    if (isLoading) return <CircularProgress />;
-    
+  const [selectedTest, setSelectedTest] = useState(null);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+   // Fetch instructor tests - Sử dụng ENDPOINTS thay vì hardcode URL
+   const { data: tests, isLoading, error } = useQuery({
+    queryKey: ['instructor-tests-admin', instructorId],
+    queryFn: async () => {
+      // Sử dụng endpoint từ file cấu hình
+      const response = await api.get(ENDPOINTS.INSTRUCTORS.TESTS(instructorId));
+      return response.data;
+    },
+    enabled: !!instructorId,
+    onError: (error) => {
+      console.error("Failed to fetch instructor tests:", error);
+    }
+  });
+
+  // Update test status mutation
+  const updateTestStatus = useMutation({
+    mutationFn: async ({ testId, status }) => {
+      // Sử dụng endpoint từ file cấu hình
+      const response = await api.put(ENDPOINTS.TESTS.UPDATE_STATUS(testId), { status });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['instructor-tests-admin', instructorId] });
+    },
+    onError: (error) => {
+      console.error("Failed to update test status:", error);
+    }
+  });
+
+  const handlePreviewTest = (test) => {
+    setSelectedTest(test);
+    setPreviewDialogOpen(true);
+  };
+
+  const handleUpdateTestStatus = async (testId, status) => {
+    try {
+      await updateTestStatus.mutateAsync({ testId, status });
+    } catch (error) {
+      console.error("Failed to update test status:", error);
+    }
+  };
+
+  if (isLoading) {
     return (
-      <>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>Test & Quiz Management</Typography>
-            
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Test Title</TableCell>
-                    <TableCell>Course</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Questions</TableCell>
-                    <TableCell>Duration</TableCell>
-                    <TableCell>Pass %</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {tests.map((test) => (
+      <Box display="flex" justifyContent="center" alignItems="center" p={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error">
+        Error loading tests: {error.message}
+      </Alert>
+    );
+  }
+
+  return (
+    <>
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>Test & Quiz Management</Typography>
+          
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Test Title</TableCell>
+                  <TableCell>Course</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Questions</TableCell>
+                  <TableCell>Duration</TableCell>
+                  <TableCell>Pass %</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {tests && tests.length > 0 ? (
+                  tests.map((test) => (
                     <TableRow key={test.id}>
                       <TableCell>{test.title}</TableCell>
                       <TableCell>{test.courseName}</TableCell>
@@ -116,21 +165,30 @@ const InstructorTestManagement = ({ instructorId }) => {
                         </Box>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-        
-        {/* Test Preview Dialog */}
-        <Dialog 
-          open={previewDialogOpen} 
-          onClose={() => setPreviewDialogOpen(false)} 
-          maxWidth="lg" 
-          fullWidth
-        >
-          <DialogTitle>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      <Typography variant="body2" color="textSecondary" py={2}>
+                        No tests found for this instructor.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+      
+      {/* Test Preview Dialog */}
+      <Dialog 
+        open={previewDialogOpen} 
+        onClose={() => setPreviewDialogOpen(false)} 
+        maxWidth="lg" 
+        fullWidth
+      >
+        <DialogTitle>
           Test Preview: {selectedTest?.title}
         </DialogTitle>
         <DialogContent>
@@ -243,4 +301,4 @@ const InstructorTestManagement = ({ instructorId }) => {
   );
 };
 
-                      
+export default InstructorTestManagement;

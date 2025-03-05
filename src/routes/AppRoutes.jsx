@@ -46,7 +46,9 @@ const AppRoutes = () => (
       <Route
         path="/dashboard/*"
         element={
-          <PrivateRoute>
+          // <PrivateRoute>
+<PrivateRoute roles={['ROLE_ADMIN']}>
+
             <AdminLayout />
           </PrivateRoute>
         }

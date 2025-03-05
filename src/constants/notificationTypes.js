@@ -1,79 +1,118 @@
 /**
  * Notification types constants
- * 
+ *
  * These constants match the backend NotificationType enum values
  * and are used for categorizing notifications throughout the application.
- * 
- * Note: This file maintains both new PascalCase values and legacy UPPERCASE values
- * for backward compatibility during transition.
  */
 
 // Main notification type constants that match backend enum exactly
 export const NOTIFICATION_TYPES = {
   // New PascalCase values (match backend enum directly)
-  Payment: 'Payment',
-  Enrollment: 'Enrollment',
-  CourseUpdate: 'CourseUpdate',
-  Assignment: 'Assignment',
-  TestReminder: 'TestReminder',
-  General: 'General',
+  PAYMENT: 'Payment',
+  ENROLLMENT: 'Enrollment',
+  COURSE_UPDATE: 'CourseUpdate',
+  ASSIGNMENT: 'Assignment',
+  TEST_REMINDER: 'TestReminder',
+  GENERAL: 'General',
   
   // Abbreviated values (match backend enum directly)
-  CrsApprv: 'CrsApprv',
-  CrsRejct: 'CrsRejct',
-  CrsSubmt: 'CrsSubmt',
-  CrsRevsn: 'CrsRevsn',
-  SysAlert: 'SysAlert',
-  AccStatus: 'AccStatus',
-  InstApprv: 'InstApprv',
-  InstRejct: 'InstRejct',
-  WalletCredit: 'WalletCredit',
-  WalletDebit: 'WalletDebit',
-  WalletWithdrawal: 'WalletWithdrawal',
+  COURSE_APPROVED: 'CrsApprv',
+  COURSE_REJECTED: 'CrsRejct',
+  COURSE_SUBMITTED: 'CrsSubmt',
+  COURSE_REVISION: 'CrsRevsn',
+  SYSTEM_ALERT: 'SysAlert',
+  ACCOUNT_STATUS: 'AccStatus',
+  INSTRUCTOR_APPROVED: 'InstApprv',
+  INSTRUCTOR_REJECTED: 'InstRejct',
+  WALLET_CREDIT: 'WalletCredit',
+  WALLET_DEBIT: 'WalletDebit',
+  WALLET_WITHDRAWAL: 'WalletWithdrawal',
   
   // Legacy values (for backward compatibility)
   COURSE: 'COURSE',
-  PAYMENT: 'Payment', // Maps to new 'Payment'
-  SYSTEM: 'SYSTEM',
-  COURSE_APPROVAL: 'CrsApprv', // Maps to new 'CrsApprv'
-  COURSE_REJECTION: 'CrsRejct', // Maps to new 'CrsRejct'
-  COURSE_SUBMISSION: 'CrsSubmt', // Maps to new 'CrsSubmt'
-  COURSE_REVISION: 'CrsRevsn', // Maps to new 'CrsRevsn'
-  INSTRUCTOR_APPROVAL: 'InstApprv', // Maps to new 'InstApprv'
-  INSTRUCTOR_REJECTION: 'InstRejct', // Maps to new 'InstRejct'
-  SYSTEM_ALERT: 'SysAlert', // Maps to new 'SysAlert'
-  ACCOUNT_STATUS: 'AccStatus', // Maps to new 'AccStatus'
-  PAYMENT_PROCESSED: 'Payment', // Maps to new 'Payment'
-  ENROLLMENT: 'Enrollment', // Maps to new 'Enrollment'
-  COURSE_UPDATE: 'CourseUpdate', // Maps to new 'CourseUpdate'
-  ASSIGNMENT: 'Assignment', // Maps to new 'Assignment'
-  TEST_REMINDER: 'TestReminder', // Maps to new 'TestReminder'
-  WALLET_CREDIT: 'WalletCredit', // Maps to new 'WalletCredit'
-  WALLET_DEBIT: 'WalletDebit', // Maps to new 'WalletDebit'
-  WALLET_WITHDRAWAL: 'WalletWithdrawal' // Maps to new 'WalletWithdrawal'
+  SYSTEM: 'SYSTEM'
 };
 
 /**
  * Helper function to convert any notification type format to the backend-compatible format
  * This ensures that even if old constants are used, the correct value is sent to the backend
- * 
+ *
  * @param {string} type - The notification type (can be in any format)
  * @returns {string} - The backend-compatible notification type
  */
 export const normalizeNotificationType = (type) => {
-  // If the type is already a valid backend value, return it directly
-  if (Object.values(NOTIFICATION_TYPES).includes(type)) {
+  if (!type) return 'SYSTEM'; // Default value
+  
+  // List of valid enum values from backend
+  const validEnumValues = [
+    // New values using PascalCase
+    'Payment', 'Enrollment', 'CourseUpdate', 'Assignment', 'TestReminder', 'General',
+    // Abbreviated values
+    'CrsApprv', 'CrsRejct', 'CrsSubmt', 'CrsRevsn', 'SysAlert', 'AccStatus',
+    'InstApprv', 'InstRejct', 'WalletCredit', 'WalletDebit', 'WalletWithdrawal',
+    // Legacy values
+    'COURSE', 'SYSTEM'
+  ];
+
+  // If type is already a valid enum value, return it directly
+  if (validEnumValues.includes(type)) {
     return type;
   }
-  
-  // If it's a key in our constants object, return the mapped value
-  if (NOTIFICATION_TYPES[type]) {
-    return NOTIFICATION_TYPES[type];
+
+  // Convert from legacy/string values to enum
+  switch (type.toUpperCase()) {
+    // Payment related
+    case 'PAYMENT':
+    case 'PAYMENT_PROCESSED':
+      return 'Payment';
+      
+    // Enrollment related
+    case 'ENROLLMENT':
+      return 'Enrollment';
+      
+    // Course related
+    case 'COURSE_UPDATE':
+      return 'CourseUpdate';
+    case 'COURSE_APPROVAL':
+      return 'CrsApprv';
+    case 'COURSE_REJECTION':
+      return 'CrsRejct';
+    case 'COURSE_SUBMISSION':
+      return 'CrsSubmt';
+    case 'COURSE_REVISION':
+      return 'CrsRevsn';
+      
+    // Assignment related
+    case 'ASSIGNMENT':
+      return 'Assignment';
+    case 'TEST_REMINDER':
+      return 'TestReminder';
+      
+    // System related
+    case 'SYSTEM_ALERT':
+      return 'SysAlert';
+    case 'ACCOUNT_STATUS':
+      return 'AccStatus';
+      
+    // Instructor related
+    case 'INSTRUCTOR_APPROVAL':
+      return 'InstApprv';
+    case 'INSTRUCTOR_REJECTION':
+      return 'InstRejct';
+      
+    // Wallet related
+    case 'WALLET_CREDIT':
+      return 'WalletCredit';
+    case 'WALLET_DEBIT':
+      return 'WalletDebit';
+    case 'WALLET_WITHDRAWAL':
+      return 'WalletWithdrawal';
+      
+    // Default fallback
+    default:
+      console.warn(`Unknown notification type: ${type}, falling back to SYSTEM`);
+      return 'SYSTEM';
   }
-  
-  // Default fallback
-  console.warn(`Unknown notification type: ${type}, defaulting to 'General'`);
-  return 'General';
 };
 
 /**
@@ -81,29 +120,34 @@ export const normalizeNotificationType = (type) => {
  */
 export const NOTIFICATION_CATEGORIES = {
   COURSE_RELATED: [
-    NOTIFICATION_TYPES.CourseUpdate,
-    NOTIFICATION_TYPES.CrsApprv,
-    NOTIFICATION_TYPES.CrsRejct,
-    NOTIFICATION_TYPES.CrsSubmt,
-    NOTIFICATION_TYPES.CrsRevsn,
-    NOTIFICATION_TYPES.Enrollment,
-    NOTIFICATION_TYPES.Assignment,
-    NOTIFICATION_TYPES.TestReminder
+    NOTIFICATION_TYPES.COURSE_UPDATE,
+    NOTIFICATION_TYPES.COURSE_APPROVED,
+    NOTIFICATION_TYPES.COURSE_REJECTED,
+    NOTIFICATION_TYPES.COURSE_SUBMITTED,
+    NOTIFICATION_TYPES.COURSE_REVISION,
+    NOTIFICATION_TYPES.ENROLLMENT,
+    NOTIFICATION_TYPES.ASSIGNMENT,
+    NOTIFICATION_TYPES.TEST_REMINDER,
+    NOTIFICATION_TYPES.COURSE // Legacy
   ],
+  
   PAYMENT_RELATED: [
-    NOTIFICATION_TYPES.Payment,
-    NOTIFICATION_TYPES.WalletCredit,
-    NOTIFICATION_TYPES.WalletDebit,
-    NOTIFICATION_TYPES.WalletWithdrawal
+    NOTIFICATION_TYPES.PAYMENT,
+    NOTIFICATION_TYPES.WALLET_CREDIT,
+    NOTIFICATION_TYPES.WALLET_DEBIT,
+    NOTIFICATION_TYPES.WALLET_WITHDRAWAL
   ],
+  
   ACCOUNT_RELATED: [
-    NOTIFICATION_TYPES.AccStatus,
-    NOTIFICATION_TYPES.InstApprv,
-    NOTIFICATION_TYPES.InstRejct
+    NOTIFICATION_TYPES.ACCOUNT_STATUS,
+    NOTIFICATION_TYPES.INSTRUCTOR_APPROVED,
+    NOTIFICATION_TYPES.INSTRUCTOR_REJECTED
   ],
+  
   SYSTEM: [
-    NOTIFICATION_TYPES.SysAlert,
-    NOTIFICATION_TYPES.General
+    NOTIFICATION_TYPES.SYSTEM_ALERT,
+    NOTIFICATION_TYPES.GENERAL,
+    NOTIFICATION_TYPES.SYSTEM // Legacy
   ]
 };
 
@@ -111,24 +155,95 @@ export const NOTIFICATION_CATEGORIES = {
  * Display names for notification types (for UI presentation)
  */
 export const NOTIFICATION_TYPE_DISPLAY_NAMES = {
-  [NOTIFICATION_TYPES.Payment]: 'Payment Confirmation',
-  [NOTIFICATION_TYPES.Enrollment]: 'Course Enrollment',
-  [NOTIFICATION_TYPES.CourseUpdate]: 'Course Update',
-  [NOTIFICATION_TYPES.Assignment]: 'Assignment',
-  [NOTIFICATION_TYPES.TestReminder]: 'Test Reminder',
-  [NOTIFICATION_TYPES.General]: 'General Notification',
-  [NOTIFICATION_TYPES.CrsApprv]: 'Course Approved',
-  [NOTIFICATION_TYPES.CrsRejct]: 'Course Rejected',
-  [NOTIFICATION_TYPES.CrsSubmt]: 'Course Submitted',
-  [NOTIFICATION_TYPES.CrsRevsn]: 'Course Revision Requested',
-  [NOTIFICATION_TYPES.SysAlert]: 'System Alert',
-  [NOTIFICATION_TYPES.AccStatus]: 'Account Status Update',
-  [NOTIFICATION_TYPES.InstApprv]: 'Instructor Approved',
-  [NOTIFICATION_TYPES.InstRejct]: 'Instructor Rejected',
-  [NOTIFICATION_TYPES.WalletCredit]: 'Wallet Credit',
-  [NOTIFICATION_TYPES.WalletDebit]: 'Wallet Debit',
-  [NOTIFICATION_TYPES.WalletWithdrawal]: 'Wallet Withdrawal',
+  [NOTIFICATION_TYPES.PAYMENT]: 'Payment Confirmation',
+  [NOTIFICATION_TYPES.ENROLLMENT]: 'Course Enrollment',
+  [NOTIFICATION_TYPES.COURSE_UPDATE]: 'Course Update',
+  [NOTIFICATION_TYPES.ASSIGNMENT]: 'Assignment',
+  [NOTIFICATION_TYPES.TEST_REMINDER]: 'Test Reminder',
+  [NOTIFICATION_TYPES.GENERAL]: 'General Notification',
+  [NOTIFICATION_TYPES.COURSE_APPROVED]: 'Course Approved',
+  [NOTIFICATION_TYPES.COURSE_REJECTED]: 'Course Rejected',
+  [NOTIFICATION_TYPES.COURSE_SUBMITTED]: 'Course Submitted',
+  [NOTIFICATION_TYPES.COURSE_REVISION]: 'Course Revision Requested',
+  [NOTIFICATION_TYPES.SYSTEM_ALERT]: 'System Alert',
+  [NOTIFICATION_TYPES.ACCOUNT_STATUS]: 'Account Status Update',
+  [NOTIFICATION_TYPES.INSTRUCTOR_APPROVED]: 'Instructor Approved',
+  [NOTIFICATION_TYPES.INSTRUCTOR_REJECTED]: 'Instructor Rejected',
+  [NOTIFICATION_TYPES.WALLET_CREDIT]: 'Wallet Credit',
+  [NOTIFICATION_TYPES.WALLET_DEBIT]: 'Wallet Debit',
+  [NOTIFICATION_TYPES.WALLET_WITHDRAWAL]: 'Wallet Withdrawal',
+  
   // Legacy mappings
   [NOTIFICATION_TYPES.COURSE]: 'Course Notification',
   [NOTIFICATION_TYPES.SYSTEM]: 'System Notification'
+};
+
+/**
+ * Get badge color based on notification type
+ * @param {string} type - Notification type
+ * @returns {string} - Bootstrap color variant
+ */
+export const getNotificationBadgeColor = (type) => {
+  // Course related
+  if ([NOTIFICATION_TYPES.COURSE, NOTIFICATION_TYPES.COURSE_UPDATE, 
+       NOTIFICATION_TYPES.COURSE_SUBMITTED, NOTIFICATION_TYPES.COURSE_REVISION,
+       NOTIFICATION_TYPES.ENROLLMENT].includes(type)) {
+    return 'info';
+  }
+  
+  // Approval related
+  if ([NOTIFICATION_TYPES.COURSE_APPROVED, NOTIFICATION_TYPES.INSTRUCTOR_APPROVED].includes(type)) {
+    return 'success';
+  }
+  
+  // Rejection related
+  if ([NOTIFICATION_TYPES.COURSE_REJECTED, NOTIFICATION_TYPES.INSTRUCTOR_REJECTED].includes(type)) {
+    return 'danger';
+  }
+  
+  // Payment related
+  if (type === NOTIFICATION_TYPES.PAYMENT) {
+    return 'primary';
+  }
+  
+  // Wallet related
+  if (type === NOTIFICATION_TYPES.WALLET_CREDIT) {
+    return 'success';
+  }
+  
+  if ([NOTIFICATION_TYPES.WALLET_DEBIT, NOTIFICATION_TYPES.WALLET_WITHDRAWAL].includes(type)) {
+    return 'warning';
+  }
+  
+  // System related
+  if ([NOTIFICATION_TYPES.SYSTEM, NOTIFICATION_TYPES.SYSTEM_ALERT].includes(type)) {
+    return 'warning';
+  }
+  
+  // Account related
+  if (type === NOTIFICATION_TYPES.ACCOUNT_STATUS) {
+    return 'secondary';
+  }
+  
+  // Education related
+  if ([NOTIFICATION_TYPES.ASSIGNMENT, NOTIFICATION_TYPES.TEST_REMINDER].includes(type)) {
+    return 'dark';
+  }
+  
+  // General
+  if (type === NOTIFICATION_TYPES.GENERAL) {
+    return 'light';
+  }
+  
+  // Default
+  return 'secondary';
+};
+
+/**
+ * Get friendly display name for notification type
+ * @param {string} type - Notification type
+ * @returns {string} - User-friendly display name
+ */
+export const getNotificationTypeName = (type) => {
+  return NOTIFICATION_TYPE_DISPLAY_NAMES[type] || type;
 };

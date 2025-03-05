@@ -65,6 +65,7 @@ const InstructorDashboard = ({ instructorId }) => {
         <Grid item xs={12}>
           <ReviewManagementPanel instructorId={instructorId} />
         </Grid>
+
       </Grid>
     </Box>
   );

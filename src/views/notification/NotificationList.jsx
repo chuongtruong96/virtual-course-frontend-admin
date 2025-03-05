@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { useContext, useState, useEffect, useRef , useMemo, useCallback } from 'react';
 import {
   Table,
   Spinner,
@@ -18,41 +18,113 @@ import {
   Col,
   ListGroup
 } from 'react-bootstrap';
-import { NotificationContext } from '../../contexts/NotificationContext';
 import { AuthContext } from '../../contexts/AuthContext';
 import useNotifications from '../../hooks/useNotifications';
-import NotificationService from '../../services/notificationService';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
+import { 
+  normalizeNotificationType, 
+  getNotificationBadgeColor, 
+  NOTIFICATION_TYPES,
+  NOTIFICATION_CATEGORIES
+} from '../../constants/notificationTypes';
 
+/**
+ * NotificationList component displays a list of notifications with filtering,
+ * pagination, and management capabilities
+ */
 const NotificationList = () => {
-  const { addNotification } = useContext(NotificationContext);
   const { auth } = useContext(AuthContext);
+  const queryClient = useQueryClient();
+  
+  // State for UI controls
   const [activeTab, setActiveTab] = useState('all');
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState(null);
-  const [editContent, setEditContent] = useState('');
   const [filterType, setFilterType] = useState(null);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'card'
   const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
   
+  // State for modals
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [showSendMultipleModal, setShowSendMultipleModal] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [editContent, setEditContent] = useState('');
+  
+  // State for new notifications
+  const [newNotification, setNewNotification] = useState({
+    userId: '',
+    content: '',
+    type: 'SYSTEM',
+    courseId: '',
+    paymentId: ''
+  });
+  
+  // State for multiple notifications
+  const [multipleNotification, setMultipleNotification] = useState({
+    userIds: '',
+    content: '',
+    type: 'SYSTEM',
+    courseId: '',
+    paymentId: ''
+  });
+  
   // Admin-specific states
-  const isAdmin = auth?.roles?.some(role => 
-    typeof role === 'string' 
-        ? role === 'ROLE_ADMIN' 
-        : role.authority === 'ROLE_ADMIN'
-);  
-
-const queryClient = useQueryClient();
-const [viewAllUsers, setViewAllUsers] = useState(false);
+  const [viewAllUsers, setViewAllUsers] = useState(false);
   const [targetUserId, setTargetUserId] = useState('');
   const [specificUserId, setSpecificUserId] = useState(null);
+  // Check user roles
+  const checkRole = useCallback((roleToCheck) => {
+    // Check if auth or roles is undefined
+    if (!auth || !auth.roles) {
+      // Try to get roles directly from localStorage as a fallback
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        const roles = storedUser?.roles;
+        
+        if (roles) {
+          // Check if roles is an array of strings
+          if (typeof roles[0] === 'string') {
+            return roles.includes(roleToCheck);
+          }
+          // Check if roles is an array of objects with authority property
+          else if (typeof roles[0] === 'object') {
+            return roles.some(role => role.authority === roleToCheck);
+          }
+        }
+      } catch (e) {
+        console.error('Error checking roles from localStorage:', e);
+      }
+      return false;
+    }
+    
+    // If auth.roles exists, check it
+    return auth.roles.some(role => {
+      if (typeof role === 'string') {
+        return role === roleToCheck;
+      }
+      return role.authority === roleToCheck;
+    });
+  }, [auth]);
 
-  // Ensure user is authenticated and has a valid id
+  const isAdmin = useMemo(() => checkRole('ROLE_ADMIN'), [checkRole]);
+  const isStudent = useMemo(() => checkRole('ROLE_STUDENT'), [checkRole]);
+  const isInstructor = useMemo(() => checkRole('ROLE_INSTRUCTOR'), [checkRole]);
+
+  // Debug log
+  useEffect(() => {
+    console.log('User roles:', {
+      isAdmin,
+      isStudent,
+      isInstructor,
+      allRoles: auth?.roles
+    });
+  }, [isAdmin, isStudent, isInstructor, auth?.roles]);
+
+  // Ensure user is authenticated
   if (!auth?.user?.id) {
     return <Alert variant="warning">User not authenticated. Please log in.</Alert>;
   }
@@ -68,170 +140,48 @@ const [viewAllUsers, setViewAllUsers] = useState(false);
       userId = specificUserId;
     }
   }
-
-  const TestApiButton = () => {
-    if (!isAdmin) return null;
-    
-    return (
-      <Button 
-        variant="outline-secondary" 
-        size="sm" 
-        className="ms-2"
-        onClick={async () => {
-          try {
-            console.log("Testing API directly");
-            const response = await fetch('http://localhost:8080/api/notifications/all');
-            const data = await response.json();
-            console.log("Direct API test result:", data);
-            alert(`API test result: ${data.length} notifications found`);
-          } catch (error) {
-            console.error("Direct API test failed:", error);
-            alert(`API test failed: ${error.message}`);
-          }
-        }}
-      >
-        Test API Directly
-      </Button>
-    );
-  };
-
-
-
-  const AdminControls = () => {
-  if (!isAdmin) return null;
+  const searchTimeoutRef = useRef(null);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  // Add this effect for debouncing search
+useEffect(() => {
+  if (searchTimeoutRef.current) {
+    clearTimeout(searchTimeoutRef.current);
+  }
   
-  const handleViewAllToggle = () => {
-    console.log("Toggling viewAllUsers from", viewAllUsers, "to", !viewAllUsers);
-    
-    // Đặt giá trị mới
-    const newValue = !viewAllUsers;
-    setViewAllUsers(newValue);
-    
-    // Reset các giá trị khác
-    setSpecificUserId(null);
-    setTargetUserId('');
-    setPage(0);
-    
-    // Force invalidate cache
-    if (newValue) {
-      console.log("Invalidating 'all' notifications cache");
-      queryClient.invalidateQueries(['notifications', 'all']);
-      queryClient.invalidateQueries(['notifications', 'all', 'paginated']);
-    }
-    
-    // Delay refresh để đảm bảo state đã được cập nhật
-    setTimeout(() => {
-      console.log("Refreshing with viewAllUsers =", newValue);
-      refreshNotifications();
-    }, 300);
-  };
+  searchTimeoutRef.current = setTimeout(() => {
+    setDebouncedSearchTerm(searchTerm);
+  }, 500); // 500ms delay
   
-  return (
-    <Card className="mb-3">
-      <Card.Body>
-        <Card.Title>Admin Controls</Card.Title>
-        <Form.Check 
-          type="switch"
-          id="view-all-notifications"
-          label="View notifications for all users"
-          checked={viewAllUsers}
-          onChange={handleViewAllToggle}
-          className="mb-2"
-        />
-        {viewAllUsers && (
-          <Button 
-            variant="outline-primary" 
-            size="sm" 
-            onClick={() => {
-              console.log("Manual refresh triggered");
-              queryClient.invalidateQueries(['notifications', 'all']);
-              queryClient.invalidateQueries(['notifications', 'all', 'paginated']);
-              setTimeout(refreshNotifications, 100);
-            }}
-          >
-            Force Refresh All Notifications
-          </Button>
-        )}
-        <TestApiButton />
-      </Card.Body>
-    </Card>
-  );
-};
-
-  // Admin user search component
-  const AdminUserSearch = () => {
-    if (!isAdmin) return null;
-    
-    return (
-      <Card className="mb-3">
-        <Card.Body>
-          <Card.Title>View Specific User's Notifications</Card.Title>
-          <Form onSubmit={(e) => {
-            e.preventDefault();
-            if (targetUserId) {
-              setSpecificUserId(parseInt(targetUserId, 10));
-              setViewAllUsers(false);
-              setPage(0);
-            }
-          }}>
-            <InputGroup>
-              <FormControl
-                placeholder="Enter user ID to view their notifications..."
-                value={targetUserId}
-                onChange={(e) => setTargetUserId(e.target.value)}
-                type="number"
-                min="1"
-              />
-              <Button type="submit" variant="outline-primary">
-                View User Notifications
-              </Button>
-            </InputGroup>
-          </Form>
-          
-          {specificUserId && (
-            <div className="mt-2">
-              <Badge bg="info">Viewing notifications for User ID: {specificUserId}</Badge>
-              <Button 
-                variant="link" 
-                size="sm"
-                onClick={() => {
-                  setSpecificUserId(null);
-                  setTargetUserId('');
-                }}
-              >
-                Clear
-              </Button>
-            </div>
-          )}
-        </Card.Body>
-      </Card>
-    );
-  };
-
-  // Determine options based on active tab, filters, and admin view
-  const getOptions = () => {
-    const options = {
-      page,
-      size,
-      enablePagination: true,
-      viewAllUsers: viewAllUsers && isAdmin // Chỉ bật viewAllUsers khi user là admin
-    };
-
-    if (activeTab === 'unread') {
-      options.unreadOnly = true;
-    } else if (activeTab === 'recent') {
-      options.recentOnly = true;
+  return () => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
-
-    if (filterType) {
-      options.type = filterType;
-    }
-
-    return options;
   };
+}, [searchTerm]);
+  // Options for useNotifications hook
+  const options = useMemo(() => ({
+    page,
+    size,
+    type: filterType,
+    searchTerm: debouncedSearchTerm, // Use debounced search term here,
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate,
+    enablePagination: true,
+    viewAllUsers,
+    isAdmin,
+    unreadOnly: activeTab === 'unread',
+    recentOnly: activeTab === 'recent'
+  }), [
+    page, size, filterType, debouncedSearchTerm, dateRange, // Changed here
+    viewAllUsers, isAdmin, activeTab
+  ]);
+  // Add this inside the component, before the useNotifications hook
 
-  // Use the enhanced hook
+  
+  // Use the notifications hook
   const {
+    allNotifications,
+    allNotificationsPaginated,
     paginatedNotifications,
     unreadCount,
     statistics,
@@ -244,100 +194,220 @@ const [viewAllUsers, setViewAllUsers] = useState(false);
     deleteNotification,
     deleteAllRead,
     updateNotificationContent,
-    refreshNotifications
-  } = useNotifications(viewAllUsers && isAdmin ? null : userId, getOptions());
-  console.log("useNotifications result:", {
-    paginatedNotifications,
-    unreadCount,
-    statistics,
-    isLoading,
-    isError,
-    error
-});
-  // Debug logs - MOVED AFTER useNotifications hook
-  useEffect(() => {
-    console.log("Current user ID:", auth?.user?.id);
-    console.log("Is admin:", isAdmin);
-    console.log("View all users:", viewAllUsers);
-    console.log("Specific user ID:", specificUserId);
+    refreshNotifications,
+    sendNotification,
+    sendNotificationToMultipleUsers
+  } = useNotifications(userId, options);
+  // Handle send notification
+  const handleSendNotification = useCallback(() => {
+    const { userId, content, type, courseId, paymentId } = newNotification;
     
-    // Refresh notifications every 30 seconds
-    const interval = setInterval(() => {
-      refreshNotifications();
-    }, 30000);
+    if (!userId || !content || !type) {
+      alert('User ID, content, and type are required');
+      return;
+    }
     
-    return () => clearInterval(interval);
-  }, [auth, isAdmin, viewAllUsers, specificUserId, refreshNotifications]);
-  
-  // Search notifications
-  const { paginatedNotifications: searchResults, isLoading: isSearchLoading } = useNotifications(userId, {
-    searchTerm,
-    page,
-    size,
-    enablePagination: true,
-    viewAllUsers: viewAllUsers && isAdmin
-  });
+    const normalizedType = normalizeNotificationType(type);
+    
+    sendNotification({
+      targetUserId: parseInt(userId, 10),
+      content,
+      type: normalizedType,
+      courseId: courseId ? parseInt(courseId, 10) : null,
+      paymentId: paymentId ? parseInt(paymentId, 10) : null
+    });
+    
+    setShowSendModal(false);
+    setNewNotification({
+      userId: '',
+      content: '',
+      type: 'SYSTEM',
+      courseId: '',
+      paymentId: ''
+    });
+  }, [newNotification, sendNotification]);
 
-  // Date range search
-  const { notifications: dateRangeResults, isLoading: isDateRangeLoading } = useNotifications(userId, {
-    startDate: dateRange.startDate,
-    endDate: dateRange.endDate,
-    enabled: !!(dateRange.startDate && dateRange.endDate),
-    viewAllUsers: viewAllUsers && isAdmin
-  });
+  // Handle send multiple notification
+  const handleSendMultipleNotification = useCallback(() => {
+    const { userIds, content, type, courseId, paymentId } = multipleNotification;
+    
+    // Validate input
+    if (!userIds || !content || !type) {
+      alert('User IDs, content, and type are required');
+      return;
+    }
+    
+    // Parse user IDs
+    const userIdArray = userIds.split(',')
+      .map(id => parseInt(id.trim(), 10))
+      .filter(id => !isNaN(id));
+    
+    if (userIdArray.length === 0) {
+      alert('Please enter valid user IDs (comma separated)');
+      return;
+    }
+    
+    // Normalize type before sending
+    const normalizedType = normalizeNotificationType(type);
+    
+    // Call API to send notification to multiple users
+    sendNotificationToMultipleUsers({
+      userIds: userIdArray,
+      content,
+      type: normalizedType,
+      courseId: courseId ? parseInt(courseId, 10) : null,
+      paymentId: paymentId ? parseInt(paymentId, 10) : null
+    });
+    
+    // Close modal and reset form
+    setShowSendMultipleModal(false);
+    setMultipleNotification({
+      userIds: '',
+      content: '',
+      type: 'SYSTEM',
+      courseId: '',
+      paymentId: ''
+    });
+  }, [multipleNotification, sendNotificationToMultipleUsers]);
 
+  // Admin controls component
+  const AdminControls = useMemo(() => {
+    if (!isAdmin) return null;
+    
+    return (
+      <Card className="mb-3">
+        <Card.Body>
+          <Card.Title>Admin Controls</Card.Title>
+          <Form.Check
+            type="switch"
+            id="view-all-notifications"
+            label="View notifications for all users"
+            checked={viewAllUsers}
+            onChange={() => {
+              setViewAllUsers(!viewAllUsers);
+              setSpecificUserId(null);
+              setTargetUserId('');
+              setPage(0);
+              queryClient.invalidateQueries({ queryKey: ['notifications', 'all'] });
+              setTimeout(refreshNotifications, 300);
+            }}
+            className="mb-2"
+          />
+          {viewAllUsers && (
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={refreshNotifications}
+            >
+              Force Refresh All Notifications
+            </Button>
+          )}
+        </Card.Body>
+      </Card>
+    );
+  }, [isAdmin, viewAllUsers, refreshNotifications, queryClient]);
+
+  // Admin user search component
+  const AdminUserSearch = useMemo(() => {
+    if (!isAdmin) return null;
+    
+    return (
+      <Card className="mb-3">
+        <Card.Body>
+          <Card.Title>View Specific User's Notifications</Card.Title>
+          <InputGroup className="mb-3">
+            <FormControl
+              placeholder="Enter user ID"
+              value={targetUserId}
+              onChange={(e) => setTargetUserId(e.target.value)}
+              type="number"
+            />
+            <Button 
+              variant="outline-primary"
+              onClick={() => {
+                if (targetUserId) {
+                  setSpecificUserId(parseInt(targetUserId, 10));
+                  setViewAllUsers(false);
+                  setPage(0);
+                  setTimeout(refreshNotifications, 300);
+                }
+              }}
+            >
+              View User
+            </Button>
+          </InputGroup>
+          {specificUserId && (
+            <Alert variant="info">
+              Viewing notifications for User ID: {specificUserId}
+              <Button
+                variant="link"
+                className="p-0 ms-2"
+                onClick={() => {
+                  setSpecificUserId(null);
+                  setTargetUserId('');
+                  setTimeout(refreshNotifications, 300);
+                }}
+              >
+                Clear
+              </Button>
+            </Alert>
+          )}
+        </Card.Body>
+      </Card>
+    );
+  }, [isAdmin, targetUserId, specificUserId, refreshNotifications]);
   // Handle pagination
-  const handlePageChange = (newPage) => {
+  const handlePageChange = useCallback((newPage) => {
     setPage(newPage);
-  };
+  }, []);
 
   // Handle tab change
-  const handleTabChange = (tab) => {
+  const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
     setPage(0); // Reset to first page when changing tabs
     setFilterType(null); // Reset type filter
     setSearchTerm(''); // Reset search
-  };
+  }, []);
 
   // Handle mark as read
-  const handleMarkAsRead = (id) => {
+  const handleMarkAsRead = useCallback((id) => {
     markAsRead(id);
-  };
+  }, [markAsRead]);
 
   // Handle mark all as read
-  const handleMarkAllAsRead = () => {
+  const handleMarkAllAsRead = useCallback(() => {
     markAllAsRead();
-  };
+  }, [markAllAsRead]);
 
   // Handle mark all as read by type
-  const handleMarkAllAsReadByType = (type) => {
+  const handleMarkAllAsReadByType = useCallback((type) => {
     markAllAsReadByType(type);
-  };
+  }, [markAllAsReadByType]);
 
   // Handle delete
-  const handleDelete = (notification) => {
+  const handleDelete = useCallback((notification) => {
     setSelectedNotification(notification);
     setShowDeleteModal(true);
-  };
+  }, []);
 
   // Confirm delete
-  const confirmDelete = () => {
+  const confirmDelete = useCallback(() => {
     if (selectedNotification) {
       deleteNotification(selectedNotification.id);
       setShowDeleteModal(false);
       setSelectedNotification(null);
     }
-  };
+  }, [selectedNotification, deleteNotification]);
 
   // Handle edit
-  const handleEdit = (notification) => {
+  const handleEdit = useCallback((notification) => {
     setSelectedNotification(notification);
     setEditContent(notification.content);
     setShowEditModal(true);
-  };
+  }, []);
 
   // Confirm edit
-  const confirmEdit = () => {
+  const confirmEdit = useCallback(() => {
     if (selectedNotification && editContent) {
       updateNotificationContent({
         id: selectedNotification.id,
@@ -347,126 +417,105 @@ const [viewAllUsers, setViewAllUsers] = useState(false);
       setSelectedNotification(null);
       setEditContent('');
     }
-  };
+  }, [selectedNotification, editContent, updateNotificationContent]);
 
   // Handle delete all read
-  const handleDeleteAllRead = () => {
+  const handleDeleteAllRead = useCallback(() => {
     if (window.confirm('Are you sure you want to delete all read notifications?')) {
       deleteAllRead();
     }
-  };
+  }, [deleteAllRead]);
 
   // Handle search
-  const handleSearch = (e) => {
+  const handleSearch = useCallback((e) => {
     e.preventDefault();
     // The search is already triggered by the useNotifications hook
     // when searchTerm changes
-  };
+  }, []);
 
   // Handle date range search
-  const handleDateRangeSearch = (e) => {
-    e.preventDefault();
-    // The date range search is already triggered by the useNotifications hook
-    // when dateRange changes
-  };
+  // Modify the handleDateRangeSearch function
+const handleDateRangeSearch = useCallback((e) => {
+  e.preventDefault();
+  
+  // Validate date range
+  if (!dateRange.startDate || !dateRange.endDate) {
+    alert('Please select both start and end dates');
+    return;
+  }
+  
+  // Ensure start date is before end date
+  if (new Date(dateRange.startDate) > new Date(dateRange.endDate)) {
+    alert('Start date must be before end date');
+    return;
+  }
+  
+  // Force refresh to apply date filter
+  refreshNotifications();
+}, [dateRange, refreshNotifications]);
 
   // Handle type filter
-  const handleTypeFilter = (type) => {
+  const handleTypeFilter = useCallback((type) => {
     setFilterType(type);
     setPage(0); // Reset to first page when changing filter
-  };
+    // Add this line to force a refresh when type filter changes
+    setTimeout(() => refreshNotifications(), 100);
+  }, [refreshNotifications]);
 
   // Handle view mode toggle
-  const handleViewModeToggle = () => {
+  const handleViewModeToggle = useCallback(() => {
     setViewMode(viewMode === 'table' ? 'card' : 'table');
-  };
+  }, [viewMode]);
 
   // Get notifications to display based on current filters and search
-  const getNotificationsToDisplay = () => {
-    console.log("Search results:", searchResults);
-    console.log("Date range results:", dateRangeResults);
-    console.log("Paginated notifications:", paginatedNotifications);
-    console.log("viewAllUsers:", viewAllUsers);
-    
-    if (searchTerm) {
-      return searchResults?.content || [];
-    } else if (dateRange.startDate && dateRange.endDate) {
-      return dateRangeResults || [];
-    } else if (viewAllUsers && isAdmin) {
-      console.log("Using all notifications view");
-      // Kiểm tra xem paginatedNotifications có dữ liệu không
-      if (paginatedNotifications && paginatedNotifications.content) {
-        console.log("Paginated notifications content:", paginatedNotifications.content);
-        return paginatedNotifications.content;
-      } else {
-        console.log("No paginated notifications content available");
-        return [];
-      }
-    } else {
-      console.log("Using regular user notifications view");
-      return paginatedNotifications?.content || [];
+  const notificationsToDisplay = useMemo(() => {
+    if (isAdmin && viewAllUsers) {
+      return allNotificationsPaginated?.content || [];
     }
-  };
-
-  // Get badge color based on notification type
-  const getBadgeColor = (type) => {
-    console.log('Notification type:', type); // Debug log
-    
-    // Legacy notification types
-    if (type === 'COURSE') return 'info';
-    if (type === 'PAYMENT') return 'success';
-    if (type === 'SYSTEM') return 'warning';
-    
-    // New notification types
-    if (type === 'InstApprv' || type === 'CrsApprv') return 'success';
-    if (type === 'InstRejct' || type === 'CrsRejct') return 'danger';
-    if (type === 'SysAlert') return 'warning';
-    if (type === 'Payment' || type === 'WalletCredit' || type === 'WalletDebit') return 'primary';
-    if (type === 'Enrollment' || type === 'CourseUpdate') return 'info';
-    if (type === 'Assignment' || type === 'TestReminder') return 'dark';
-    if (type === 'AccStatus') return 'light';
-    
-    // Default
-    return 'secondary';
-  };
+    return paginatedNotifications?.content || [];
+  }, [isAdmin, viewAllUsers, allNotificationsPaginated, paginatedNotifications]);
 
   // Get friendly name for notification type
-  const getNotificationTypeName = (type) => {
+  const getNotificationTypeName = useCallback((type) => {
     switch (type) {
+      // Legacy values
       case 'COURSE': return 'Course';
       case 'PAYMENT': return 'Payment';
       case 'SYSTEM': return 'System';
-      case 'InstApprv': return 'Instructor Approved';
-      case 'InstRejct': return 'Instructor Rejected';
+      // New PascalCase values
+      case 'Payment': return 'Payment';
+      case 'Enrollment': return 'Enrollment';
+      case 'CourseUpdate': return 'Course Update';
+      case 'Assignment': return 'Assignment';
+      case 'TestReminder': return 'Test Reminder';
+      case 'General': return 'General';
+      // Abbreviated values
       case 'CrsApprv': return 'Course Approved';
       case 'CrsRejct': return 'Course Rejected';
       case 'CrsSubmt': return 'Course Submitted';
       case 'CrsRevsn': return 'Course Revision';
       case 'SysAlert': return 'System Alert';
       case 'AccStatus': return 'Account Status';
-      case 'Payment': return 'Payment';
-      case 'Enrollment': return 'Enrollment';
-      case 'CourseUpdate': return 'Course Update';
-      case 'Assignment': return 'Assignment';
-      case 'TestReminder': return 'Test Reminder';
+      case 'InstApprv': return 'Instructor Approved';
+      case 'InstRejct': return 'Instructor Rejected';
       case 'WalletCredit': return 'Wallet Credit';
       case 'WalletDebit': return 'Wallet Debit';
       case 'WalletWithdrawal': return 'Wallet Withdrawal';
+      // Default: return the type itself
       default: return type;
     }
-  };
+  }, []);
 
   // Format date
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     try {
       return format(new Date(dateString), 'MMM dd, yyyy HH:mm');
     } catch (e) {
       return dateString;
     }
-  };
-
+  }, []);
   // Render loading state
-  if (isLoading || isSearchLoading || isDateRangeLoading) {
+  if (isLoading) {
     return (
       <div className="text-center my-5">
         <Spinner animation="border" />
@@ -481,14 +530,34 @@ const [viewAllUsers, setViewAllUsers] = useState(false);
   }
 
   // Get notifications to display
-  const notifications = getNotificationsToDisplay();
+  const notifications = notificationsToDisplay;
+
   console.log("Notifications to display:", notifications);
 
   return (
     <div className="notification-management">
+      {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h3>Notification Management</h3>
         <div>
+          {isAdmin && (
+            <>
+              <Button
+                variant="primary"
+                className="me-2"
+                onClick={() => setShowSendModal(true)}
+              >
+                Send New Notification
+              </Button>
+              <Button
+                variant="outline-primary"
+                className="me-2"
+                onClick={() => setShowSendMultipleModal(true)}
+              >
+                Send to Multiple Users
+              </Button>
+            </>
+          )}
           <Badge bg="primary" className="me-2">
             Unread: {unreadCount || 0}
           </Badge>
@@ -505,12 +574,8 @@ const [viewAllUsers, setViewAllUsers] = useState(false);
       </div>
 
       {/* Admin Controls */}
-      {isAdmin && (
-        <>
-          <AdminControls />
-          <AdminUserSearch />
-        </>
-      )}
+      {isAdmin && AdminControls}
+      {isAdmin && AdminUserSearch}
 
       {/* Statistics Cards */}
       {statistics && (
@@ -541,350 +606,543 @@ const [viewAllUsers, setViewAllUsers] = useState(false);
           </Col>
           <Col md={3}>
             <Card className="text-center">
-            <Card.Body>
-              <Card.Title>System</Card.Title>
-              <h3>{statistics.systemNotificationsCount}</h3>
-            </Card.Body>
-          </Card>
+              <Card.Body>
+                <Card.Title>System</Card.Title>
+                <h3>{statistics.systemNotificationsCount}</h3>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
+      {/* Search and Filters */}
+      <Row className="mb-4">
+        <Col md={6}>
+          <Form onSubmit={handleSearch}>
+            <InputGroup>
+              <FormControl
+                placeholder="Search notifications..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Button type="submit" variant="outline-secondary">
+                Search
+              </Button>
+            </InputGroup>
+          </Form>
+        </Col>
+        <Col md={4}>
+          <Form onSubmit={handleDateRangeSearch}>
+            <InputGroup>
+              <FormControl
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              />
+              <FormControl
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              />
+              <Button type="submit" variant="outline-secondary">
+                Filter
+              </Button>
+            </InputGroup>
+          </Form>
+        </Col>
+        <Col md={2} className="d-flex justify-content-end">
+          <Dropdown>
+            <Dropdown.Toggle variant="outline-secondary" id="dropdown-type-filter">
+              {filterType ? getNotificationTypeName(filterType) : 'Filter by Type'}
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+              <Dropdown.Item onClick={() => handleTypeFilter(null)}>All Types</Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Header>Course Related</Dropdown.Header>
+              <Dropdown.Item onClick={() => handleTypeFilter('COURSE')}>Course (Legacy)</Dropdown.Item>
+              <Dropdown.Item onClick={() => handleTypeFilter('CourseUpdate')}>Course Update</Dropdown.Item>
+              <Dropdown.Item onClick={() => handleTypeFilter('CrsApprv')}>Course Approved</Dropdown.Item>
+              <Dropdown.Item onClick={() => handleTypeFilter('CrsRejct')}>Course Rejected</Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Header>Instructor Related</Dropdown.Header>
+              <Dropdown.Item onClick={() => handleTypeFilter('InstApprv')}>Instructor Approved</Dropdown.Item>
+              <Dropdown.Item onClick={() => handleTypeFilter('InstRejct')}>Instructor Rejected</Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Header>Payment Related</Dropdown.Header>
+              <Dropdown.Item onClick={() => handleTypeFilter('PAYMENT')}>Payment (Legacy)</Dropdown.Item>
+              <Dropdown.Item onClick={() => handleTypeFilter('Payment')}>Payment</Dropdown.Item>
+              <Dropdown.Item onClick={() => handleTypeFilter('WalletCredit')}>Wallet Credit</Dropdown.Item>
+              <Dropdown.Item onClick={() => handleTypeFilter('WalletDebit')}>Wallet Debit</Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Header>System Related</Dropdown.Header>
+              <Dropdown.Item onClick={() => handleTypeFilter('SYSTEM')}>System (Legacy)</Dropdown.Item>
+              <Dropdown.Item onClick={() => handleTypeFilter('SysAlert')}>System Alert</Dropdown.Item>
+              <Dropdown.Item onClick={() => handleTypeFilter('AccStatus')}>Account Status</Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>
+          <Button variant="outline-secondary" className="ms-2" onClick={handleViewModeToggle}>
+            {viewMode === 'table' ? 'Card View' : 'Table View'}
+          </Button>
         </Col>
       </Row>
-    )}
 
-    {/* Search and Filters */}
-    <Row className="mb-4">
-      <Col md={6}>
-        <Form onSubmit={handleSearch}>
-          <InputGroup>
-          <FormControl 
-              placeholder="Search notifications..." 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
-            />
-            <Button type="submit" variant="outline-secondary">
-              Search
-            </Button>
-          </InputGroup>
-        </Form>
-      </Col>
-      <Col md={4}>
-        <Form onSubmit={handleDateRangeSearch}>
-          <InputGroup>
-            <FormControl
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-            />
-            <FormControl
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-            />
-            <Button type="submit" variant="outline-secondary">
-              Filter
-            </Button>
-          </InputGroup>
-        </Form>
-      </Col>
-      <Col md={2} className="d-flex justify-content-end">
-        <Dropdown>
-          <Dropdown.Toggle variant="outline-secondary" id="dropdown-type-filter">
-            {filterType ? getNotificationTypeName(filterType) : 'Filter by Type'}
-          </Dropdown.Toggle>
-          <Dropdown.Menu>
-            <Dropdown.Item onClick={() => handleTypeFilter(null)}>All Types</Dropdown.Item>
-            <Dropdown.Divider />
-            <Dropdown.Header>Course Related</Dropdown.Header>
-            <Dropdown.Item onClick={() => handleTypeFilter('COURSE')}>Course (Legacy)</Dropdown.Item>
-            <Dropdown.Item onClick={() => handleTypeFilter('CourseUpdate')}>Course Update</Dropdown.Item>
-            <Dropdown.Item onClick={() => handleTypeFilter('CrsApprv')}>Course Approved</Dropdown.Item>
-            <Dropdown.Item onClick={() => handleTypeFilter('CrsRejct')}>Course Rejected</Dropdown.Item>
-            <Dropdown.Divider />
-            <Dropdown.Header>Instructor Related</Dropdown.Header>
-            <Dropdown.Item onClick={() => handleTypeFilter('InstApprv')}>Instructor Approved</Dropdown.Item>
-            <Dropdown.Item onClick={() => handleTypeFilter('InstRejct')}>Instructor Rejected</Dropdown.Item>
-            <Dropdown.Divider />
-            <Dropdown.Header>Payment Related</Dropdown.Header>
-            <Dropdown.Item onClick={() => handleTypeFilter('PAYMENT')}>Payment (Legacy)</Dropdown.Item>
-            <Dropdown.Item onClick={() => handleTypeFilter('Payment')}>Payment</Dropdown.Item>
-            <Dropdown.Item onClick={() => handleTypeFilter('WalletCredit')}>Wallet Credit</Dropdown.Item>
-            <Dropdown.Item onClick={() => handleTypeFilter('WalletDebit')}>Wallet Debit</Dropdown.Item>
-            <Dropdown.Divider />
-            <Dropdown.Header>System Related</Dropdown.Header>
-            <Dropdown.Item onClick={() => handleTypeFilter('SYSTEM')}>System (Legacy)</Dropdown.Item>
-            <Dropdown.Item onClick={() => handleTypeFilter('SysAlert')}>System Alert</Dropdown.Item>
-            <Dropdown.Item onClick={() => handleTypeFilter('AccStatus')}>Account Status</Dropdown.Item>
-          </Dropdown.Menu>
-        </Dropdown>
-        <Button variant="outline-secondary" className="ms-2" onClick={handleViewModeToggle}>
-          {viewMode === 'table' ? 'Card View' : 'Table View'}
-        </Button>
-      </Col>
-    </Row>
-
-    {/* Tabs */}
-    <Tabs activeKey={activeTab} onSelect={handleTabChange} className="mb-4">
-      <Tab eventKey="all" title="All Notifications" />
-      <Tab eventKey="unread" title={`Unread (${unreadCount || 0})`} />
-      <Tab eventKey="recent" title="Recent (30 days)" />
-    </Tabs>
-
-    {/* Notifications List */}
-    {notifications && notifications.length > 0 ? (
-      <>
-        {viewMode === 'table' ? (
-          <Table striped bordered hover responsive>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Content</th>
-                <th>Type</th>
-                <th>Sent At</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {notifications.map((notif) => (
-                <tr key={notif.id}>
-                  <td>{notif.id}</td>
-                  <td>{notif.content}</td>
-                  <td>
-                    <Badge bg={getBadgeColor(notif.type)}>
-                      {getNotificationTypeName(notif.type)}
-                    </Badge>
-                  </td>
-                  <td>{formatDate(notif.sentAt)}</td>
-                  <td>
-                    <Badge bg={notif.isRead ? 'secondary' : 'primary'}>
-                      {notif.isRead ? 'Read' : 'Unread'}
-                    </Badge>
-                  </td>
-                  <td>
-                    {!notif.isRead && (
-                      <Button
-                        variant="success"
-                        size="sm"
-                        className="me-1"
-                        onClick={() => handleMarkAsRead(notif.id)}
-                      >
-                        Mark as Read
-                      </Button>
-                    )}
-                    <Button
-                      variant="info"
-                      size="sm"
-                      className="me-1"
-                      onClick={() => handleEdit(notif)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleDelete(notif)}
-                    >
-                      Delete
-                    </Button>
-                  </td>
+      {/* Tabs */}
+      <Tabs activeKey={activeTab} onSelect={handleTabChange} className="mb-4">
+        <Tab eventKey="all" title="All Notifications" />
+        <Tab eventKey="unread" title={`Unread (${unreadCount || 0})`} />
+        <Tab eventKey="recent" title="Recent (30 days)" />
+      </Tabs>
+      {/* Notifications List */}
+      {notifications && notifications.length > 0 ? (
+        <>
+          {viewMode === 'table' ? (
+            <Table striped bordered hover responsive>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Content</th>
+                  <th>Type</th>
+                  <th>Sent At</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
-        ) : (
-          <ListGroup>
-            {notifications.map((notif) => (
-              <ListGroup.Item
-                key={notif.id}
-                className={`mb-2 ${!notif.isRead ? 'border-primary' : ''}`}
-              >
-                <div className="d-flex justify-content-between align-items-start">
-                  <div>
-                    <div className="d-flex align-items-center mb-1">
-                      <Badge bg={getBadgeColor(notif.type)} className="me-2">
+              </thead>
+              <tbody>
+                {notifications.map((notif) => (
+                  <tr key={notif.id}>
+                    <td>{notif.id}</td>
+                    <td>{notif.content}</td>
+                    <td>
+                      <Badge bg={getNotificationBadgeColor(notif.type)}>
                         {getNotificationTypeName(notif.type)}
                       </Badge>
+                    </td>
+                    <td>{formatDate(notif.sentAt)}</td>
+                    <td>
                       <Badge bg={notif.isRead ? 'secondary' : 'primary'}>
                         {notif.isRead ? 'Read' : 'Unread'}
                       </Badge>
-                      <small className="text-muted ms-2">
-                        {formatDate(notif.sentAt)}
-                      </small>
-                    </div>
-                    <p className="mb-0">{notif.content}</p>
-                  </div>
-                  <div>
-                    {!notif.isRead && (
+                    </td>
+                    <td>
+                      {!notif.isRead && (
+                        <Button
+                          variant="success"
+                          size="sm"
+                          className="me-1"
+                          onClick={() => handleMarkAsRead(notif.id)}
+                        >
+                          Mark as Read
+                        </Button>
+                      )}
                       <Button
-                        variant="success"
+                        variant="info"
                         size="sm"
                         className="me-1"
-                        onClick={() => handleMarkAsRead(notif.id)}
+                        onClick={() => handleEdit(notif)}
                       >
-                        Mark as Read
+                        Edit
                       </Button>
-                    )}
-                    <Button
-                      variant="info"
-                      size="sm"
-                      className="me-1"
-                      onClick={() => handleEdit(notif)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleDelete(notif)}
-                    >
-                      Delete
-                    </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(notif)}
+                      >
+                        Delete
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          ) : (
+            <ListGroup>
+              {notifications.map((notif) => (
+                <ListGroup.Item
+                  key={notif.id}
+                  className={`mb-2 ${!notif.isRead ? 'border-primary' : ''}`}
+                >
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <div className="d-flex align-items-center mb-1">
+                        <Badge bg={getNotificationBadgeColor(notif.type)} className="me-2">
+                          {getNotificationTypeName(notif.type)}
+                        </Badge>
+                        <Badge bg={notif.isRead ? 'secondary' : 'primary'}>
+                          {notif.isRead ? 'Read' : 'Unread'}
+                        </Badge>
+                        <small className="text-muted ms-2">
+                          {formatDate(notif.sentAt)}
+                        </small>
+                      </div>
+                      <p className="mb-0">{notif.content}</p>
+                    </div>
+                    <div>
+                      {!notif.isRead && (
+                        <Button
+                          variant="success"
+                          size="sm"
+                          className="me-1"
+                          onClick={() => handleMarkAsRead(notif.id)}
+                        >
+                          Mark as Read
+                        </Button>
+                      )}
+                      <Button
+                        variant="info"
+                        size="sm"
+                        className="me-1"
+                        onClick={() => handleEdit(notif)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(notif)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                {notif.courseId && (
-                  <div className="mt-2">
-                    <Badge bg="light" text="dark">
-                      Course ID: {notif.courseId}
-                    </Badge>
-                  </div>
-                )}
-                {notif.paymentId && (
-                  <div className="mt-2">
-                    <Badge bg="light" text="dark">
-                      Payment ID: {notif.paymentId}
-                    </Badge>
-                  </div>
-                )}
-                {viewAllUsers && isAdmin && notif.userId && (
-                  <div className="mt-2">
-                    <Badge bg="info">
-                      User ID: {notif.userId}
-                    </Badge>
-                  </div>
-                )}
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
-        )}
-      </>
-    ) : (
-      <Alert variant="info">
-        {searchTerm
-          ? 'No notifications found matching your search.'
-          : dateRange.startDate && dateRange.endDate
-          ? 'No notifications found in the selected date range.'
-          : 'No notifications found.'}
-      </Alert>
-    )}
-
-    {/* Pagination */}
-    {paginatedNotifications && paginatedNotifications.totalPages > 1 && (
-      <div className="d-flex justify-content-center mt-4">
-        <Pagination>
-          <Pagination.First onClick={() => handlePageChange(0)} disabled={page === 0} />
-          <Pagination.Prev onClick={() => handlePageChange(page - 1)} disabled={page === 0} />
-
-          {[...Array(paginatedNotifications.totalPages).keys()].map((pageNum) => (
-            <Pagination.Item
-              key={pageNum}
-              active={pageNum === page}
-              onClick={() => handlePageChange(pageNum)}
-            >
-              {pageNum + 1}
-            </Pagination.Item>
-          ))}
-
-          <Pagination.Next
-            onClick={() => handlePageChange(page + 1)}
-            disabled={page === paginatedNotifications.totalPages - 1}
-          />
-          <Pagination.Last
-            onClick={() => handlePageChange(paginatedNotifications.totalPages - 1)}
-            disabled={page === paginatedNotifications.totalPages - 1}
-          />
-        </Pagination>
-      </div>
-    )}
-
-    {/* Delete Confirmation Modal */}
-    <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Delete Notification</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        Are you sure you want to delete this notification?
-        {selectedNotification && (
-          <div className="mt-3 p-3 bg-light">
-            <p>
-              <strong>Content:</strong> {selectedNotification.content}
-            </p>
-            <p>
-              <strong>Type:</strong> {getNotificationTypeName(selectedNotification.type)}
-            </p>
-            <p>
-              <strong>Sent At:</strong> {formatDate(selectedNotification.sentAt)}
-            </p>
-          </div>
-        )}
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-          Cancel
-        </Button>
-        <Button variant="danger" onClick={confirmDelete}>
-          Delete
-        </Button>
-      </Modal.Footer>
-    </Modal>
-
-    {/* Edit Modal */}
-    <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Edit Notification</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Form>
-          <Form.Group className="mb-3">
-            <Form.Label>Content</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-            />
-          </Form.Group>
-          {selectedNotification && (
-            <>
-              <Form.Group className="mb-3">
-                <Form.Label>Type</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={getNotificationTypeName(selectedNotification.type)}
-                  disabled
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Sent At</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={formatDate(selectedNotification.sentAt)}
-                  disabled
-                />
-              </Form.Group>
-            </>
+                  {notif.courseId && (
+                    <div className="mt-2">
+                      <Badge bg="light" text="dark">
+                        Course ID: {notif.courseId}
+                      </Badge>
+                    </div>
+                  )}
+                  {notif.paymentId && (
+                    <div className="mt-2">
+                      <Badge bg="light" text="dark">
+                        Payment ID: {notif.paymentId}
+                      </Badge>
+                    </div>
+                  )}
+                  {viewAllUsers && isAdmin && notif.userId && (
+                    <div className="mt-2">
+                      <Badge bg="info">
+                        User ID: {notif.userId}
+                      </Badge>
+                    </div>
+                  )}
+                </ListGroup.Item>
+              ))}
+            </ListGroup>
           )}
-        </Form>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={() => setShowEditModal(false)}>
-          Cancel
-        </Button>
-        <Button variant="primary" onClick={confirmEdit}>
-          Save Changes
-        </Button>
-      </Modal.Footer>
-    </Modal>
-  </div>
-);
+        </>
+      ) : (
+        <Alert variant="info">
+          {searchTerm
+            ? 'No notifications found matching your search.'
+            : dateRange.startDate && dateRange.endDate
+            ? 'No notifications found in the selected date range.'
+            : 'No notifications found.'}
+        </Alert>
+      )}
+      {/* Pagination */}
+      {paginatedNotifications && paginatedNotifications.totalPages > 1 && (
+        <div className="d-flex justify-content-center mt-4">
+          <Pagination>
+            <Pagination.First onClick={() => handlePageChange(0)} disabled={page === 0} />
+            <Pagination.Prev onClick={() => handlePageChange(page - 1)} disabled={page === 0} />
+            {[...Array(paginatedNotifications.totalPages).keys()].map((pageNum) => (
+              <Pagination.Item
+                key={pageNum}
+                active={pageNum === page}
+                onClick={() => handlePageChange(pageNum)}
+              >
+                {pageNum + 1}
+              </Pagination.Item>
+            ))}
+            <Pagination.Next
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page === paginatedNotifications.totalPages - 1}
+            />
+            <Pagination.Last
+              onClick={() => handlePageChange(paginatedNotifications.totalPages - 1)}
+              disabled={page === paginatedNotifications.totalPages - 1}
+            />
+          </Pagination>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Delete Notification</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete this notification?
+          {selectedNotification && (
+            <div className="mt-3 p-3 bg-light">
+              <p>
+                <strong>Content:</strong> {selectedNotification.content}
+              </p>
+              <p>
+                <strong>Type:</strong> {getNotificationTypeName(selectedNotification.type)}
+              </p>
+              <p>
+                <strong>Sent At:</strong> {formatDate(selectedNotification.sentAt)}
+              </p>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={confirmDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Notification</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Content</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+              />
+            </Form.Group>
+            {selectedNotification && (
+              <>
+                <Form.Group className="mb-3">
+                  <Form.Label>Type</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={getNotificationTypeName(selectedNotification.type)}
+                    disabled
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Sent At</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={formatDate(selectedNotification.sentAt)}
+                    disabled
+                  />
+                </Form.Group>
+              </>
+            )}
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={confirmEdit}>
+            Save Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      {/* Send Notification Modal */}
+      <Modal show={showSendModal} onHide={() => setShowSendModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Send New Notification</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>User ID *</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter user ID"
+                value={newNotification.userId}
+                onChange={(e) => setNewNotification({...newNotification, userId: e.target.value})}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Content *</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                placeholder="Enter notification content"
+                value={newNotification.content}
+                onChange={(e) => setNewNotification({...newNotification, content: e.target.value})}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Type *</Form.Label>
+              <Form.Select
+                value={newNotification.type}
+                onChange={(e) => setNewNotification({...newNotification, type: e.target.value})}
+                required
+              >
+                <option value="">Select notification type</option>
+                <optgroup label="System">
+                  <option value="SYSTEM">System (Legacy)</option>
+                  <option value="SysAlert">System Alert</option>
+                  <option value="General">General</option>
+                  <option value="AccStatus">Account Status</option>
+                </optgroup>
+                <optgroup label="Course">
+                  <option value="COURSE">Course (Legacy)</option>
+                  <option value="CourseUpdate">Course Update</option>
+                  <option value="CrsApprv">Course Approved</option>
+                  <option value="CrsRejct">Course Rejected</option>
+                  <option value="CrsSubmt">Course Submitted</option>
+                  <option value="CrsRevsn">Course Revision</option>
+                </optgroup>
+                <optgroup label="Instructor">
+                  <option value="InstApprv">Instructor Approved</option>
+                  <option value="InstRejct">Instructor Rejected</option>
+                </optgroup>
+                <optgroup label="Payment">
+                  <option value="PAYMENT">Payment (Legacy)</option>
+                  <option value="Payment">Payment</option>
+                  <option value="WalletCredit">Wallet Credit</option>
+                  <option value="WalletDebit">Wallet Debit</option>
+                  <option value="WalletWithdrawal">Wallet Withdrawal</option>
+                </optgroup>
+                <optgroup label="Education">
+                  <option value="Enrollment">Enrollment</option>
+                  <option value="Assignment">Assignment</option>
+                  <option value="TestReminder">Test Reminder</option>
+                </optgroup>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Course ID (Optional)</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter course ID if applicable"
+                value={newNotification.courseId}
+                onChange={(e) => setNewNotification({...newNotification, courseId: e.target.value})}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Payment ID (Optional)</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter payment ID if applicable"
+                value={newNotification.paymentId}
+                onChange={(e) => setNewNotification({...newNotification, paymentId: e.target.value})}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSendModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSendNotification}>
+            Send Notification
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Send to Multiple Users Modal */}
+      <Modal show={showSendMultipleModal} onHide={() => setShowSendMultipleModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Send Notification to Multiple Users</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>User IDs * (comma separated)</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="e.g. 1, 2, 3, 4"
+                value={multipleNotification.userIds}
+                onChange={(e) => setMultipleNotification({...multipleNotification, userIds: e.target.value})}
+                required
+              />
+              <Form.Text className="text-muted">
+                Enter user IDs separated by commas
+              </Form.Text>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Content *</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                placeholder="Enter notification content"
+                value={multipleNotification.content}
+                onChange={(e) => setMultipleNotification({...multipleNotification, content: e.target.value})}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Type *</Form.Label>
+              <Form.Select
+                value={multipleNotification.type}
+                onChange={(e) => setMultipleNotification({...multipleNotification, type: e.target.value})}
+                required
+              >
+                <option value="">Select notification type</option>
+                <optgroup label="System">
+                  <option value="SYSTEM">System (Legacy)</option>
+                  <option value="SysAlert">System Alert</option>
+                  <option value="General">General</option>
+                  <option value="AccStatus">Account Status</option>
+                </optgroup>
+                <optgroup label="Course">
+                  <option value="COURSE">Course (Legacy)</option>
+                  <option value="CourseUpdate">Course Update</option>
+                  <option value="CrsApprv">Course Approved</option>
+                  <option value="CrsRejct">Course Rejected</option>
+                  <option value="CrsSubmt">Course Submitted</option>
+                  <option value="CrsRevsn">Course Revision</option>
+                </optgroup>
+                <optgroup label="Instructor">
+                  <option value="InstApprv">Instructor Approved</option>
+                  <option value="InstRejct">Instructor Rejected</option>
+                </optgroup>
+                <optgroup label="Payment">
+                  <option value="PAYMENT">Payment (Legacy)</option>
+                  <option value="Payment">Payment</option>
+                  <option value="WalletCredit">Wallet Credit</option>
+                  <option value="WalletDebit">Wallet Debit</option>
+                  <option value="WalletWithdrawal">Wallet Withdrawal</option>
+                </optgroup>
+                <optgroup label="Education">
+                  <option value="Enrollment">Enrollment</option>
+                  <option value="Assignment">Assignment</option>
+                  <option value="TestReminder">Test Reminder</option>
+                </optgroup>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Course ID (Optional)</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter course ID if applicable"
+                value={multipleNotification.courseId}
+                onChange={(e) => setMultipleNotification({...multipleNotification, courseId: e.target.value})}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Payment ID (Optional)</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter payment ID if applicable"
+                value={multipleNotification.paymentId}
+                onChange={(e) => setMultipleNotification({...multipleNotification, paymentId: e.target.value})}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSendMultipleModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSendMultipleNotification}>
+            Send Notifications
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </div>
+  );
 };
 
 export default NotificationList;

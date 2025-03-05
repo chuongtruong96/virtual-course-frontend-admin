@@ -19,7 +19,8 @@ import {
   DialogContent,
   DialogActions,
   Pagination,
-  Tooltip
+  Tooltip,
+  CircularProgress
 } from '@mui/material';
 import { 
   Eye, 
@@ -30,13 +31,12 @@ import {
   XCircle 
 } from 'lucide-react';
 import { useInstructorTests } from '../../hooks/useInstructorTests';
-import LoadingSpinner from '../common/LoadingSpinner';
-import ErrorAlert from '../common/ErrorAlert';
 
 const TestManagementPanel = ({ instructorId }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTest, setSelectedTest] = useState(null);
 
+  // Sử dụng hook useInstructorTests
   const {
     tests,
     totalPages,
@@ -48,9 +48,7 @@ const TestManagementPanel = ({ instructorId }) => {
     deleteTest
   } = useInstructorTests(instructorId);
 
-  if (isLoading) return <LoadingSpinner />;
-  if (error) return <ErrorAlert error={error} />;
-
+  // Xử lý khi thay đổi trạng thái bài kiểm tra
   const handleStatusChange = async (testId, newStatus) => {
     try {
       await updateTestStatus({ testId, status: newStatus });
@@ -59,6 +57,7 @@ const TestManagementPanel = ({ instructorId }) => {
     }
   };
 
+  // Xử lý khi xác nhận xóa bài kiểm tra
   const handleDeleteConfirm = async () => {
     if (!selectedTest) return;
     try {
@@ -69,6 +68,26 @@ const TestManagementPanel = ({ instructorId }) => {
       console.error('Error deleting test:', error);
     }
   };
+
+  // Hiển thị loading spinner khi đang tải dữ liệu
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" p={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Hiển thị thông báo lỗi nếu có
+  if (error) {
+    return (
+      <Box p={2}>
+        <Typography color="error">
+          Error loading tests: {error.message}
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Card>
@@ -98,83 +117,99 @@ const TestManagementPanel = ({ instructorId }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {tests.map((test) => (
-                <TableRow key={test.id}>
-                  <TableCell>{test.title}</TableCell>
-                  <TableCell>{test.courseName}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={test.status}
-                      color={test.status === 'ACTIVE' ? 'success' : 'default'}
-                    />
-                  </TableCell>
-                  <TableCell>{test.questionCount}</TableCell>
-                  <TableCell>{test.duration} min</TableCell>
-                  <TableCell>{test.passPercentage}%</TableCell>
-                  <TableCell>
-                    <Tooltip title="View Test">
-                      <IconButton
+              {tests.length > 0 ? (
+                tests.map((test) => (
+                  <TableRow key={test.id}>
+                    <TableCell>{test.title}</TableCell>
+                    <TableCell>{test.courseName}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={test.status}
+                        color={test.status === 'ACTIVE' ? 'success' : 'default'}
                         size="small"
-                        onClick={() => window.location.href = `/instructor/tests/${test.id}`}
-                      >
-                        <Eye size={18} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Edit Test">
-                      <IconButton
-                        size="small"
-                        onClick={() => window.location.href = `/instructor/tests/edit/${test.id}`}
-                      >
-                        <Edit size={18} />
-                      </IconButton>
-                    </Tooltip>
-                    {test.status === 'INACTIVE' ? (
-                      <Tooltip title="Activate Test">
-                        <IconButton
-                          size="small"
-                          color="success"
-                          onClick={() => handleStatusChange(test.id, 'ACTIVE')}
-                        >
-                          <CheckCircle size={18} />
-                        </IconButton>
-                      </Tooltip>
-                    ) : (
-                      <Tooltip title="Deactivate Test">
-                        <IconButton
-                          size="small"
-                          color="warning"
-                          onClick={() => handleStatusChange(test.id, 'INACTIVE')}
-                        >
-                          <XCircle size={18} />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    <Tooltip title="Delete Test">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => {
-                          setSelectedTest(test);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 size={18} />
-                      </IconButton>
-                    </Tooltip>
+                      />
+                    </TableCell>
+                    <TableCell>{test.questionCount || 0}</TableCell>
+                    <TableCell>{test.duration} min</TableCell>
+                    <TableCell>{test.passPercentage}%</TableCell>
+                    <TableCell>
+                      <Box display="flex" gap={1}>
+                        <Tooltip title="View Test">
+                          <IconButton
+                            size="small"
+                            onClick={() => window.location.href = `/instructor/tests/${test.id}`}
+                          >
+                            <Eye size={18} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit Test">
+                          <IconButton
+                            size="small"
+                            onClick={() => window.location.href = `/instructor/tests/edit/${test.id}`}
+                          >
+                            <Edit size={18} />
+                          </IconButton>
+                        </Tooltip>
+                        {test.status === 'INACTIVE' ? (
+                          <Tooltip title="Activate Test">
+                            <IconButton
+                              size="small"
+                              color="success"
+                              onClick={() => handleStatusChange(test.id, 'ACTIVE')}
+                            >
+                              <CheckCircle size={18} />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Deactivate Test">
+                            <IconButton
+                              size="small"
+                              color="warning"
+                              onClick={() => handleStatusChange(test.id, 'INACTIVE')}
+                            >
+                              <XCircle size={18} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <Tooltip title="Delete Test">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => {
+                              setSelectedTest(test);
+                              setDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 size={18} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    <Typography variant="body2" color="textSecondary" py={2}>
+                      No tests found. Create your first test to get started.
+                    </Typography>
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </TableContainer>
 
-        <Box display="flex" justifyContent="center" mt={3}>
-          <Pagination
-            count={totalPages}
-            page={currentPage + 1}
-            onChange={(e, page) => handlePageChange(page - 1)}
-          />
-        </Box>
+        {totalPages > 1 && (
+          <Box display="flex" justifyContent="center" mt={3}>
+            <Pagination
+              count={totalPages}
+              page={currentPage + 1}
+              onChange={(e, page) => handlePageChange(page - 1)}
+              color="primary"
+            />
+          </Box>
+        )}
 
         {/* Delete Confirmation Dialog */}
         <Dialog

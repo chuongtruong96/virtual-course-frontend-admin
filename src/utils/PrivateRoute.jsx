@@ -9,7 +9,17 @@ const PrivateRoute = ({ children }) => {
   if (!auth || !auth.user) {
     return <Navigate to="/auth/signin" replace />;
   }
-
+  // if (roles.length > 0) {
+  //   const userRoles = auth.roles.map(role => 
+  //     typeof role === 'string' ? role : role.authority
+  //   );
+    
+  //   const hasRequiredRole = roles.some(role => userRoles.includes(role));
+    
+  //   if (!hasRequiredRole) {
+  //     return <Navigate to="/unauthorized" replace />;
+  //   }
+  // }
   // If authenticated, render children
   return children;
 };

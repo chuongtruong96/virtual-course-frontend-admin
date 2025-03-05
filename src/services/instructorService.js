@@ -100,6 +100,27 @@ const InstructorService = {
   },
 
   // TEST MANAGEMENT
+  // Add the missing getTests method that calls getInstructorTests
+  getTests: async (instructorId, filters = {}) => {
+    try {
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString());
+        }
+      });
+  
+      const url = queryParams.toString()
+        ? `${ENDPOINTS.INSTRUCTORS.TESTS(instructorId)}?${queryParams.toString()}`
+        : ENDPOINTS.INSTRUCTORS.TESTS(instructorId);
+  
+      const response = await api.get(url);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, 'Error fetching instructor tests');
+    }
+  },
+  // TEST MANAGEMENT
   getInstructorTests: async (instructorId, filters = {}) => {
     try {
       const queryParams = new URLSearchParams();

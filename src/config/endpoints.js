@@ -163,47 +163,54 @@ const ENDPOINTS = {
   },
 
   // Notifications
-  NOTIFICATIONS: {
-    BASE: `${API_BASE}/notifications`,
-    ALL: `${API_BASE}/notifications/all`,
-    ALL_PAGINATED: `${API_BASE}/notifications/all/paginated`, // Đảm bảo endpoint này đúng
-    BY_USER: (userId) => `${API_BASE}/notifications/user/${userId}`,
-    BY_USER_PAGINATED: (userId, page, size) => 
-      `${API_BASE}/notifications/user/${userId}/paginated?page=${page}&size=${size}`,
-    BY_ID: (id) => `${API_BASE}/notifications/${id}`,
-    MARK_AS_READ: (id) => `${API_BASE}/notifications/${id}/read`,
-    MARK_ALL_READ: (userId) => `${API_BASE}/notifications/user/${userId}/mark-all-read`,
-    MARK_ALL_READ_BY_TYPE: (userId, type) => 
-      `${API_BASE}/notifications/user/${userId}/type/${type}/mark-all-read`,
-    DELETE_ALL_READ: (userId) => `${API_BASE}/notifications/user/${userId}/delete-all-read`,
-    UNREAD: (userId) => `${API_BASE}/notifications/user/${userId}/unread`,
-    UNREAD_PAGINATED: (userId, page, size) => 
-      `${API_BASE}/notifications/user/${userId}/unread/paginated?page=${page}&size=${size}`,
-    COUNT_UNREAD: (userId) => `${API_BASE}/notifications/user/${userId}/count-unread`,
-    RECENT: (userId) => `${API_BASE}/notifications/user/${userId}/recent`,
-    RECENT_PAGINATED: (userId, page, size) => 
-      `${API_BASE}/notifications/user/${userId}/recent/paginated?page=${page}&size=${size}`,
-    BY_TYPE: (userId, type) => `${API_BASE}/notifications/user/${userId}/type/${type}`,
-    BY_TYPE_PAGINATED: (userId, type, page, size) => 
-      `${API_BASE}/notifications/user/${userId}/type/${type}/paginated?page=${page}&size=${size}`,
-    BY_COURSE: (courseId) => `${API_BASE}/notifications/course/${courseId}`,
-    BY_COURSE_PAGINATED: (courseId, page, size) => 
-      `${API_BASE}/notifications/course/${courseId}/paginated?page=${page}&size=${size}`,
-    BY_PAYMENT: (paymentId) => `${API_BASE}/notifications/payment/${paymentId}`,
-    SEARCH: (userId, searchTerm) => 
-      `${API_BASE}/notifications/user/${userId}/search?searchTerm=${encodeURIComponent(searchTerm)}`,
-    SEARCH_PAGINATED: (userId, searchTerm, page, size) => 
-      `${API_BASE}/notifications/user/${userId}/search/paginated?searchTerm=${encodeURIComponent(searchTerm)}&page=${page}&size=${size}`,
-    BY_DATE_RANGE: (userId, startDate, endDate) => 
-      `${API_BASE}/notifications/user/${userId}/date-range?startDate=${startDate}&endDate=${endDate}`,
-    STATISTICS: (userId) => `${API_BASE}/notifications/user/${userId}/statistics`,
-    UPDATE_CONTENT: (id) => `${API_BASE}/notifications/${id}/content`,
-    SEND: `${API_BASE}/notifications/send`,
-    SEND_MULTIPLE: `${API_BASE}/notifications/send-multiple`,
-    SEND_ALL: `${API_BASE}/notifications/send-all`,
-    SEND_COURSE_ENROLLEES: `${API_BASE}/notifications/send-course-enrollees`,
-    SCHEDULE: `${API_BASE}/notifications/schedule`
-  },
+  // Notifications
+NOTIFICATIONS: {
+  BASE: `${API_BASE}/notifications`,
+  ALL: `${API_BASE}/notifications/all`,
+  ALL_PAGINATED: `${API_BASE}/notifications/all/paginated`, // Đảm bảo endpoint này đúng
+  BY_USER: (userId) => `${API_BASE}/notifications/user/${userId}`,
+  BY_USER_PAGINATED: (userId, page, size) => 
+    `${API_BASE}/notifications/user/${userId}/paginated?page=${page}&size=${size}`,
+  BY_ID: (id) => `${API_BASE}/notifications/${id}`,
+  MARK_AS_READ: (id) => `${API_BASE}/notifications/${id}/read`,
+  MARK_ALL_READ: (userId) => `${API_BASE}/notifications/user/${userId}/mark-all-read`,
+  MARK_ALL_READ_BY_TYPE: (userId, type) => 
+    `${API_BASE}/notifications/user/${userId}/type/${type}/mark-all-read`,
+  DELETE_ALL_READ: (userId) => `${API_BASE}/notifications/user/${userId}/delete-all-read`,
+  UNREAD: (userId) => `${API_BASE}/notifications/user/${userId}/unread`,
+  UNREAD_PAGINATED: (userId, page, size) => 
+    `${API_BASE}/notifications/user/${userId}/unread/paginated?page=${page}&size=${size}`,
+  COUNT_UNREAD: (userId) => `${API_BASE}/notifications/user/${userId}/count-unread`,
+  RECENT: (userId) => `${API_BASE}/notifications/user/${userId}/recent`,
+  RECENT_PAGINATED: (userId, page, size) => 
+    `${API_BASE}/notifications/user/${userId}/recent/paginated?page=${page}&size=${size}`,
+  BY_TYPE: (userId, type) => `${API_BASE}/notifications/user/${userId}/type/${type}`,
+  BY_TYPE_PAGINATED: (userId, type, page, size) => 
+    `${API_BASE}/notifications/user/${userId}/type/${type}/paginated?page=${page}&size=${size}`,
+  BY_COURSE: (courseId) => `${API_BASE}/notifications/course/${courseId}`,
+  BY_COURSE_PAGINATED: (courseId, page, size) => 
+    `${API_BASE}/notifications/course/${courseId}/paginated?page=${page}&size=${size}`,
+  BY_PAYMENT: (paymentId) => `${API_BASE}/notifications/payment/${paymentId}`,
+  SEARCH: (userId, searchTerm) => 
+    `${API_BASE}/notifications/user/${userId}/search?searchTerm=${encodeURIComponent(searchTerm)}`,
+  SEARCH_PAGINATED: (userId, searchTerm, page, size) => 
+    `${API_BASE}/notifications/user/${userId}/search/paginated?searchTerm=${encodeURIComponent(searchTerm)}&page=${page}&size=${size}`,
+  BY_DATE_RANGE: (userId, startDate, endDate) => 
+    `${API_BASE}/notifications/user/${userId}/date-range?startDate=${startDate}&endDate=${endDate}`,
+  STATISTICS: (userId) => `${API_BASE}/notifications/user/${userId}/statistics`,
+  UPDATE_CONTENT: (id) => `${API_BASE}/notifications/${id}/content`,
+  SEND: `${API_BASE}/notifications/send`,
+  SEND_MULTIPLE: `${API_BASE}/notifications/send-multiple`,
+  SEND_ALL: `${API_BASE}/notifications/send-all`,
+  SEND_COURSE_ENROLLEES: `${API_BASE}/notifications/send-course-enrollees`,
+  SCHEDULE: `${API_BASE}/notifications/schedule`,
+  SEARCH_ALL_PAGINATED: (searchTerm, page, size) => 
+    `${API_BASE}/notifications/all/search/paginated?searchTerm=${encodeURIComponent(searchTerm)}&page=${page}&size=${size}`,
+  ALL_BY_TYPE_PAGINATED: (type, page, size) => 
+    `${API_BASE}/notifications/all/type/${type}/paginated?page=${page}&size=${size}`,
+  COUNT_ALL_BY_TYPE: (type) => `${API_BASE}/notifications/all/type/${type}/count`,
+  DELETE_ALL_BY_TYPE: (type) => `${API_BASE}/notifications/all/type/${type}/delete-all`
+},
 
   // Payment
   PAYMENT: {

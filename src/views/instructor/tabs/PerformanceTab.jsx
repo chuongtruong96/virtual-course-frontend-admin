@@ -1,4 +1,3 @@
-// src/components/instructor/tabs/PerformanceTab.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Box, Typography, Divider } from '@mui/material';
@@ -42,7 +41,10 @@ const PerformanceTab = ({ instructor, instructorId }) => {
 
 PerformanceTab.propTypes = {
   instructor: PropTypes.object.isRequired,
-  instructorId: PropTypes.string.isRequired
+  instructorId: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number
+  ]).isRequired
 };
 
 export default PerformanceTab;

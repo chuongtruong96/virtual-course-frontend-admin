@@ -38,6 +38,13 @@ export const useInstructorDetail = (instructorId) => {
     enabled: !!instructorId
   });
 
+  // Thêm query để lấy tests của instructor
+  const { data: tests } = useQuery({
+    queryKey: ['instructor-tests', instructorId],
+    queryFn: () => InstructorService.getTests(instructorId),
+    enabled: !!instructorId
+  });
+
   // Mutations - Cập nhật theo cú pháp React Query v5
   const updateStatusMutation = useMutation({
     mutationFn: (data) => {
@@ -86,6 +93,7 @@ export const useInstructorDetail = (instructorId) => {
     statistics,
     courses,
     documents,
+    tests, // Thêm tests vào return object
     isLoading,
     isError,
     error,

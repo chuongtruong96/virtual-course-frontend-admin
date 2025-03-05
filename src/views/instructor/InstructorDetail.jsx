@@ -1,4 +1,3 @@
-// src/components/instructor/InstructorDetail.jsx
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -10,9 +9,8 @@ import {
   Tabs,
   Tab,
 } from '@mui/material';
-import { ArrowLeft, AlertTriangle, BarChart2 } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, BarChart2, FileText } from 'lucide-react';
 import { ErrorBoundary } from 'react-error-boundary';
-
 import { useInstructorDetail } from '../../hooks/useInstructorDetail';
 import TabPanel from './TabPanel';
 import ProfileHeader from './sections/ProfileHeader';
@@ -25,11 +23,12 @@ import ActivityTab from './tabs/ActivityTab';
 import StatusActions from './StatusActions';
 import StatusDialog from './dialogs/StatusDialog';
 import DocumentPreviewDialog from './dialogs/DocumentPreviewDialog';
+import InstructorTestManagement from './InstructorTestManagement'; // Import component quản lý test
 
 // Error Fallback Component
 const ErrorFallback = ({ error, resetErrorBoundary }) => (
-  <Alert 
-    severity="error" 
+  <Alert
+    severity="error"
     action={
       <Button onClick={resetErrorBoundary}>Try again</Button>
     }
@@ -42,6 +41,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }) => (
 const InstructorDetail = () => {
   const { instructorId } = useParams();
   const navigate = useNavigate();
+  
   const {
     instructor,
     statistics,
@@ -85,14 +85,14 @@ const InstructorDetail = () => {
           >
             Back to Instructors
           </Button>
-          <StatusActions 
+          <StatusActions
             status={instructor.status}
             onAction={handleStatusAction}
           />
         </Box>
 
         {/* Profile Overview */}
-        <ProfileHeader 
+        <ProfileHeader
           instructor={instructor}
           statistics={statistics}
         />
@@ -103,13 +103,16 @@ const InstructorDetail = () => {
         {/* Tabs Section */}
         <Card>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs 
-              value={tabValue} 
+            <Tabs
+              value={tabValue}
               onChange={handleTabChange}
               aria-label="instructor detail tabs"
+              variant="scrollable"
+              scrollButtons="auto"
             >
               <Tab label="Profile" />
               <Tab label="Courses" />
+              <Tab label="Tests" icon={<FileText size={16} />} iconPosition="start" />
               <Tab label="Performance" icon={<BarChart2 size={16} />} iconPosition="start" />
               <Tab label="Documents" />
               <Tab label="Activity Log" />
@@ -121,7 +124,7 @@ const InstructorDetail = () => {
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
-            <CoursesTab 
+            <CoursesTab
               courses={courses}
               isLoading={isLoading}
               onViewCourse={(courseId) => navigate(`/dashboard/course/detail/${courseId}`)}
@@ -129,13 +132,17 @@ const InstructorDetail = () => {
           </TabPanel>
 
           <TabPanel value={tabValue} index={2}>
-            <PerformanceTab 
+            <InstructorTestManagement instructorId={instructorId} />
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={3}>
+            <PerformanceTab
               instructor={instructor}
               instructorId={instructorId}
             />
           </TabPanel>
 
-          <TabPanel value={tabValue} index={3}>
+          <TabPanel value={tabValue} index={4}>
             <DocumentsTab
               documents={documents}
               isLoading={isLoading}
@@ -143,7 +150,7 @@ const InstructorDetail = () => {
             />
           </TabPanel>
 
-          <TabPanel value={tabValue} index={4}>
+          <TabPanel value={tabValue} index={5}>
             <ActivityTab activityLog={instructor.activityLog} />
           </TabPanel>
         </Card>
