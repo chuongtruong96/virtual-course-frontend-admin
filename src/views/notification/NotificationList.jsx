@@ -456,11 +456,16 @@ const handleDateRangeSearch = useCallback((e) => {
 
   // Handle type filter
   const handleTypeFilter = useCallback((type) => {
+    console.log(`Setting filter type to: ${type}`);
     setFilterType(type);
     setPage(0); // Reset to first page when changing filter
-    // Add this line to force a refresh when type filter changes
-    setTimeout(() => refreshNotifications(), 100);
-  }, [refreshNotifications]);
+    
+    // Force refresh to apply the type filter
+  setTimeout(() => {
+    console.log("Triggering refresh with new filter type:", type);
+    refreshNotifications();
+  }, 300);
+}, [refreshNotifications]);
 
   // Handle view mode toggle
   const handleViewModeToggle = useCallback(() => {
@@ -474,7 +479,9 @@ const handleDateRangeSearch = useCallback((e) => {
     }
     return paginatedNotifications?.content || [];
   }, [isAdmin, viewAllUsers, allNotificationsPaginated, paginatedNotifications]);
-
+  console.log("allNotificationsPaginated:", allNotificationsPaginated);
+  console.log("paginatedNotifications:", paginatedNotifications);
+  console.log("notificationsToDisplay:", notificationsToDisplay);
   // Get friendly name for notification type
   const getNotificationTypeName = useCallback((type) => {
     switch (type) {

@@ -184,9 +184,10 @@ NOTIFICATIONS: {
   RECENT: (userId) => `${API_BASE}/notifications/user/${userId}/recent`,
   RECENT_PAGINATED: (userId, page, size) => 
     `${API_BASE}/notifications/user/${userId}/recent/paginated?page=${page}&size=${size}`,
-  BY_TYPE: (userId, type) => `${API_BASE}/notifications/user/${userId}/type/${type}`,
-  BY_TYPE_PAGINATED: (userId, type, page, size) => 
-    `${API_BASE}/notifications/user/${userId}/type/${type}/paginated?page=${page}&size=${size}`,
+  BY_TYPE_ALL: (type) => `${API_BASE}/notifications/type/${type}`,
+  // Endpoint cho filter theo type (có phân trang)
+  BY_TYPE_ALL_PAGINATED: (type, page, size) => 
+    `${API_BASE}/notifications/type/${type}/paginated?page=${page}&size=${size}`,
   BY_COURSE: (courseId) => `${API_BASE}/notifications/course/${courseId}`,
   BY_COURSE_PAGINATED: (courseId, page, size) => 
     `${API_BASE}/notifications/course/${courseId}/paginated?page=${page}&size=${size}`,
@@ -209,7 +210,12 @@ NOTIFICATIONS: {
   ALL_BY_TYPE_PAGINATED: (type, page, size) => 
     `${API_BASE}/notifications/all/type/${type}/paginated?page=${page}&size=${size}`,
   COUNT_ALL_BY_TYPE: (type) => `${API_BASE}/notifications/all/type/${type}/count`,
-  DELETE_ALL_BY_TYPE: (type) => `${API_BASE}/notifications/all/type/${type}/delete-all`
+  DELETE_ALL_BY_TYPE: (type) => `${API_BASE}/notifications/all/type/${type}/delete-all`,
+  // Thêm vào ENDPOINTS.NOTIFICATIONS trong endpoints.js
+SEARCH_ALL_PAGINATED: (searchTerm, page, size) => 
+  `${API_BASE}/notifications/search/paginated?searchTerm=${encodeURIComponent(searchTerm)}&page=${page}&size=${size}`,
+DATE_RANGE_ALL_PAGINATED: (startDate, endDate, page, size) => 
+  `${API_BASE}/notifications/date-range/paginated?startDate=${startDate}&endDate=${endDate}&page=${page}&size=${size}`,
 },
 
   // Payment

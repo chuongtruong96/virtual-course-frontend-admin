@@ -205,32 +205,33 @@ const NotificationService = {
   },
 
   // Get notifications by type
-  getNotificationsByType: async (type) => {
-    try {
-      const normalizedType = normalizeNotificationType(type);
-      console.log(`Fetching notifications of type: ${normalizedType}`);
-      const response = await api.get(`${ENDPOINTS.NOTIFICATIONS.BASE}/type/${normalizedType}`);
-      console.log('Notifications by type response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching notifications of type ${type}:`, error);
-      return []; // Return empty array on error
-    }
-  },
+ // Lấy tất cả thông báo theo type (không phân trang)
+getNotificationsByType: async (type) => {
+  try {
+    const normalizedType = normalizeNotificationType(type);
+    console.log(`Fetching all notifications of type: ${normalizedType}`);
+    const response = await api.get(`${ENDPOINTS.NOTIFICATIONS.BASE}/type/${normalizedType}`);
+    console.log('Notifications by type response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching notifications of type ${type}:`, error);
+    return [];
+  }
+},
 
-  // Get notifications by type with pagination
-  getNotificationsByTypePaginated: async (type, page = 0, size = 10) => {
-    try {
-      const normalizedType = normalizeNotificationType(type);
-      console.log(`Fetching paginated notifications of type: ${normalizedType}, page=${page}, size=${size}`);
-      const response = await api.get(`${ENDPOINTS.NOTIFICATIONS.BASE}/type/${normalizedType}/paginated?page=${page}&size=${size}`);
-      console.log('Notifications by type paginated response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching paginated notifications of type ${type}:`, error);
-      return { content: [], totalElements: 0, totalPages: 0 }; // Return empty page on error
-    }
-  },
+// Lấy tất cả thông báo theo type (có phân trang)
+getNotificationsByTypePaginated: async (type, page = 0, size = 10) => {
+  try {
+    const normalizedType = normalizeNotificationType(type);
+    console.log(`Fetching paginated notifications of type: ${normalizedType}, page=${page}, size=${size}`);
+    const response = await api.get(`${ENDPOINTS.NOTIFICATIONS.BASE}/type/${normalizedType}/paginated?page=${page}&size=${size}`);
+    console.log('Notifications by type paginated response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching paginated notifications of type ${type}:`, error);
+    return { content: [], totalElements: 0, totalPages: 0 };
+  }
+},
 
   // Get notifications by user and type
   getNotificationsByUserAndType: async (userId, type) => {
@@ -248,18 +249,18 @@ const NotificationService = {
 
   // Get notifications by user and type with pagination
   // Get notifications by user and type with pagination
-getNotificationsByUserAndTypePaginated: async (userId, type, page = 0, size = 10) => {
-  try {
-    const normalizedType = normalizeNotificationType(type);
-    console.log(`Fetching paginated notifications for user ${userId} of type: ${normalizedType} (original: ${type}), page=${page}, size=${size}`);
-    const response = await api.get(ENDPOINTS.NOTIFICATIONS.BY_TYPE_PAGINATED(userId, normalizedType, page, size));
-    console.log('Notifications by user and type paginated response:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching paginated notifications for user ${userId} of type ${type}:`, error);
-    return { content: [], totalElements: 0, totalPages: 0 }; // Return empty page on error
-  }
-},
+  getNotificationsByUserAndTypePaginated: async (userId, type, page = 0, size = 10) => {
+    try {
+      console.log(`Fetching paginated notifications for user ${userId} of type: ${type}, page=${page}, size=${size}`);
+      // Đảm bảo type được truyền đúng
+      const response = await api.get(ENDPOINTS.NOTIFICATIONS.BY_TYPE_PAGINATED(userId, type, page, size));
+      console.log('Notifications by user and type paginated response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching paginated notifications for user ${userId} of type ${type}:`, error);
+      return { content: [], totalElements: 0, totalPages: 0 };
+    }
+  },
 
   // Get notifications by course
   getNotificationsByCourse: async (courseId) => {
@@ -339,7 +340,19 @@ getNotificationsByDateRange: async (userId, startDate, endDate) => {
     return []; // Return empty array on error
   }
 },
-
+getAllNotificationsByDateRangePaginated: async (startDate, endDate, page = 0, size = 10) => {
+  try {
+    console.log(`Fetching all notifications in date range: ${startDate} to ${endDate}, page=${page}, size=${size}`);
+    const response = await api.get(
+      `${ENDPOINTS.NOTIFICATIONS.BASE}/date-range/paginated?startDate=${startDate}&endDate=${endDate}&page=${page}&size=${size}`
+    );
+    console.log('All notifications by date range paginated response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching all notifications in date range:`, error);
+    return { content: [], totalElements: 0, totalPages: 0 };
+  }
+},
 // Get notification statistics
 getNotificationStatistics: async (userId) => {
   try {

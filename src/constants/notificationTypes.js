@@ -40,39 +40,23 @@ export const NOTIFICATION_TYPES = {
  * @param {string} type - The notification type (can be in any format)
  * @returns {string} - The backend-compatible notification type
  */
+// Trong constants/notificationTypes.js
 export const normalizeNotificationType = (type) => {
-  if (!type) return 'SYSTEM'; // Default value
+  if (!type) return 'SYSTEM';
   
-  // List of valid enum values from backend
-  const validEnumValues = [
-    // New values using PascalCase
-    'Payment', 'Enrollment', 'CourseUpdate', 'Assignment', 'TestReminder', 'General',
-    // Abbreviated values
-    'CrsApprv', 'CrsRejct', 'CrsSubmt', 'CrsRevsn', 'SysAlert', 'AccStatus',
-    'InstApprv', 'InstRejct', 'WalletCredit', 'WalletDebit', 'WalletWithdrawal',
-    // Legacy values
-    'COURSE', 'SYSTEM'
-  ];
-
-  // If type is already a valid enum value, return it directly
-  if (validEnumValues.includes(type)) {
+  // Nếu type đã là một trong các giá trị enum, trả về nguyên bản
+  if (Object.values(NOTIFICATION_TYPES).includes(type)) {
     return type;
   }
-
-  // Convert from legacy/string values to enum
+  
+  // Xử lý các trường hợp đặc biệt
   switch (type.toUpperCase()) {
-    // Payment related
-    case 'PAYMENT':
     case 'PAYMENT_PROCESSED':
       return 'Payment';
-      
-    // Enrollment related
-    case 'ENROLLMENT':
-      return 'Enrollment';
-      
-    // Course related
     case 'COURSE_UPDATE':
       return 'CourseUpdate';
+    case 'TEST_REMINDER':
+      return 'TestReminder';
     case 'COURSE_APPROVAL':
       return 'CrsApprv';
     case 'COURSE_REJECTION':
@@ -81,37 +65,17 @@ export const normalizeNotificationType = (type) => {
       return 'CrsSubmt';
     case 'COURSE_REVISION':
       return 'CrsRevsn';
-      
-    // Assignment related
-    case 'ASSIGNMENT':
-      return 'Assignment';
-    case 'TEST_REMINDER':
-      return 'TestReminder';
-      
-    // System related
     case 'SYSTEM_ALERT':
       return 'SysAlert';
     case 'ACCOUNT_STATUS':
       return 'AccStatus';
-      
-    // Instructor related
     case 'INSTRUCTOR_APPROVAL':
       return 'InstApprv';
     case 'INSTRUCTOR_REJECTION':
       return 'InstRejct';
-      
-    // Wallet related
-    case 'WALLET_CREDIT':
-      return 'WalletCredit';
-    case 'WALLET_DEBIT':
-      return 'WalletDebit';
-    case 'WALLET_WITHDRAWAL':
-      return 'WalletWithdrawal';
-      
-    // Default fallback
+    // Thêm các trường hợp khác nếu cần
     default:
-      console.warn(`Unknown notification type: ${type}, falling back to SYSTEM`);
-      return 'SYSTEM';
+      return type; // Trả về nguyên bản nếu không có xử lý đặc biệt
   }
 };
 

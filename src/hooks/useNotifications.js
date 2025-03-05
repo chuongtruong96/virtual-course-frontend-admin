@@ -38,6 +38,10 @@ const useNotifications = (userId, options = {}) => {
   // Modify the getQueryKey function to ensure unique keys for different filters
 const getQueryKey = useCallback(() => {
   if (isAdmin && viewAllUsers) {
+    // Bao gồm filter type trong query key cho admin view
+    if (normalizedType) {
+      return ['notifications', 'admin', 'all', 'type', normalizedType, page, size];
+    }
     return ['notifications', 'admin', 'all', page, size];
   }
   
@@ -73,8 +77,8 @@ const getQueryKey = useCallback(() => {
   }
   
   return [...baseKey, page, size];
-}, [isAdmin, viewAllUsers, userId, searchTerm, startDate, endDate, courseId, paymentId, normalizedType, unreadOnly, recentOnly, page, size]);// Xác định hàm query dựa trên các tùy chọn
-  const getQueryFn = useCallback(() => {
+}, [isAdmin, viewAllUsers, userId, searchTerm, startDate, endDate, courseId, paymentId, normalizedType, unreadOnly, recentOnly, page, size]);
+const getQueryFn = useCallback(() => {
     if (viewAllUsers) {
       console.log("Admin viewing all notifications");
       return NotificationService.getAllNotifications();
@@ -107,7 +111,29 @@ const getQueryKey = useCallback(() => {
   // Xác định hàm query phân trang dựa trên các tùy chọn
   // Modify the getPaginatedQueryFn function to handle date range properly
 const getPaginatedQueryFn = useCallback(() => {
+  console.log("Current filter state:", {
+    isAdmin, viewAllUsers, type, normalizedType, page, size
+  });
+
   if (isAdmin && viewAllUsers) {
+    // Ưu tiên filter type nếu có
+    if (normalizedType) {
+      console.log(`Admin filtering all notifications by type: ${normalizedType}, page=${page}, size=${size}`);
+      // Gọi API filter theo type
+      return NotificationService.getNotificationsByTypePaginated(normalizedType, page, size);
+    }
+    
+    // Nếu có search term
+    if (searchTerm) {
+      console.log(`Admin searching all notifications for: "${searchTerm}", page=${page}, size=${size}`);
+      return NotificationService.searchAllNotificationsPaginated(searchTerm, page, size);
+    }
+    // Nếu có date range
+    if (startDate && endDate) {
+      console.log(`Admin filtering all notifications by date range: ${startDate} to ${endDate}, page=${page}, size=${size}`);
+      // Bạn cần thêm method này vào NotificationService nếu chưa có
+      return NotificationService.getAllNotificationsByDateRangePaginated(startDate, endDate, page, size);
+    }
     console.log("Admin viewing all notifications with pagination");
     return NotificationService.getAllNotificationsPaginated(page, size);
   }
@@ -171,8 +197,13 @@ const getPaginatedQueryFn = useCallback(() => {
 
   // Query tất cả thông báo phân trang (cho admin)
   const allNotificationsPaginatedQuery = useQuery({
-    queryKey: ['notifications', 'all', 'paginated', page, size],
-    queryFn: () => NotificationService.getAllNotificationsPaginated(page, size),
+    queryKey: ['notifications', 'all', 'paginated', normalizedType, page, size],
+    queryFn: () => {
+      if (normalizedType) {
+        return NotificationService.getNotificationsByTypePaginated(normalizedType, page, size);
+      }
+      return NotificationService.getAllNotificationsPaginated(page, size);
+    },
     enabled: isAdmin && viewAllUsers && enablePagination
   });
 
@@ -304,7 +335,14 @@ const refreshNotifications = useCallback(() => {
   });
   
   if (isAdmin && viewAllUsers) {
-    queryClient.invalidateQueries({ queryKey: ['notifications', 'admin', 'all'] });
+    if (normalizedType) {
+      // Invalidate query cụ thể cho filter type trong admin view
+      queryClient.invalidateQueries({ 
+        queryKey: ['notifications', 'admin', 'all', 'type', normalizedType]
+      });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'admin', 'all'] });
+    }
   } else if (userId) {
     if (normalizedType) {
       // Specifically invalidate type-filtered queries
@@ -322,6 +360,7 @@ const refreshNotifications = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['notifications', userId, 'statistics'] });
   }
 }, [queryClient, isAdmin, viewAllUsers, userId, normalizedType, searchTerm, startDate, endDate, unreadOnly, recentOnly]);
+
 
   return {
     // Thêm 2 properties mới này
