@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Button, Form, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { FaArrowLeft, FaSave, FaTrash, FaUserCircle, FaBook } from 'react-icons/fa';
-import ReviewService from '../../../services/reviewService';
-import { NotificationContext } from '../../../contexts/NotificationContext';
+import ReviewService from '../../services/ReviewService';
+import { NotificationContext } from '../../contexts/NotificationContext';
 import { useContext } from 'react';
 
 const ReviewDetail = () => {
@@ -149,13 +149,13 @@ const ReviewDetail = () => {
                   <div className="mb-2">
                     <FaUserCircle className="me-2" />
                     <strong>Student:</strong> {review.studentName || review.studentId} 
-                    <Button 
+                    {/* <Button 
                       variant="link" 
                       size="sm" 
                       onClick={() => navigate(`/dashboard/student/detail/${review.studentId}`)}
                     >
                       View Student
-                    </Button>
+                    </Button> */}
                   </div>
                   <div className="mb-2">
                     <FaBook className="me-2" />

@@ -1,5 +1,4 @@
-// src/components/instructor/PendingInstructors.jsx
-import React, { useState, useMemo, useContext } from 'react'; // Thêm useContext
+import React, { useState, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -60,6 +59,7 @@ const PendingInstructors = () => {
   const navigate = useNavigate();
   const { addNotification } = useContext(NotificationContext);
   const queryClient = useQueryClient();
+  
   // States
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogs, setDialogs] = useState({
@@ -77,6 +77,10 @@ const PendingInstructors = () => {
     reason: '',
     customReason: ''
   });
+  
+  // Loading states for approve and reject actions
+  const [isApproving, setIsApproving] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
 
   // Fetch pending instructors
   const {
@@ -169,9 +173,12 @@ const PendingInstructors = () => {
 
   // Submit handlers
   const handleApprove = () => {
-    if (!canApprove()) return;
+    if (!canApprove() || isApproving) return;
     
     const { instructor } = dialogs.approve;
+    
+    // Set loading state
+    setIsApproving(true);
     
     const detailedNotes = `
         Overall Rating: ${approvalData.overallRating}/5 stars
@@ -187,21 +194,30 @@ const PendingInstructors = () => {
         instructorId: instructor.id,
         notes: detailedNotes,
         onSuccess: () => {
-            // Chỉ đóng dialog và hiển thị thông báo khi approve thành công
+            // Show success notification
             addNotification(`Instructor ${instructor.firstName} ${instructor.lastName} has been approved successfully!`, 'success');
             
-            // Refresh danh sách thông báo
+            // Refresh notifications list
             queryClient.invalidateQueries(['notifications']);
             
+            // Close dialog and reset loading state
             setDialogs(prev => ({
                 ...prev,
                 approve: { open: false, instructor: null }
             }));
+            setIsApproving(false);
+        },
+        onError: (error) => {
+            console.error('Error approving instructor:', error);
+            addNotification('Failed to approve instructor. Please try again.', 'error');
+            setIsApproving(false);
         }
     });
   };
 
   const handleReject = () => {
+    if (isRejecting) return;
+    
     const { instructor } = dialogs.reject;
     const finalReason = rejectData.category === 'custom' 
       ? rejectData.customReason 
@@ -211,6 +227,9 @@ const PendingInstructors = () => {
       alert('Please provide a reason for rejection');
       return;
     }
+
+    // Set loading state
+    setIsRejecting(true);
 
     rejectInstructor({
       instructorId: instructor.id,
@@ -239,10 +258,14 @@ const PendingInstructors = () => {
         
         // Refresh instructor list
         refetch();
+        
+        // Reset loading state
+        setIsRejecting(false);
       },
       onError: (error) => {
         console.error('Error rejecting instructor:', error);
         addNotification('Failed to reject instructor. Please try again.', 'error');
+        setIsRejecting(false);
       }
     });
   };
@@ -306,7 +329,7 @@ const PendingInstructors = () => {
               }}
             />
           </Box>
-
+  
           {/* Instructor List */}
           {filteredInstructors.length === 0 ? (
             <Alert severity="info">
@@ -326,11 +349,11 @@ const PendingInstructors = () => {
               ))}
             </Grid>
           )}
-
+  
           {/* Approve Dialog */}
           <Dialog
             open={dialogs.approve.open}
-            onClose={() => setDialogs(prev => ({ ...prev, approve: { open: false, instructor: null } }))}
+            onClose={() => !isApproving && setDialogs(prev => ({ ...prev, approve: { open: false, instructor: null } }))}
             maxWidth="md"
             fullWidth
           >
@@ -350,7 +373,7 @@ const PendingInstructors = () => {
                   Email: {dialogs.approve.instructor?.accountEmail}
                 </Typography>
               </Box>
-
+  
               {/* Stepper */}
               <Stepper activeStep={approvalData.activeStep} sx={{ mb: 4 }}>
                 <Step key="evaluation">
@@ -363,7 +386,7 @@ const PendingInstructors = () => {
                   <StepLabel>Notes & Confirmation</StepLabel>
                 </Step>
               </Stepper>
-
+  
               {/* Step Content */}
               {approvalData.activeStep === 0 && (
                 <Box>
@@ -374,7 +397,7 @@ const PendingInstructors = () => {
                     Please evaluate the candidate according to each criterion below.
                     Criteria marked with (*) are required.
                   </Typography>
-
+  
                   {APPROVAL_CRITERIA.map((criteria) => (
                     <Paper key={criteria.id} sx={{ p: 2, mb: 2 }}>
                       <Box display="flex" alignItems="center" mb={1}>
@@ -387,7 +410,7 @@ const PendingInstructors = () => {
                           </IconButton>
                         </Tooltip>
                       </Box>
-
+  
                       <RadioGroup
                         value={approvalData.evaluations[criteria.id] || ''}
                         onChange={(e) => handleEvaluationChange(criteria.id, e.target.value)}
@@ -412,7 +435,7 @@ const PendingInstructors = () => {
                   ))}
                 </Box>
               )}
-
+  
               {approvalData.activeStep === 1 && (
                 <Box>
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -422,7 +445,7 @@ const PendingInstructors = () => {
                     Based on the criteria evaluation, please provide an overall assessment.
                     A minimum of 3 stars is required for approval.
                   </Typography>
-
+  
                   <Box display="flex" alignItems="center" mb={3}>
                     <Rating
                       value={approvalData.overallRating}
@@ -433,254 +456,276 @@ const PendingInstructors = () => {
                       precision={0.5}
                     />
                     <Typography variant="body2" ml={2}>
-  {approvalData.overallRating === 0 && 'Not rated'}
-  {approvalData.overallRating > 0 && approvalData.overallRating < 3 && 'Below requirements'}
-  {approvalData.overallRating >= 3 && approvalData.overallRating < 4 && 'Meets requirements'}
-  {approvalData.overallRating >= 4 && 'Excellent'}
-</Typography>
-</Box>
-
-{/* Evaluation Summary */}
-<Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-  Evaluation Summary
-</Typography>
-<Paper sx={{ p: 2 }}>
-  {Object.entries(approvalData.evaluations).map(([key, value]) => {
-    const criteria = APPROVAL_CRITERIA.find(c => c.id === key);
-    const option = criteria?.options.find(o => o.value === value);
-    return (
-      <Box key={key} display="flex" justifyContent="space-between" mb={1}>
-        <Typography variant="body2">{criteria?.label}:</Typography>
-        <Typography
-          variant="body2"
-          color={
-            value === 'exceeds' ? 'success.main' :
-            value === 'meets' ? 'primary.main' :
-            'error.main'
-          }
-        >
-          {option?.label}
-        </Typography>
-      </Box>
-    );
-  })}
-</Paper>
-</Box>
-)}
-
-{approvalData.activeStep === 2 && (
-<Box>
-  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-    Notes & Confirmation
-  </Typography>
-  <Typography variant="body2" color="text.secondary" paragraph>
-    Please provide additional notes about your approval decision.
-    This information will be saved and may be shared with the instructor.
-  </Typography>
-
-  <TextField
-    label="Approval Notes"
-    fullWidth
-    multiline
-    rows={4}
-    value={approvalData.notes}
-    onChange={(e) => setApprovalData(prev => ({ ...prev, notes: e.target.value }))}
-    placeholder="Enter notes about your approval decision..."
-    required
-    variant="outlined"
-    sx={{ mb: 3 }}
-  />
-
-  <Alert severity="info" sx={{ mb: 2 }}>
-    <Typography variant="body2">
-      When approved, the instructor account will be activated and they can begin creating courses.
-      Ensure that you have thoroughly evaluated all criteria.
-    </Typography>
-  </Alert>
-
-  <Paper sx={{ p: 2, bgcolor: 'success.light' }}>
-    <Box display="flex" alignItems="center">
-      <CheckCircle color="success" size={24} style={{ marginRight: 8 }} />
-      <Typography variant="body1" fontWeight="bold">
-        Ready for Approval
-      </Typography>
-    </Box>
-    <Typography variant="body2" mt={1}>
-      Overall Rating: {approvalData.overallRating}/5 stars
-    </Typography>
-  </Paper>
-</Box>
-)}
-</DialogContent>
-<DialogActions>
-<Button 
-  onClick={() => setDialogs(prev => ({ 
-    ...prev, 
-    approve: { open: false, instructor: null } 
-  }))}
->
-  Cancel
-</Button>
-{approvalData.activeStep > 0 && (
-  <Button onClick={() => handleApprovalStepChange('back')}>
-    Back
-  </Button>
-)}
-{approvalData.activeStep < 2 ? (
-  <Button
-    onClick={() => handleApprovalStepChange('next')}
-    variant="contained"
-    color="primary"
-    disabled={!isStepComplete(approvalData.activeStep)}
-  >
-    Next
-  </Button>
-) : (
-  <Button
-    onClick={handleApprove}
-    variant="contained"
-    color="success"
-    disabled={!canApprove()}
-  >
-    Approve Instructor
-  </Button>
-)}
-</DialogActions>
-</Dialog>
-
-{/* Reject Dialog */}
-<Dialog
-open={dialogs.reject.open}
-onClose={() => setDialogs(prev => ({ ...prev, reject: { open: false, instructor: null } }))}
-maxWidth="md"
-fullWidth
->
-<DialogTitle>
-  <Box display="flex" alignItems="center">
-    <AlertTriangle color="error" size={24} style={{ marginRight: 8 }} />
-    Reject Instructor Application
-  </Box>
-</DialogTitle>
-<DialogContent>
-  <Box mb={3}>
-    <Typography variant="h6" gutterBottom>
-      {dialogs.reject.instructor?.firstName} {dialogs.reject.instructor?.lastName}
-    </Typography>
-    <Typography variant="body2" color="text.secondary">
-      Email: {dialogs.reject.instructor?.accountEmail}
-    </Typography>
-  </Box>
-
-  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-    Rejection Reason
-  </Typography>
-  <Typography variant="body2" color="text.secondary" paragraph>
-    Please select a category and reason for rejection or provide a custom reason.
-    This information will be sent to the applicant.
-  </Typography>
-
-  <FormControl fullWidth sx={{ mb: 3 }}>
-    <FormLabel>Select Category</FormLabel>
-    <RadioGroup
-      value={rejectData.category}
-      onChange={(e) => setRejectData(prev => ({ 
-        ...prev, 
-        category: e.target.value,
-        reason: ''
-      }))}
-    >
-      {COMMON_REJECTION_REASONS.map((category) => (
-        <FormControlLabel
-          key={category.category}
-          value={category.category}
-          control={<Radio />}
-          label={category.category}
-        />
-      ))}
-      <FormControlLabel
-        value="custom"
-        control={<Radio />}
-        label="Other Reason"
-      />
-    </RadioGroup>
-  </FormControl>
-
-  {rejectData.category && rejectData.category !== 'custom' && (
-    <FormControl fullWidth sx={{ mb: 3 }}>
-      <FormLabel>Select Specific Reason</FormLabel>
-      <RadioGroup
-        value={rejectData.reason}
-        onChange={(e) => setRejectData(prev => ({ 
-          ...prev, 
-          reason: e.target.value 
-        }))}
-      >
-        {COMMON_REJECTION_REASONS
-          .find(cat => cat.category === rejectData.category)
-          ?.reasons.map((reason, index) => (
-            <FormControlLabel
-              key={index}
-              value={reason}
-              control={<Radio />}
-              label={reason}
-            />
-          ))}
-      </RadioGroup>
-    </FormControl>
-  )}
-
-  {rejectData.category === 'custom' && (
-    <TextField
-      label="Custom Rejection Reason"
-      fullWidth
-      multiline
-      rows={4}
-      value={rejectData.customReason}
-      onChange={(e) => setRejectData(prev => ({ 
-        ...prev, 
-        customReason: e.target.value 
-      }))}
-      placeholder="Enter detailed rejection reason..."
-      required
-      variant="outlined"
-      sx={{ mb: 3 }}
-    />
-  )}
-
-  <Alert severity="warning">
-    <Typography variant="body2">
-      Rejecting the application will change the account status to "REJECTED".
-      The applicant will receive a notification with the rejection reason.
-    </Typography>
-  </Alert>
-</DialogContent>
-<DialogActions>
-  <Button 
-    onClick={() => setDialogs(prev => ({ 
-      ...prev, 
-      reject: { open: false, instructor: null } 
-    }))}
-  >
-    Cancel
-  </Button>
-  <Button
-    onClick={handleReject}
-    variant="contained"
-    color="error"
-    disabled={
-      (rejectData.category !== 'custom' && !rejectData.reason) ||
-      (rejectData.category === 'custom' && !rejectData.customReason.trim()) ||
-      !rejectData.category
-    }
-  >
-    Reject Application
-  </Button>
-</DialogActions>
-</Dialog>
-</Box>
-</Card>
-</ErrorBoundary>
-);
-};
-
-export default PendingInstructors;
+                      {approvalData.overallRating === 0 && 'Not rated'}
+                      {approvalData.overallRating > 0 && approvalData.overallRating < 3 && 'Below requirements'}
+                      {approvalData.overallRating >= 3 && approvalData.overallRating < 4 && 'Meets requirements'}
+                      {approvalData.overallRating >= 4 && 'Excellent'}
+                    </Typography>
+                  </Box>
+  
+                  {/* Evaluation Summary */}
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    Evaluation Summary
+                  </Typography>
+                  <Paper sx={{ p: 2 }}>
+                    {Object.entries(approvalData.evaluations).map(([key, value]) => {
+                      const criteria = APPROVAL_CRITERIA.find(c => c.id === key);
+                      const option = criteria?.options.find(o => o.value === value);
+                      return (
+                        <Box key={key} display="flex" justifyContent="space-between" mb={1}>
+                          <Typography variant="body2">{criteria?.label}:</Typography>
+                          <Typography
+                            variant="body2"
+                            color={
+                              value === 'exceeds' ? 'success.main' :
+                              value === 'meets' ? 'primary.main' :
+                              'error.main'
+                            }
+                          >
+                            {option?.label}
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Paper>
+                </Box>
+              )}
+  
+              {approvalData.activeStep === 2 && (
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    Notes & Confirmation
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    Please provide additional notes about your approval decision.
+                    This information will be saved and may be shared with the instructor.
+                  </Typography>
+  
+                  <TextField
+                    label="Approval Notes"
+                    fullWidth
+                    multiline
+                    rows={4}
+                    value={approvalData.notes}
+                    onChange={(e) => setApprovalData(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Enter notes about your approval decision..."
+                    required
+                    variant="outlined"
+                    sx={{ mb: 3 }}
+                    disabled={isApproving}
+                  />
+  
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      When approved, the instructor account will be activated and they can begin creating courses.
+                      Ensure that you have thoroughly evaluated all criteria.
+                    </Typography>
+                  </Alert>
+  
+                  <Paper sx={{ p: 2, bgcolor: 'success.light' }}>
+                    <Box display="flex" alignItems="center">
+                      <CheckCircle color="success" size={24} style={{ marginRight: 8 }} />
+                      <Typography variant="body1" fontWeight="bold">
+                        Ready for Approval
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" mt={1}>
+                      Overall Rating: {approvalData.overallRating}/5 stars
+                    </Typography>
+                  </Paper>
+                </Box>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button 
+                onClick={() => setDialogs(prev => ({ 
+                  ...prev, 
+                  approve: { open: false, instructor: null } 
+                }))}
+                disabled={isApproving}
+              >
+                Cancel
+              </Button>
+              {approvalData.activeStep > 0 && (
+                <Button 
+                  onClick={() => handleApprovalStepChange('back')}
+                  disabled={isApproving}
+                >
+                  Back
+                </Button>
+              )}
+              {approvalData.activeStep < 2 ? (
+                <Button
+                  onClick={() => handleApprovalStepChange('next')}
+                  variant="contained"
+                  color="primary"
+                  disabled={!isStepComplete(approvalData.activeStep) || isApproving}
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleApprove}
+                  variant="contained"
+                  color="success"
+                  disabled={!canApprove() || isApproving}
+                >
+                  {isApproving ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                      Approving...
+                    </Box>
+                  ) : (
+                    'Approve Instructor'
+                  )}
+                </Button>
+              )}
+            </DialogActions>
+          </Dialog>
+  
+          {/* Reject Dialog */}
+          <Dialog
+            open={dialogs.reject.open}
+            onClose={() => !isRejecting && setDialogs(prev => ({ ...prev, reject: { open: false, instructor: null } }))}
+            maxWidth="md"
+            fullWidth
+          >
+            <DialogTitle>
+              <Box display="flex" alignItems="center">
+                <AlertTriangle color="error" size={24} style={{ marginRight: 8 }} />
+                Reject Instructor Application
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              <Box mb={3}>
+                <Typography variant="h6" gutterBottom>
+                  {dialogs.reject.instructor?.firstName} {dialogs.reject.instructor?.lastName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Email: {dialogs.reject.instructor?.accountEmail}
+                </Typography>
+              </Box>
+  
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Rejection Reason
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Please select a category and reason for rejection or provide a custom reason.
+                This information will be sent to the applicant.
+              </Typography>
+  
+              <FormControl fullWidth sx={{ mb: 3 }} disabled={isRejecting}>
+                <FormLabel>Select Category</FormLabel>
+                <RadioGroup
+                  value={rejectData.category}
+                  onChange={(e) => setRejectData(prev => ({ 
+                    ...prev, 
+                    category: e.target.value,
+                    reason: ''
+                  }))}
+                >
+                  {COMMON_REJECTION_REASONS.map((category) => (
+                    <FormControlLabel
+                      key={category.category}
+                      value={category.category}
+                      control={<Radio />}
+                      label={category.category}
+                    />
+                  ))}
+                  <FormControlLabel
+                    value="custom"
+                    control={<Radio />}
+                    label="Other Reason"
+                  />
+                </RadioGroup>
+              </FormControl>
+  
+              {rejectData.category && rejectData.category !== 'custom' && (
+                <FormControl fullWidth sx={{ mb: 3 }} disabled={isRejecting}>
+                  <FormLabel>Select Specific Reason</FormLabel>
+                  <RadioGroup
+                    value={rejectData.reason}
+                    onChange={(e) => setRejectData(prev => ({ 
+                      ...prev, 
+                      reason: e.target.value 
+                    }))}
+                  >
+                    {COMMON_REJECTION_REASONS
+                      .find(cat => cat.category === rejectData.category)
+                      ?.reasons.map((reason, index) => (
+                        <FormControlLabel
+                          key={index}
+                          value={reason}
+                          control={<Radio />}
+                          label={reason}
+                        />
+                      ))}
+                  </RadioGroup>
+                </FormControl>
+              )}
+  
+              {rejectData.category === 'custom' && (
+                <TextField
+                  label="Custom Rejection Reason"
+                  fullWidth
+                  multiline
+                  rows={4}
+                  value={rejectData.customReason}
+                  onChange={(e) => setRejectData(prev => ({ 
+                    ...prev, 
+                    customReason: e.target.value 
+                  }))}
+                  placeholder="Enter detailed rejection reason..."
+                  required
+                  variant="outlined"
+                  sx={{ mb: 3 }}
+                  disabled={isRejecting}
+                />
+              )}
+  
+              <Alert severity="warning">
+                <Typography variant="body2">
+                  Rejecting the application will change the account status to "REJECTED".
+                  The applicant will receive a notification with the rejection reason.
+                </Typography>
+              </Alert>
+            </DialogContent>
+            <DialogActions>
+              <Button 
+                onClick={() => setDialogs(prev => ({ 
+                  ...prev, 
+                  reject: { open: false, instructor: null } 
+                }))}
+                disabled={isRejecting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleReject}
+                variant="contained"
+                color="error"
+                disabled={
+                  (rejectData.category !== 'custom' && !rejectData.reason) ||
+                  (rejectData.category === 'custom' && !rejectData.customReason.trim()) ||
+                  !rejectData.category ||
+                  isRejecting
+                }
+              >
+                {isRejecting ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                    Rejecting...
+                  </Box>
+                ) : (
+                  'Reject Application'
+                )}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </Box>
+      </Card>
+    </ErrorBoundary>
+  );
+  };
+  
+  export default PendingInstructors;

@@ -172,10 +172,7 @@ const AccountList = () => {
     refetch();
   };
 
-  // Handle create new account
-  const handleCreateAccount = () => {
-    navigate('/dashboard/account/create');
-  };
+ 
 
   if (isLoading) {
     return (
@@ -194,14 +191,7 @@ const AccountList = () => {
             Account Management
           </Typography>
           <Box display="flex" gap={2}>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              startIcon={<UserPlus size={20} />}
-              onClick={handleCreateAccount}
-            >
-              Create Account
-            </Button>
+            
             <Button 
               variant="outlined" 
               startIcon={<RefreshCw size={20} />}

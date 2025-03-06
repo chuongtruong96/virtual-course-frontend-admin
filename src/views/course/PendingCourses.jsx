@@ -161,19 +161,13 @@ const PendingCourses = () => {
   const navigate = useNavigate();
   const { pendingCourses, isLoading, isError, error, refetch } = useCourses('pending');
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const {
-    approvalHistory,
-    approveCourse,
-    rejectCourse,
-    isApproving,
-    isRejecting
-  } = useCourseApproval(selectedCourse?.id);
+  const { approvalHistory, approveCourse, rejectCourse, isApproving, isRejecting } = useCourseApproval(selectedCourse?.id);
 
   // Dialog states
   const [approveDialog, setApproveDialog] = useState({ open: false, course: null });
   const [rejectDialog, setRejectDialog] = useState({ open: false, course: null });
   const [historyDialog, setHistoryDialog] = useState({ open: false, course: null });
-  
+
   // Form states
   const [approvalNotes, setApprovalNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
@@ -182,7 +176,7 @@ const PendingCourses = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [evaluations, setEvaluations] = useState({});
   const [overallRating, setOverallRating] = useState(0);
-  
+
   // Debug the pendingCourses data when it changes
   useEffect(() => {
     if (pendingCourses) {
@@ -234,8 +228,8 @@ const PendingCourses = () => {
 
   const getLevelColor = (level) => {
     if (!level) return 'default';
-    
-    switch(level.toLowerCase()) {
+
+    switch (level.toLowerCase()) {
       case 'beginner':
         return 'success';
       case 'intermediate':
@@ -278,7 +272,7 @@ const PendingCourses = () => {
   };
 
   const handleEvaluationChange = (criteriaId, value) => {
-    setEvaluations(prev => ({
+    setEvaluations((prev) => ({
       ...prev,
       [criteriaId]: value
     }));
@@ -286,10 +280,8 @@ const PendingCourses = () => {
 
   const handleApprove = () => {
     // Check if all required criteria have been evaluated
-    const requiredCriteria = APPROVAL_CRITERIA.filter(criteria => criteria.required);
-    const allRequiredEvaluated = requiredCriteria.every(criteria => 
-      evaluations[criteria.id] && evaluations[criteria.id] !== 'below'
-    );
+    const requiredCriteria = APPROVAL_CRITERIA.filter((criteria) => criteria.required);
+    const allRequiredEvaluated = requiredCriteria.every((criteria) => evaluations[criteria.id] && evaluations[criteria.id] !== 'below');
 
     if (!allRequiredEvaluated) {
       alert('Please evaluate all required criteria and ensure the course meets minimum requirements');
@@ -305,11 +297,13 @@ const PendingCourses = () => {
       // Create detailed approval notes
       const detailedNotes = `
 Overall Rating: ${overallRating}/5 stars
-${Object.entries(evaluations).map(([key, value]) => {
-  const criteria = APPROVAL_CRITERIA.find(c => c.id === key);
-  const option = criteria?.options.find(o => o.value === value);
-  return `${criteria?.label}: ${option?.label}`;
-}).join('\n')}
+${Object.entries(evaluations)
+  .map(([key, value]) => {
+    const criteria = APPROVAL_CRITERIA.find((c) => c.id === key);
+    const option = criteria?.options.find((o) => o.value === value);
+    return `${criteria?.label}: ${option?.label}`;
+  })
+  .join('\n')}
 
 Additional Notes: ${approvalNotes}
       `.trim();
@@ -318,9 +312,9 @@ Additional Notes: ${approvalNotes}
         courseId: approveDialog.course.id,
         notes: detailedNotes
       });
-      
+
       setApproveDialog({ open: false, course: null });
-      
+
       // Reset form state after successful submission
       setTimeout(() => {
         setSelectedCourse(null);
@@ -354,9 +348,9 @@ Additional Notes: ${approvalNotes}
         courseId: rejectDialog.course.id,
         reason: finalReason
       });
-      
+
       setRejectDialog({ open: false, course: null });
-      
+
       // Reset form state after successful submission
       setTimeout(() => {
         setSelectedCourse(null);
@@ -371,8 +365,8 @@ Additional Notes: ${approvalNotes}
   const isStepComplete = (step) => {
     if (step === 0) {
       // Check if all required criteria have been evaluated
-      const requiredCriteria = APPROVAL_CRITERIA.filter(criteria => criteria.required);
-      return requiredCriteria.every(criteria => evaluations[criteria.id]);
+      const requiredCriteria = APPROVAL_CRITERIA.filter((criteria) => criteria.required);
+      return requiredCriteria.every((criteria) => evaluations[criteria.id]);
     }
     if (step === 1) {
       return overallRating > 0;
@@ -382,11 +376,9 @@ Additional Notes: ${approvalNotes}
 
   const canApprove = () => {
     // Check if all required criteria have been evaluated and meet requirements
-    const requiredCriteria = APPROVAL_CRITERIA.filter(criteria => criteria.required);
-    const allRequiredMet = requiredCriteria.every(criteria => 
-      evaluations[criteria.id] && evaluations[criteria.id] !== 'below'
-    );
-    
+    const requiredCriteria = APPROVAL_CRITERIA.filter((criteria) => criteria.required);
+    const allRequiredMet = requiredCriteria.every((criteria) => evaluations[criteria.id] && evaluations[criteria.id] !== 'below');
+
     return allRequiredMet && overallRating >= 3 && approvalNotes.trim().length > 0;
   };
 
@@ -413,12 +405,9 @@ Additional Notes: ${approvalNotes}
   return (
     <>
       <Card>
-        <CardHeader 
-          title="Pending Courses" 
-          subheader={`${pendingCourses?.length || 0} courses awaiting review`}
-        />
+        <CardHeader title="Pending Courses" subheader={`${pendingCourses?.length || 0} courses awaiting review`} />
         <CardContent>
-        {(!pendingCourses || !Array.isArray(pendingCourses) || pendingCourses.length === 0) ? (
+          {!pendingCourses || !Array.isArray(pendingCourses) || pendingCourses.length === 0 ? (
             <Alert severity="info">
               <Typography>No pending courses found</Typography>
             </Alert>
@@ -439,7 +428,7 @@ Additional Notes: ${approvalNotes}
                 </TableHead>
                 <TableBody>
                   {Array.isArray(pendingCourses) &&
-                    pendingCourses.map(course => (
+                    pendingCourses.map((course) => (
                       <TableRow key={course.id} hover>
                         <TableCell>
                           <Typography variant="body2" fontWeight="medium">
@@ -449,11 +438,7 @@ Additional Notes: ${approvalNotes}
                         <TableCell>{renderInstructorName(course.instructor)}</TableCell>
                         <TableCell>{renderCategory(course.category || course.categoryName)}</TableCell>
                         <TableCell>
-                          <Chip 
-                            label={course.level || 'N/A'} 
-                            size="small" 
-                            color={getLevelColor(course.level)}
-                          />
+                          <Chip label={course.level || 'N/A'} size="small" color={getLevelColor(course.level)} />
                         </TableCell>
                         <TableCell>{course.duration ? `${course.duration} hrs` : 'N/A'}</TableCell>
                         <TableCell>{formatPrice(course.basePrice || course.price)}</TableCell>
@@ -492,8 +477,7 @@ Additional Notes: ${approvalNotes}
                           </Box>
                         </TableCell>
                       </TableRow>
-                    ))
-                  }
+                    ))}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -502,12 +486,7 @@ Additional Notes: ${approvalNotes}
       </Card>
 
       {/* Approve Dialog */}
-      <Dialog
-        open={approveDialog.open}
-        onClose={() => setApproveDialog({ open: false, course: null })}
-        maxWidth="md"
-        fullWidth
-      >
+      <Dialog open={approveDialog.open} onClose={() => setApproveDialog({ open: false, course: null })} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box display="flex" alignItems="center">
             <CheckCircle color="success" size={24} style={{ marginRight: 8 }} />
@@ -598,10 +577,7 @@ Additional Notes: ${approvalNotes}
                       </IconButton>
                     </Tooltip>
                   </Box>
-                  <RadioGroup
-                    value={evaluations[criteria.id] || ''}
-                    onChange={(e) => handleEvaluationChange(criteria.id, e.target.value)}
-                  >
+                  <RadioGroup value={evaluations[criteria.id] || ''} onChange={(e) => handleEvaluationChange(criteria.id, e.target.value)}>
                     {criteria.options.map((option) => (
                       <FormControlLabel
                         key={option.value}
@@ -629,8 +605,8 @@ Additional Notes: ${approvalNotes}
                 Overall Assessment
               </Typography>
               <Typography variant="body2" color="text.secondary" paragraph>
-                Based on the criteria evaluation, please provide an overall assessment of the course.
-                A minimum of 3 stars is required for approval.
+                Based on the criteria evaluation, please provide an overall assessment of the course. A minimum of 3 stars is required for
+                approval.
               </Typography>
 
               <Box display="flex" alignItems="center" mb={3}>
@@ -655,19 +631,15 @@ Additional Notes: ${approvalNotes}
               </Typography>
               <Paper sx={{ p: 2 }}>
                 {Object.entries(evaluations).map(([key, value]) => {
-                  const criteria = APPROVAL_CRITERIA.find(c => c.id === key);
-                  const option = criteria?.options.find(o => o.value === value);
+                  const criteria = APPROVAL_CRITERIA.find((c) => c.id === key);
+                  const option = criteria?.options.find((o) => o.value === value);
                   return (
                     <Box key={key} display="flex" justifyContent="space-between" mb={1}>
                       <Typography variant="body2">{criteria?.label}:</Typography>
-                      <Chip 
-                        label={option?.label} 
-                        size="small" 
-                        color={
-                          value === 'exceeds' ? 'success' : 
-                          value === 'meets' ? 'primary' : 
-                          'error'
-                        }
+                      <Chip
+                        label={option?.label}
+                        size="small"
+                        color={value === 'exceeds' ? 'success' : value === 'meets' ? 'primary' : 'error'}
                       />
                     </Box>
                   );
@@ -682,8 +654,8 @@ Additional Notes: ${approvalNotes}
                 Notes & Confirmation
               </Typography>
               <Typography variant="body2" color="text.secondary" paragraph>
-                Please provide additional notes about your approval decision.
-                This information will be saved in the record and may be shared with the instructor.
+                Please provide additional notes about your approval decision. This information will be saved in the record and may be shared
+                with the instructor.
               </Typography>
 
               <TextField
@@ -704,8 +676,8 @@ Additional Notes: ${approvalNotes}
               </Typography>
               <Alert severity="info" sx={{ mb: 2 }}>
                 <Typography variant="body2">
-                  When approved, the course will be published and available to students.
-                  Ensure that you have thoroughly evaluated all criteria.
+                  When approved, the course will be published and available to students. Ensure that you have thoroughly evaluated all
+                  criteria.
                 </Typography>
               </Alert>
 
@@ -724,43 +696,29 @@ Additional Notes: ${approvalNotes}
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setApproveDialog({ open: false, course: null })}>
-            Cancel
-          </Button>
-          {activeStep > 0 && (
-            <Button onClick={handleBack}>
-              Back
-            </Button>
-          )}
+          <Button onClick={() => setApproveDialog({ open: false, course: null })}>Cancel</Button>
+          {activeStep > 0 && <Button onClick={handleBack}>Back</Button>}
           {activeStep < 2 ? (
-            <Button 
-              onClick={handleNext}
-              variant="contained" 
-              color="primary"
-              disabled={!isStepComplete(activeStep)}
-            >
+            <Button onClick={handleNext} variant="contained" color="primary" disabled={!isStepComplete(activeStep)}>
               Next
             </Button>
           ) : (
-            <Button 
-              onClick={handleApprove}
-              variant="contained" 
-              color="success"
-              disabled={!canApprove()}
-            >
-              Approve Course
+            <Button onClick={handleApprove} variant="contained" color="success" disabled={!canApprove() || isApproving}>
+              {isApproving ? (
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                  Approving...
+                </Box>
+              ) : (
+                'Approve Course'
+              )}
             </Button>
           )}
         </DialogActions>
       </Dialog>
 
       {/* Reject Dialog */}
-      <Dialog
-        open={rejectDialog.open}
-        onClose={() => setRejectDialog({ open: false, course: null })}
-        maxWidth="md"
-        fullWidth
-      >
+      <Dialog open={rejectDialog.open} onClose={() => setRejectDialog({ open: false, course: null })} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box display="flex" alignItems="center">
             <XCircle color="error" size={24} style={{ marginRight: 8 }} />
@@ -810,49 +768,26 @@ Additional Notes: ${approvalNotes}
             Rejection Reason
           </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Please select a category and reason for rejection or provide a custom reason.
-            This information will be sent to the instructor.
+            Please select a category and reason for rejection or provide a custom reason. This information will be sent to the instructor.
           </Typography>
 
           <FormControl fullWidth sx={{ mb: 3 }}>
             <FormLabel>Select Category</FormLabel>
-            <RadioGroup
-              value={selectedRejectCategory}
-              onChange={(e) => setSelectedRejectCategory(e.target.value)}
-            >
+            <RadioGroup value={selectedRejectCategory} onChange={(e) => setSelectedRejectCategory(e.target.value)}>
               {COMMON_REJECTION_REASONS.map((category) => (
-                <FormControlLabel
-                  key={category.category}
-                  value={category.category}
-                  control={<Radio />}
-                  label={category.category}
-                />
+                <FormControlLabel key={category.category} value={category.category} control={<Radio />} label={category.category} />
               ))}
-              <FormControlLabel
-                value="custom"
-                control={<Radio />}
-                label="Other Reason"
-              />
+              <FormControlLabel value="custom" control={<Radio />} label="Other Reason" />
             </RadioGroup>
           </FormControl>
 
           {selectedRejectCategory && selectedRejectCategory !== 'custom' && (
             <FormControl fullWidth sx={{ mb: 3 }}>
               <FormLabel>Select Specific Reason</FormLabel>
-              <RadioGroup
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-              >
-                {COMMON_REJECTION_REASONS
-                  .find(cat => cat.category === selectedRejectCategory)
-                  ?.reasons.map((reason, index) => (
-                    <FormControlLabel
-                      key={index}
-                      value={reason}
-                      control={<Radio />}
-                      label={reason}
-                    />
-                  ))}
+              <RadioGroup value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)}>
+                {COMMON_REJECTION_REASONS.find((cat) => cat.category === selectedRejectCategory)?.reasons.map((reason, index) => (
+                  <FormControlLabel key={index} value={reason} control={<Radio />} label={reason} />
+                ))}
               </RadioGroup>
             </FormControl>
           )}
@@ -874,38 +809,38 @@ Additional Notes: ${approvalNotes}
 
           <Alert severity="warning" sx={{ mb: 2 }}>
             <Typography variant="body2">
-              Rejecting the course will change its status to "REJECTED".
-              The instructor will receive a notification with the rejection reason.
-              They will be able to make changes and resubmit the course.
+              Rejecting the course will change its status to "REJECTED". The instructor will receive a notification with the rejection
+              reason. They will be able to make changes and resubmit the course.
             </Typography>
           </Alert>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRejectDialog({ open: false, course: null })}>
-            Cancel
-          </Button>
+          <Button onClick={() => setRejectDialog({ open: false, course: null })}>Cancel</Button>
           <Button 
-            onClick={handleReject}
-            variant="contained" 
-            color="error"
-            disabled={
-              (selectedRejectCategory !== 'custom' && !rejectionReason) ||
-              (selectedRejectCategory === 'custom' && !customRejectionReason.trim()) ||
-              !selectedRejectCategory
-            }
-          >
-            Reject Course
-          </Button>
+  onClick={handleReject}
+  variant="contained" 
+  color="error"
+  disabled={
+    (selectedRejectCategory !== 'custom' && !rejectionReason) ||
+    (selectedRejectCategory === 'custom' && !customRejectionReason.trim()) ||
+    !selectedRejectCategory ||
+    isRejecting
+  }
+>
+  {isRejecting ? (
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+      Rejecting...
+    </Box>
+  ) : (
+    'Reject Course'
+  )}
+</Button>
         </DialogActions>
       </Dialog>
 
       {/* History Dialog */}
-      <Dialog
-        open={historyDialog.open}
-        onClose={() => setHistoryDialog({ open: false, course: null })}
-        maxWidth="md"
-        fullWidth
-      >
+      <Dialog open={historyDialog.open} onClose={() => setHistoryDialog({ open: false, course: null })} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box display="flex" alignItems="center">
             <Clock size={24} style={{ marginRight: 8 }} />
@@ -916,17 +851,20 @@ Additional Notes: ${approvalNotes}
           <Typography variant="h6" gutterBottom>
             {historyDialog.course?.titleCourse || historyDialog.course?.title}
           </Typography>
-          
+
           <Divider sx={{ my: 2 }} />
-          
+
           {approvalHistory?.length > 0 ? (
             <Box>
               {approvalHistory.map((history, index) => (
-                <Paper key={index} sx={{ p: 2, mb: 2, bgcolor: 
-                  history.status === 'APPROVED' ? 'success.light' : 
-                  history.status === 'REJECTED' ? 'error.light' : 
-                  'info.light' 
-                }}>
+                <Paper
+                  key={index}
+                  sx={{
+                    p: 2,
+                    mb: 2,
+                    bgcolor: history.status === 'APPROVED' ? 'success.light' : history.status === 'REJECTED' ? 'error.light' : 'info.light'
+                  }}
+                >
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                     <Box display="flex" alignItems="center">
                       {history.status === 'APPROVED' && <CheckCircle color="success" size={20} style={{ marginRight: 8 }} />}
@@ -940,11 +878,11 @@ Additional Notes: ${approvalNotes}
                       {formatSubmissionDate(history.createdAt)}
                     </Typography>
                   </Box>
-                  
+
                   <Typography variant="body2" mb={1}>
                     <strong>Reviewer:</strong> {history.reviewer?.username || 'N/A'}
                   </Typography>
-                  
+
                   {history.notes && (
                     <Box mt={1}>
                       <Typography variant="body2" fontWeight="medium">
@@ -955,7 +893,7 @@ Additional Notes: ${approvalNotes}
                       </Typography>
                     </Box>
                   )}
-                  
+
                   {history.rejectionReason && (
                     <Box mt={1}>
                       <Typography variant="body2" fontWeight="medium" color="error.main">
@@ -976,9 +914,7 @@ Additional Notes: ${approvalNotes}
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setHistoryDialog({ open: false, course: null })}>
-            Close
-          </Button>
+          <Button onClick={() => setHistoryDialog({ open: false, course: null })}>Close</Button>
         </DialogActions>
       </Dialog>
     </>

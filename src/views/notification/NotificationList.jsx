@@ -514,22 +514,124 @@ const handleDateRangeSearch = useCallback((e) => {
   }, []);
 
   // Format date
-  const formatDate = useCallback((dateString) => {
-    try {
-      return format(new Date(dateString), 'MMM dd, yyyy HH:mm');
-    } catch (e) {
-      return dateString;
-    }
-  }, []);
-  // Render loading state
-  if (isLoading) {
-    return (
-      <div className="text-center my-5">
-        <Spinner animation="border" />
-        <p>Loading notifications...</p>
-      </div>
-    );
+const formatDate = useCallback((dateString) => {
+  try {
+    return format(new Date(dateString), 'MMM dd, yyyy HH:mm');
+  } catch (e) {
+    return dateString;
   }
+}, []);
+
+// Thêm đoạn code này để debug
+useEffect(() => {
+  console.log("Statistics data:", statistics);
+  console.log("All notifications:", allNotifications);
+  console.log("Paginated notifications:", paginatedNotifications);
+}, [statistics, allNotifications, paginatedNotifications]);
+
+// Nếu backend không trả về statistics đúng, chúng ta có thể tính toán thủ công
+// Nếu backend không trả về statistics đúng, chúng ta có thể tính toán thủ công
+const calculatedStatistics = useMemo(() => {
+  if (!allNotifications || allNotifications.length === 0) {
+    return {
+      totalCount: paginatedNotifications?.totalElements || 0,
+      courseNotificationsCount: 0,
+      paymentNotificationsCount: 0,
+      systemNotificationsCount: 0,
+      reviewNotificationsCount: 0,
+      otherNotificationsCount: 0
+    };
+  }
+
+  // Lấy tất cả thông báo từ allNotifications hoặc paginatedNotifications
+  const notifications = allNotifications.length > 0
+    ? allNotifications
+    : (paginatedNotifications?.content || []);
+
+  // Log để debug
+  console.log("Calculating statistics from notifications:", notifications);
+  
+  // Tính toán số lượng theo loại
+  let courseCount = 0;
+  let paymentCount = 0;
+  let systemCount = 0;
+  let reviewCount = 0;
+  let otherCount = 0;
+  
+  notifications.forEach(notif => {
+    const type = notif.type;
+    
+    // Course related
+    if (
+      type === 'COURSE' || 
+      type === 'CourseUpdate' || 
+      type === 'CrsApprv' || 
+      type === 'CrsRejct' || 
+      type === 'CrsSubmt' || 
+      type === 'CrsRevsn' || 
+      type === 'Enrollment' || 
+      type === 'Assignment' || 
+      type === 'TestReminder'
+    ) {
+      courseCount++;
+    }
+    // Payment related
+    else if (
+      type === 'PAYMENT' || 
+      type === 'Payment' || 
+      type === 'WalletCredit' || 
+      type === 'WalletDebit' || 
+      type === 'WalletWithdrawal'
+    ) {
+      paymentCount++;
+    }
+    // System related
+    else if (
+      type === 'SYSTEM' || 
+      type === 'SysAlert' || 
+      type === 'General' || 
+      type === 'AccStatus' || 
+      type === 'InstApprv' || 
+      type === 'InstRejct'
+    ) {
+      systemCount++;
+    }
+    // Review related
+    else if (
+      type === 'Review' || 
+      type === 'ReviewResponse' || 
+      type === 'ReviewApproval' ||
+      type === 'CourseReview' ||
+      type === 'InstructorReview'
+    ) {
+      reviewCount++;
+    }
+    // Nếu không thuộc loại nào ở trên
+    else {
+      otherCount++;
+      console.log(`Notification with type "${type}" counted as "Other"`);
+    }
+  });
+
+  return {
+    totalCount: notifications.length,
+    courseNotificationsCount: courseCount,
+    paymentNotificationsCount: paymentCount,
+    systemNotificationsCount: systemCount,
+    reviewNotificationsCount: reviewCount,
+    otherNotificationsCount: otherCount
+  };
+}, [allNotifications, paginatedNotifications]);
+
+// Render loading state
+if (isLoading) {
+  return (
+    <div className="text-center my-5">
+      <Spinner animation="border" />
+      <p>Loading notifications...</p>
+    </div>
+  );
+}
 
   // Render error state
   if (isError) {
@@ -585,42 +687,78 @@ const handleDateRangeSearch = useCallback((e) => {
       {isAdmin && AdminUserSearch}
 
       {/* Statistics Cards */}
-      {statistics && (
-        <Row className="mb-4">
-          <Col md={3}>
-            <Card className="text-center">
-              <Card.Body>
-                <Card.Title>Total</Card.Title>
-                <h3>{statistics.totalCount}</h3>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={3}>
-            <Card className="text-center">
-              <Card.Body>
-                <Card.Title>Course</Card.Title>
-                <h3>{statistics.courseNotificationsCount}</h3>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={3}>
-            <Card className="text-center">
-              <Card.Body>
-                <Card.Title>Payment</Card.Title>
-                <h3>{statistics.paymentNotificationsCount}</h3>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={3}>
-            <Card className="text-center">
-              <Card.Body>
-                <Card.Title>System</Card.Title>
-                <h3>{statistics.systemNotificationsCount}</h3>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )}
+      {(() => {
+  // Tạo một đối tượng thống kê hợp nhất
+  const stats = {
+    totalCount: statistics?.totalCount || calculatedStatistics?.totalCount || 0,
+    courseNotificationsCount: statistics?.courseNotificationsCount || calculatedStatistics?.courseNotificationsCount || 0,
+    paymentNotificationsCount: statistics?.paymentNotificationsCount || calculatedStatistics?.paymentNotificationsCount || 0,
+    systemNotificationsCount: statistics?.systemNotificationsCount || calculatedStatistics?.systemNotificationsCount || 0,
+    // Nếu không có dữ liệu reviews, hiển thị 0
+    reviewNotificationsCount: 0,
+    // Tính toán "Other" bằng cách lấy tổng trừ đi các loại đã biết
+    otherNotificationsCount: (statistics?.totalCount || 0) - 
+      ((statistics?.courseNotificationsCount || 0) + 
+       (statistics?.paymentNotificationsCount || 0) + 
+       (statistics?.systemNotificationsCount || 0))
+  };
+  
+  // Đảm bảo otherNotificationsCount không âm
+  if (stats.otherNotificationsCount < 0) stats.otherNotificationsCount = 0;
+  
+  return (
+    <Row className="mb-4">
+      <Col md={2} sm={6}>
+        <Card className="text-center mb-2">
+          <Card.Body>
+            <Card.Title>Total</Card.Title>
+            <h3>{stats.totalCount}</h3>
+          </Card.Body>
+        </Card>
+      </Col>
+      <Col md={2} sm={6}>
+        <Card className="text-center mb-2">
+          <Card.Body>
+            <Card.Title>Course</Card.Title>
+            <h3>{stats.courseNotificationsCount}</h3>
+          </Card.Body>
+        </Card>
+      </Col>
+      <Col md={2} sm={6}>
+        <Card className="text-center mb-2">
+          <Card.Body>
+            <Card.Title>Payment</Card.Title>
+            <h3>{stats.paymentNotificationsCount}</h3>
+          </Card.Body>
+        </Card>
+      </Col>
+      <Col md={2} sm={6}>
+        <Card className="text-center mb-2">
+          <Card.Body>
+            <Card.Title>System</Card.Title>
+            <h3>{stats.systemNotificationsCount}</h3>
+          </Card.Body>
+        </Card>
+      </Col>
+      <Col md={2} sm={6}>
+        <Card className="text-center mb-2" bg="light">
+          <Card.Body>
+            <Card.Title>Reviews</Card.Title>
+            <h3>{stats.reviewNotificationsCount}</h3>
+          </Card.Body>
+        </Card>
+      </Col>
+      <Col md={2} sm={6}>
+        <Card className="text-center mb-2" bg="light">
+          <Card.Body>
+            <Card.Title>Other</Card.Title>
+            <h3>{stats.otherNotificationsCount}</h3>
+          </Card.Body>
+        </Card>
+      </Col>
+    </Row>
+  );
+})()}
       {/* Search and Filters */}
       <Row className="mb-4">
         <Col md={6}>
