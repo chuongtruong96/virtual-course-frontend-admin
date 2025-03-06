@@ -1,44 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react';
+// Thêm import React và các hooks cần thiết
+import React, { useState, useMemo } from 'react';
+
+// Thêm hooks mới để lấy dữ liệu tài chính
+import useTransactions from '../../hooks/useTransactions';
+import useWallets from '../../hooks/useWallets';
 import { 
-  Box, 
-  Grid, 
-  Card, 
-  CardContent, 
-  Typography, 
-  Avatar, 
-  Button, 
-  FormControl, 
-  Select, 
-  MenuItem, 
-  IconButton, 
-  Chip, 
-  Divider, 
-  Tooltip, 
-  CircularProgress, 
-  Alert, 
-  Paper, 
-  Badge,
-  Tab,
-  Tabs,
-  useTheme,
-  alpha,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  LinearProgress,
-  Menu,
-  ListItemIcon,
-  ListItemText
-} from '@mui/material';
-import { Link, useNavigate } from 'react-router-dom';
-import useAdminDashboard from '../../hooks/useAdminDashboard';
-import useNotifications from '../../hooks/useNotifications';
-import useAdminReviews from '../../hooks/useAdminReviews';
-import StatisticsChart from '../../components/statistics/StatisticsChart';
-import { motion } from 'framer-motion';
-import { 
+  // Thêm icons mới
+  CreditCard, 
+  Wallet, 
+  DollarSign as DollarSignIcon,
+  TrendingUp as TrendingUpIcon,
+  BarChart2 as BarChart2Icon,
+  PieChart as PieChartIcon,
+  ArrowUpRight,
+  // Các icons hiện có
   Users, 
   BookOpen, 
   Grid as GridIcon, 
@@ -68,477 +43,68 @@ import {
   LineChart,
   BarChart
 } from 'lucide-react';
-import { format, parseISO, isToday, isThisWeek, isThisMonth, subMonths } from 'date-fns';
+import { 
+  BarChart as RechartsBarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip as RechartsTooltip, 
+  Legend, 
+  ResponsiveContainer,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  LineChart as RechartsLineChart,
+  Line,
+  AreaChart,
+  Area
+} from 'recharts';
+import { 
+  Box, 
+  Grid, 
+  Card, 
+  CardContent, 
+  Typography, 
+  Avatar, 
+  Button, 
+  FormControl, 
+  Select, 
+  MenuItem, 
+  IconButton, 
+  Chip, 
+  Divider, 
+  Tooltip, 
+  CircularProgress, 
+  Alert, 
+  Paper, 
+  Badge,
+  Tab,
+  Tabs,
+  useTheme,  // Thêm useTheme vào đây
+  alpha,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  LinearProgress,
+  Menu,
+  ListItemIcon,
+  ListItemText
+} from '@mui/material';
 
-// Custom components
-const StatsCard = ({ title, count, icon, trend, trendUp, color, onClick }) => {
-  const theme = useTheme();
-  
-  return (
-    <motion.div
-      whileHover={{ y: -5, boxShadow: theme.shadows[10] }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card 
-        sx={{ 
-          borderRadius: 2,
-          position: 'relative',
-          overflow: 'hidden',
-          cursor: onClick ? 'pointer' : 'default',
-          boxShadow: theme.shadows[3],
-          '&:before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '4px',
-            backgroundColor: theme.palette[color].main
-          }
-        }}
-        onClick={onClick}
-      >
-        <CardContent>
-          <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Avatar 
-              sx={{ 
-                bgcolor: alpha(theme.palette[color].main, 0.1), 
-                color: theme.palette[color].main,
-                width: 56,
-                height: 56,
-                borderRadius: 2
-              }}
-            >
-              {icon}
-            </Avatar>
-            <Box textAlign="right">
-              <Typography variant="h4" component="div" fontWeight="bold">
-                {count?.toLocaleString() || 0}
-              </Typography>
-              <Typography variant="subtitle2" color="textSecondary">
-                {title}
-              </Typography>
-            </Box>
-          </Box>
-          <Box display="flex" alignItems="center" mt={2}>
-            {trendUp ? 
-              <TrendingUp size={16} color={theme.palette.success.main} /> : 
-              <TrendingDown size={16} color={theme.palette.error.main} />
-            }
-            <Typography
-              variant="body2"
-              color={trendUp ? "success.main" : "error.main"}
-              sx={{ ml: 1, fontWeight: 'medium' }}
-            >
-              {trend} {trendUp ? 'increase' : 'decrease'}
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-};
-
-const ApprovalItem = ({ item, onApprove, onReject, type }) => {
-  const [approvalDialog, setApprovalDialog] = useState(false);
-  const [rejectionDialog, setRejectionDialog] = useState(false);
-  const [notes, setNotes] = useState('');
-  const [reason, setReason] = useState('');
-  const theme = useTheme();
-  
-  const handleApprove = () => {
-    onApprove({ 
-      [type === 'course' ? 'courseId' : 'instructorId']: item.id, 
-      notes 
-    });
-    setApprovalDialog(false);
-  };
-  
-  const handleReject = () => {
-    onReject({ 
-      [type === 'course' ? 'courseId' : 'instructorId']: item.id, 
-      reason 
-    });
-    setRejectionDialog(false);
-  };
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Paper 
-        elevation={1} 
-        sx={{ 
-          mb: 2, 
-          p: 2, 
-          borderRadius: 2,
-          transition: 'all 0.3s',
-          '&:hover': {
-            boxShadow: 3,
-            transform: 'translateY(-2px)'
-          }
-        }}
-      >
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography variant="subtitle1" fontWeight="medium">
-              {type === 'course' ? item.titleCourse : `${item.firstName || ''} ${item.lastName || ''}`}
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              {type === 'course' 
-                ? `By ${item.instructorFirstName || ''} ${item.instructorLastName || ''}`
-                : item.email
-              }
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-              Submitted: {item.createdAt ? format(parseISO(item.createdAt), 'MMM dd, yyyy') : 'N/A'}
-            </Typography>
-          </Box>
-          <Box>
-            <Tooltip title="Approve">
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<CheckCircle size={16} />}
-                color="success"
-                onClick={() => setApprovalDialog(true)}
-                sx={{ mr: 1 }}
-              >
-                Approve
-              </Button>
-            </Tooltip>
-            <Tooltip title="Reject">
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<XCircle size={16} />}
-                color="error"
-                onClick={() => setRejectionDialog(true)}
-              >
-                Reject
-              </Button>
-            </Tooltip>
-          </Box>
-        </Box>
-        
-        {/* Approval Dialog */}
-        <Dialog open={approvalDialog} onClose={() => setApprovalDialog(false)}>
-          <DialogTitle>Approve {type === 'course' ? 'Course' : 'Instructor'}</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2" paragraph>
-              Are you sure you want to approve this {type}?
-            </Typography>
-            <TextField
-              label="Notes (Optional)"
-              multiline
-              rows={3}
-              fullWidth
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              variant="outlined"
-              placeholder="Add any notes about this approval"
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setApprovalDialog(false)}>Cancel</Button>
-            <Button onClick={handleApprove} color="success" variant="contained">
-              Approve
-            </Button>
-          </DialogActions>
-        </Dialog>
-        
-        {/* Rejection Dialog */}
-        <Dialog open={rejectionDialog} onClose={() => setRejectionDialog(false)}>
-          <DialogTitle>Reject {type === 'course' ? 'Course' : 'Instructor'}</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2" paragraph>
-              Please provide a reason for rejection:
-            </Typography>
-            <TextField
-              label="Reason for Rejection"
-              multiline
-              rows={3}
-              fullWidth
-              required
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              variant="outlined"
-              placeholder="Explain why this is being rejected"
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setRejectionDialog(false)}>Cancel</Button>
-            <Button 
-              onClick={handleReject} 
-              color="error" 
-              variant="contained"
-              disabled={!reason.trim()}
-            >
-              Reject
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Paper>
-    </motion.div>
-  );
-};
-
-const ReviewItem = ({ review }) => {
-  const theme = useTheme();
-  
-  return (
-    <Box sx={{ mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 1 }}>
-      <Box display="flex" alignItems="flex-start">
-        <Avatar 
-          src={review.studentAvatar} 
-          alt={review.studentName}
-          sx={{ mr: 2, bgcolor: theme.palette.primary.main }}
-        >
-          {review.studentName?.charAt(0) || 'U'}
-        </Avatar>
-        <Box flex={1}>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="subtitle2" fontWeight="bold">
-              {review.studentName || `Student ${review.studentId}`}
-            </Typography>
-            <Box>
-              {[...Array(5)].map((_, i) => (
-                <Star 
-                  key={i} 
-                  size={16} 
-                  fill={i < review.rating ? theme.palette.warning.main : 'transparent'} 
-                  stroke={i < review.rating ? theme.palette.warning.main : theme.palette.text.disabled}
-                />
-              ))}
-            </Box>
-          </Box>
-          <Typography variant="caption" color="text.secondary">
-            for <Link to={`/dashboard/course/detail/${review.courseId}`} style={{ textDecoration: 'none', color: theme.palette.primary.main }}>
-              {review.courseTitle || `Course ${review.courseId}`}
-            </Link>
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 1 }}>
-            {review.comment}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            {format(parseISO(review.createdAt), 'MMM dd, yyyy')}
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
-  );
-};
-
-const NotificationItem = ({ notification }) => {
-  const theme = useTheme();
-  
-  // Determine icon based on notification type
-  const getIcon = () => {
-    switch (notification.type) {
-      case 'course_approval':
-      case 'CourseApprv':
-        return <BookOpen size={16} />;
-      case 'instructor_approval':
-      case 'InstApprv':
-        return <Users size={16} />;
-      case 'review':
-      case 'Review':
-        return <Star size={16} />;
-      case 'payment':
-      case 'Payment':
-        return <DollarSign size={16} />;
-      default:
-        return <Bell size={16} />;
-    }
-  };
-  
-  // Format the time
-  const getTimeDisplay = (dateString) => {
-    if (!dateString) return 'N/A';
-    
-    const date = parseISO(dateString);
-    if (isToday(date)) {
-      return `Today, ${format(date, 'h:mm a')}`;
-    } else if (isThisWeek(date)) {
-      return format(date, 'EEEE, h:mm a');
-    } else {
-      return format(date, 'MMM dd, yyyy');
-    }
-  };
-  
-  // Determine notification color
-  const getNotificationColor = () => {
-    switch (notification.type) {
-      case 'course_approval':
-      case 'CourseApprv':
-        return 'success';
-      case 'instructor_approval':
-      case 'InstApprv':
-        return 'info';
-      case 'review':
-      case 'Review':
-        return 'warning';
-      case 'payment':
-      case 'Payment':
-        return 'primary';
-      default:
-        return 'primary';
-    }
-  };
-  
-  return (
-    <Box 
-      sx={{ 
-        mb: 2, 
-        p: 2, 
-        bgcolor: notification.read ? 'background.paper' : alpha(theme.palette.primary.light, 0.1), 
-        borderRadius: 2,
-        boxShadow: 1,
-        transition: 'all 0.2s',
-        '&:hover': {
-          boxShadow: 2,
-          bgcolor: notification.read ? alpha(theme.palette.background.paper, 0.8) : alpha(theme.palette.primary.light, 0.15)
-        }
-      }}
-    >
-      <Box display="flex" alignItems="flex-start">
-        <Avatar 
-          sx={{ 
-            mr: 2, 
-            bgcolor: alpha(theme.palette[getNotificationColor()].main, 0.1),
-            color: theme.palette[getNotificationColor()].main,
-            width: 40,
-            height: 40
-          }}
-        >
-          {getIcon()}
-        </Avatar>
-        <Box flex={1}>
-          <Typography variant="subtitle2" fontWeight={notification.read ? 'regular' : 'bold'}>
-            {notification.title || 'Notification'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {notification.content || notification.message}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            {getTimeDisplay(notification.createdAt)}
-          </Typography>
-        </Box>
-        {!notification.read && (
-          <Chip 
-            label="New" 
-            size="small" 
-            color="primary" 
-            sx={{ height: 20, fontSize: '0.7rem' }} 
-          />
-        )}
-      </Box>
-    </Box>
-  );
-};
-
-// Chart card component with options menu
-const ChartCard = ({ title, subtitle, children, height = 300, chartType = "line" }) => {
-  const theme = useTheme();
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
-  
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-  
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-  
-  const getChartIcon = () => {
-    switch(chartType.toLowerCase()) {
-      case 'line':
-        return <LineChart size={16} />;
-      case 'bar':
-        return <BarChart size={16} />;
-      case 'pie':
-        return <PieChart size={16} />;
-      default:
-        return <BarChart2 size={16} />;
-    }
-  };
-  
-  return (
-    <Card sx={{ borderRadius: 2, boxShadow: 3, height: '100%' }}>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-          <Box>
-            <Typography variant="h6" fontWeight="medium">
-              {title}
-            </Typography>
-            {subtitle && (
-              <Typography variant="caption" color="text.secondary">
-                {subtitle}
-              </Typography>
-            )}
-          </Box>
-          <Box>
-            <Tooltip title="Chart options">
-              <IconButton
-                size="small"
-                onClick={handleClick}
-                aria-controls={open ? "chart-menu" : undefined}
-                aria-haspopup="true"
-                aria-expanded={open ? "true" : undefined}
-              >
-                <MoreVertical size={18} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-        
-        <Menu
-          id="chart-menu"
-          anchorEl={anchorEl}
-          open={open}
-          onClose={handleClose}
-          MenuListProps={{
-            'aria-labelledby': 'chart-button',
-          }}
-        >
-          <MenuItem onClick={handleClose}>
-            <ListItemIcon>
-              {getChartIcon()}
-            </ListItemIcon>
-            <ListItemText>Change Chart Type</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={handleClose}>
-            <ListItemIcon>
-              <Download size={16} />
-            </ListItemIcon>
-            <ListItemText>Export as PDF</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={handleClose}>
-            <ListItemIcon>
-              <FileText size={16} />
-            </ListItemIcon>
-            <ListItemText>Export Data</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={handleClose}>
-            <ListItemIcon>
-              <Settings size={16} />
-            </ListItemIcon>
-            <ListItemText>Chart Settings</ListItemText>
-          </MenuItem>
-        </Menu>
-        
-        <Divider sx={{ my: 1.5 }} />
-        
-        <Box sx={{ height: height }}>
-          {children}
-        </Box>
-      </CardContent>
-    </Card>
-  );
-};
+// Thêm import cho các components cần thiết
+import useAdminDashboard from '../../hooks/useAdminDashboard';
+import useNotifications from '../../hooks/useNotifications';
+import useAdminReviews from '../../hooks/useAdminReviews';
+import { Link, useNavigate } from 'react-router-dom';
+import StatsCard from '../../components/StatsCard';
+import ChartCard from '../../components/ChartCard';
+import StatisticsChart from '../../components/StatisticsChart';
+import ApprovalItem from '../../components/ApprovalItem';
+import ReviewItem from '../../components/ReviewItem';
+import NotificationItem from '../../components/NotificationItem';
 
 const DashDefault = () => {
   const theme = useTheme();
@@ -548,7 +114,7 @@ const DashDefault = () => {
   const [tabValue, setTabValue] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Use the hooks
+  // Existing hooks
   const {
     statistics,
     trends,
@@ -584,11 +150,28 @@ const DashDefault = () => {
     size: 5 
   });
 
+  // NEW: Get transaction statistics
+  const {
+    statistics: transactionStats,
+    isLoading: transactionsLoading,
+    fetchTransactionStatistics
+  } = useTransactions();
+
+  // NEW: Get wallet statistics
+  const {
+    walletStatistics,
+    isLoading: walletsLoading,
+    getWalletStatistics
+  } = useWallets();
+
   // Handle refresh
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       await refetch();
+      // NEW: Also refresh financial data
+      await fetchTransactionStatistics();
+      await getWalletStatistics();
     } finally {
       setTimeout(() => setRefreshing(false), 800);
     }
@@ -645,42 +228,77 @@ const DashDefault = () => {
         trendUp: calculateTrend(statistics?.reviews || 0, trends?.previousReviews || 0).isUp,
         color: 'info',
         path: '/dashboard/reviews'
+      },
+      // NEW: Add financial stats to quick stats
+      {
+        title: 'Total Revenue',
+        count: transactionStats?.totalDepositAmount ? `$${transactionStats.totalDepositAmount.toFixed(2)}` : '$0.00',
+        icon: <DollarSignIcon />,
+        trend: '8.5%',
+        trendUp: true,
+        color: 'success',
+        path: '/dashboard/finance/transactions'
+      },
+      {
+        title: 'Active Wallets',
+        count: walletStatistics?.activeWallets || 0,
+        icon: <Wallet />,
+        trend: '4.2%',
+        trendUp: true,
+        color: 'primary',
+        path: '/dashboard/finance/wallets'
+      },
+      {
+        title: 'Pending Withdrawals',
+        count: transactionStats?.pendingTransactions || 0,
+        icon: <CreditCard />,
+        trend: '2.1%',
+        trendUp: false,
+        color: 'warning',
+        path: '/dashboard/finance/withdrawal-requests'
+      },
+      {
+        title: 'Avg. Wallet Balance',
+        count: walletStatistics?.averageBalance ? `$${walletStatistics.averageBalance.toFixed(2)}` : '$0.00',
+        icon: <BarChart2Icon />,
+        trend: '6.7%',
+        trendUp: true,
+        color: 'info',
+        path: '/dashboard/finance/wallets'
       }
     ];
-  }, [statistics, trends]);
+  }, [statistics, trends, transactionStats, walletStatistics]);
 
-  // Create sample course data for better charts
-  useEffect(() => {
-    // This is just a simulation - in a real app, you'd modify your backend
-    // to provide better data or use real data from your API
-    const createSampleCourseData = () => {
-      // Create sample data for the last 12 months
-      const now = new Date();
-      const sampleData = [];
-      
-      for (let i = 11; i >= 0; i--) {
-        const date = subMonths(now, i);
-        const monthName = format(date, 'MMM');
-        
-        // Generate random but increasing values
-        const baseValue = 50 + (11 - i) * 15; // Base value increases as we get closer to present
-        const randomFactor = Math.random() * 20 - 10; // Random variation between -10 and +10
-        
-        sampleData.push({
-          month: monthName,
-          enrollments: Math.max(0, Math.round(baseValue + randomFactor)),
-          revenue: Math.round((baseValue + randomFactor) * 25) / 10,
-          courses: Math.round((11 - i) * 1.5 + Math.random() * 2)
-        });
-      }
-      
-      return sampleData;
-    };
-    
-    // In a real app, you'd dispatch this data to your state management
-    // or use it directly in your charts
-    window.sampleCourseData = createSampleCourseData();
-  }, []);
+  // Rest of your existing code...
+
+  // NEW: Prepare data for transaction type pie chart
+  const transactionTypeData = [
+    { name: 'Deposits', value: transactionStats?.totalDeposits || 0, color: theme.palette.success.main },
+    { name: 'Withdrawals', value: transactionStats?.totalWithdrawals || 0, color: theme.palette.secondary.main }
+  ];
+  
+  // NEW: Prepare data for transaction status pie chart
+  const transactionStatusData = [
+    { name: 'Pending', value: transactionStats?.pendingTransactions || 0, color: theme.palette.warning.main },
+    { name: 'Completed', value: transactionStats?.completedTransactions || 0, color: theme.palette.success.main },
+    { name: 'Failed', value: transactionStats?.failedTransactions || 0, color: theme.palette.error.main }
+  ];
+
+  // NEW: Sample monthly transaction data (in a real app, this would come from the API)
+  const monthlyTransactionData = [
+    { month: 'Jan', deposits: 12500, withdrawals: 8200 },
+    { month: 'Feb', deposits: 14200, withdrawals: 9100 },
+    { month: 'Mar', deposits: 15800, withdrawals: 10500 },
+    { month: 'Apr', deposits: 16900, withdrawals: 11200 },
+    { month: 'May', deposits: 18500, withdrawals: 12800 },
+    { month: 'Jun', deposits: 19200, withdrawals: 13500 },
+    { month: 'Jul', deposits: 21000, withdrawals: 14200 },
+    { month: 'Aug', deposits: 22500, withdrawals: 15800 },
+    { month: 'Sep', deposits: 24100, withdrawals: 16500 },
+    { month: 'Oct', deposits: 25800, withdrawals: 17200 },
+    { month: 'Nov', deposits: 27200, withdrawals: 18500 },
+    { month: 'Dec', deposits: 29500, withdrawals: 19800 }
+  ];
 
   return (
     <Box sx={{ flexGrow: 1, padding: 2 }}>
@@ -735,7 +353,7 @@ const DashDefault = () => {
       </Box>
 
       {/* Loading indicator */}
-      {isLoading && (
+      {(isLoading || transactionsLoading || walletsLoading) && (
         <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />
       )}
 
@@ -756,7 +374,7 @@ const DashDefault = () => {
 
       {/* Quick Stats */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        {quickStats.map((stat, index) => (
+        {quickStats.slice(0, 4).map((stat, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <StatsCard
               title={stat.title}
@@ -789,9 +407,158 @@ const DashDefault = () => {
             chartType="bar"
           >
             <StatisticsChart model="courses" filter={timeFilter} title="" />
+            </ChartCard>
+        </Grid>
+      </Grid>
+
+      {/* NEW: Financial Overview Section */}
+      <Typography variant="h5" sx={{ mb: 2, mt: 4, fontWeight: 'medium' }}>
+        Financial Overview
+      </Typography>
+      
+      {/* Financial Stats */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {quickStats.slice(4).map((stat, index) => (
+          <Grid item xs={12} sm={6} md={3} key={index + 4}>
+            <StatsCard
+              title={stat.title}
+              count={stat.count}
+              icon={stat.icon}
+              trend={stat.trend}
+              trendUp={stat.trendUp}
+              color={stat.color}
+              onClick={() => navigate(stat.path)}
+            />
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Financial Charts */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {/* Transaction Type Distribution */}
+        <Grid item xs={12} md={6}>
+          <ChartCard 
+            title="Transaction Distribution" 
+            subtitle="💰 By Type"
+            chartType="pie"
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <RechartsPieChart>
+                <Pie
+                  data={transactionTypeData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                >
+                  {transactionTypeData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <RechartsTooltip formatter={(value) => [value, 'Transactions']} />
+                <Legend />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </Grid>
+        
+        {/* Transaction Status Distribution */}
+        <Grid item xs={12} md={6}>
+          <ChartCard 
+            title="Transaction Status" 
+            subtitle="📊 Overview"
+            chartType="bar"
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <RechartsBarChart
+                data={transactionStatusData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <RechartsTooltip formatter={(value) => [value, 'Transactions']} />
+                <Bar dataKey="value" name="Transactions">
+                  {transactionStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </RechartsBarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </Grid>
+        
+        {/* Monthly Transaction Trends */}
+        <Grid item xs={12}>
+          <ChartCard 
+            title="Monthly Transaction Trends" 
+            subtitle="💹 Financial Activity"
+            chartType="line"
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <RechartsLineChart
+                data={monthlyTransactionData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis yAxisId="left" orientation="left" stroke={theme.palette.success.main} />
+                <YAxis yAxisId="right" orientation="right" stroke={theme.palette.secondary.main} />
+                <RechartsTooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
+                <Legend />
+                <Line 
+                  yAxisId="left" 
+                  type="monotone" 
+                  dataKey="deposits" 
+                  name="Deposits" 
+                  stroke={theme.palette.success.main} 
+                  activeDot={{ r: 8 }} 
+                />
+                <Line 
+                  yAxisId="right" 
+                  type="monotone" 
+                  dataKey="withdrawals" 
+                  name="Withdrawals" 
+                  stroke={theme.palette.secondary.main} 
+                />
+              </RechartsLineChart>
+            </ResponsiveContainer>
           </ChartCard>
         </Grid>
       </Grid>
+      
+      {/* Financial Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          startIcon={<TrendingUpIcon />}
+          onClick={() => navigate('/dashboard/finance/transactions')}
+          sx={{ mr: 2 }}
+        >
+          View All Transactions
+        </Button>
+        <Button 
+          variant="outlined" 
+          color="primary" 
+          startIcon={<Wallet />}
+          onClick={() => navigate('/dashboard/finance/wallets')}
+          sx={{ mr: 2 }}
+        >
+          Manage Wallets
+        </Button>
+        <Button 
+          variant="outlined" 
+          color="warning" 
+          startIcon={<CreditCard />}
+          onClick={() => navigate('/dashboard/finance/withdrawal-requests')}
+        >
+          Pending Withdrawals ({transactionStats?.pendingTransactions || 0})
+        </Button>
+      </Box>
 
       {/* Pending Approvals */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -1139,8 +906,18 @@ const DashDefault = () => {
                   startIcon={<BarChart2 size={18} />}
                   component={Link}
                   to="/dashboard/reviews/statistics"
+                  sx={{ mr: 2 }}
                 >
                   View Detailed Analytics
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  color="secondary" 
+                  startIcon={<PieChartIcon size={18} />}
+                  component={Link}
+                  to="/dashboard/finance/statistics"
+                >
+                  Financial Analytics
                 </Button>
               </Box>
             </CardContent>

@@ -1,20 +1,37 @@
 import api from '../utils/api';
-import { ENDPOINTS } from '../config/endpoints';
+import ENDPOINTS from '../config/endpoints';
 
-const WalletService = {
-  fetchWallets: () => api.get(ENDPOINTS.WALLETS.BASE),
-  deleteWallet: (id) => api.delete(ENDPOINTS.WALLETS.BY_ID(id)),
+const AdminWalletService = {
+  // Get all wallets
+  getAllWallets: async (params = {}) => {
+    const response = await api.get(ENDPOINTS.ADMIN.WALLETS.LIST, { params });
+    return response.data;
+  },
 
-  createWallet: (walletData) => api.post(ENDPOINTS.WALLETS.BASE, walletData),
-  fetchById: (id) => api.get(ENDPOINTS.WALLETS.BY_ID(id)),
-  updateBalance: (id, amount, isDeposit) =>
-    api.put(ENDPOINTS.WALLETS.UPDATE_BALANCE(id), { amount, isDeposit }),
-  fetchByInstructorId: (instructorId) =>
-    api.get(`${ENDPOINTS.WALLETS.BASE}/instructor/${instructorId}`),
-  updateStatus: (id, newStatus) =>
-    api.put(ENDPOINTS.WALLETS.UPDATE_STATUS(id), { status: newStatus }),
-  setMaxLimit: (id, maxLimit) =>
-    api.put(ENDPOINTS.WALLETS.SET_MAX_LIMIT(id), { maxLimit })
+  // Get a wallet by instructor ID
+  getWalletByInstructorId: async (instructorId) => {
+    // Fix: Use the DETAIL endpoint function correctly
+    const response = await api.get(ENDPOINTS.ADMIN.WALLETS.DETAIL(instructorId));
+    return response.data;
+  },
+
+  // Update wallet status
+  updateWalletStatus: async (walletId, status) => {
+    const response = await api.put(ENDPOINTS.ADMIN.WALLETS.UPDATE_STATUS(walletId), { status });
+    return response.data;
+  },
+
+  // Update wallet balance
+  updateWalletBalance: async (instructorId, amount) => {
+    const response = await api.put(ENDPOINTS.ADMIN.WALLETS.UPDATE_BALANCE(instructorId), { amount });
+    return response.data;
+  },
+
+  // Get wallet statistics
+  getWalletStatistics: async () => {
+    const response = await api.get(ENDPOINTS.ADMIN.WALLETS.STATISTICS);
+    return response.data;
+  }
 };
 
-export default WalletService;
+export default AdminWalletService;

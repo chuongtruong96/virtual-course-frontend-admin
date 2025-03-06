@@ -77,6 +77,23 @@ const ENDPOINTS = {
       TOGGLE_FEATURED: (reviewId) => `${API_BASE}/admin/reviews/${reviewId}/featured`,
       UPDATE_STATUS: (reviewId) => `${API_BASE}/admin/reviews/${reviewId}/status`,
     },
+    TRANSACTIONS: {
+      LIST: `${API_BASE}/admin/transactions`,
+      DETAIL: (id) => `${API_BASE}/admin/transactions/detail/${id}`,
+      STATISTICS: `${API_BASE}/admin/transactions/statistics`,
+      APPROVE_WITHDRAWAL: (id) => `${API_BASE}/admin/transactions/approve-withdrawal/${id}`,
+      REJECT_WITHDRAWAL: (id) => `${API_BASE}/admin/transactions/reject-withdrawal/${id}`,
+      STUDENT_HISTORY: (studentId) => `${API_BASE}/admin/transactions/student-history/${studentId}`,
+      INSTRUCTOR_TRANSACTIONS: (instructorId) => `${API_BASE}/admin/transactions/instructor-transactions/${instructorId}`
+    },
+    
+    WALLETS: {
+      LIST: `${API_BASE}/admin/wallets`,
+      DETAIL: (id) => `${API_BASE}/admin/wallets/detail/${id}`,
+      UPDATE_STATUS: (id) => `${API_BASE}/admin/wallets/update-status/${id}`,
+      UPDATE_BALANCE: (instructorId) => `${API_BASE}/admin/wallets/update-balance/${instructorId}`,
+      STATISTICS: `${API_BASE}/admin/wallets/statistics`
+    }
   },
 
   // Regular instructor endpoints
@@ -220,31 +237,31 @@ DATE_RANGE_ALL_PAGINATED: (startDate, endDate, page, size) =>
 },
 
   // Payment
-  PAYMENT: {
-    PAYPAL: {
-      CREATE: `${API_BASE}/payment/create-paypal-payment`,
-      EXECUTE: `${API_BASE}/payment/execute-paypal-payment`,
-      CREATE_MULTIPLE: `${API_BASE}/payment/create-paypal-payment-multiple`,
-    },
-    VNPAY: {
-      CREATE: `${API_BASE}/payment/create-vnpay-payment`,
-      CREATE_MULTIPLE: `${API_BASE}/payment/create-vnpay-payment-multiple`,
-      RETURN: `${API_BASE}/payment/vnpay-return`,
-    },
+PAYMENT: {
+  PAYPAL: {
+    CREATE: `${API_BASE}/payment/create-paypal-payment`,
+    EXECUTE: `${API_BASE}/payment/execute-paypal-payment`,
+    CREATE_MULTIPLE: `${API_BASE}/payment/create-paypal-payment-multiple`,
   },
+  VNPAY: {
+    CREATE: `${API_BASE}/payment/create-vnpay-payment`,
+    CREATE_MULTIPLE: `${API_BASE}/payment/create-vnpay-payment-multiple`,
+    RETURN: `${API_BASE}/payment/vnpay-return`,
+  },
+},
 
-  // Progress
-  PROGRESS: {
-    COMPLETE_LECTURE: `${API_BASE}/progress/complete-lecture`,
-  },
+// Progress
+PROGRESS: {
+  COMPLETE_LECTURE: `${API_BASE}/progress/complete-lecture`,
+},
 
-  // Tickets
-  TICKETS: {
-    BASE: `${API_BASE}/tickets`,
-    BY_ID: (id) => `${API_BASE}/tickets/${id}`,
-    RESOLVE: (id) => `${API_BASE}/tickets/${id}/resolve`,
-    CLOSE: (id) => `${API_BASE}/tickets/${id}/close`,
-  },
+// Tickets
+TICKETS: {
+  BASE: `${API_BASE}/tickets`,
+  BY_ID: (id) => `${API_BASE}/tickets/${id}`,
+  RESOLVE: (id) => `${API_BASE}/tickets/${id}/resolve`,
+  CLOSE: (id) => `${API_BASE}/tickets/${id}/close`,
+},
 };
 
 export default ENDPOINTS;

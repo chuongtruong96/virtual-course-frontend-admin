@@ -1,143 +1,203 @@
+// src/menu-items/index.js
+import {
+  Home,
+  Users,
+  BookOpen,
+  Grid,
+  Star,
+  MessageSquare,
+  Bell,
+  DollarSign,
+  CreditCard,
+  Briefcase,
+  Settings,
+  Wallet
+} from 'lucide-react';
+
 const menuItems = {
   items: [
-    // Dashboard
     {
       id: 'dashboard',
       title: 'Dashboard',
       type: 'group',
-      icon: 'home',
       children: [
         {
-          id: 'default',
-          title: 'Overview',
+          id: 'dashboard-default',
+          title: 'Dashboard',
           type: 'item',
-          icon: 'activity',
           url: '/dashboard/default',
+          icon: Home,
+          breadcrumbs: false
         }
       ]
     },
-
-    // User Management
     {
       id: 'user-management',
       title: 'User Management',
       type: 'group',
-      icon: 'users',
       children: [
         {
           id: 'account-list',
-          title: 'Accounts',
+          title: 'Account List',
           type: 'item',
-          icon: 'users',
           url: '/dashboard/account/list',
-        },
-        {
-          id: 'instructor-management',
-          title: 'Instructors',
-          type: 'collapse',
-          icon: 'user',
-          children: [
-            {
-              id: 'instructor-list',
-              title: 'All Instructors',
-              type: 'item',
-              url: '/dashboard/instructor/list',
-            },
-            {
-              id: 'pending-instructors',
-              title: 'Pending Approval',
-              type: 'item',
-              url: '/dashboard/instructor/pending',
-            }
-          ]
+          icon: Users,
+          breadcrumbs: false
         },
         {
           id: 'student-list',
-          title: 'Students',
+          title: 'Student List',
           type: 'item',
-          icon: 'user',
           url: '/dashboard/student/list-student',
+          icon: Users,
+          breadcrumbs: false
+        },
+        {
+          id: 'instructor-list',
+          title: 'Instructor List',
+          type: 'item',
+          url: '/dashboard/instructor/list',
+          icon: Users,
+          breadcrumbs: false
+        },
+        {
+          id: 'pending-instructors',
+          title: 'Pending Instructors',
+          type: 'item',
+          url: '/dashboard/instructor/pending',
+          icon: Users,
+          breadcrumbs: false
         }
       ]
     },
-
-    // Content Management
     {
       id: 'content-management',
       title: 'Content Management',
       type: 'group',
-      icon: 'book',
       children: [
         {
           id: 'category-list',
-          title: 'Categories',
+          title: 'Category List',
           type: 'item',
-          icon: 'grid',
           url: '/dashboard/category/list-category',
+          icon: BookOpen,
+          breadcrumbs: false
         },
         {
-          id: 'course-management',
-          title: 'Courses',
-          type: 'collapse',
-          icon: 'book-open',
-          children: [
-            {
-              id: 'course-list',
-              title: 'All Courses',
-              type: 'item',
-              url: '/dashboard/course/list-course',
-            },
-            {
-              id: 'pending-courses',
-              title: 'Pending Approval',
-              type: 'item',
-              url: '/dashboard/course/pending-approval',
-            }
-          ]
+          id: 'course-list',
+          title: 'Course List',
+          type: 'item',
+          url: '/dashboard/course/list-course',
+          icon: BookOpen,
+          breadcrumbs: false
         },
         {
-          id: 'review-management',
-          title: 'Reviews',
-          type: 'collapse',
-          icon: 'star',
-          children: [
-            {
-              id: 'review-list',
-              title: 'All Reviews',
-              type: 'item',
-              url: '/dashboard/reviews',
-            },
-            {
-              id: 'review-statistics',
-              title: 'Review Statistics',
-              type: 'item',
-              url: '/dashboard/reviews/statistics',
-            }
-          ]
+          id: 'pending-courses',
+          title: 'Pending Courses',
+          type: 'item',
+          url: '/dashboard/course/pending-approval',
+          icon: BookOpen,
+          breadcrumbs: false
         }
       ]
     },
-
-    // Support
+    {
+      id: 'reviews',
+      title: 'Reviews',
+      type: 'group',
+      children: [
+        {
+          id: 'review-list',
+          title: 'Review List',
+          type: 'item',
+          url: '/dashboard/reviews',
+          icon: Star,
+          breadcrumbs: false
+        },
+        {
+          id: 'review-statistics',
+          title: 'Review Statistics',
+          type: 'item',
+          url: '/dashboard/reviews/statistics',
+          icon: Star,
+          breadcrumbs: false
+        }
+      ]
+    },
     {
       id: 'support',
       title: 'Support',
       type: 'group',
-      icon: 'headphones',
       children: [
         {
           id: 'ticket-list',
-          title: 'Support Tickets',
+          title: 'Ticket List',
           type: 'item',
-          icon: 'life-buoy',
           url: '/dashboard/ticket/list',
-        },
+          icon: MessageSquare,
+          breadcrumbs: false
+        }
+      ]
+    },
+    {
+      id: 'notifications',
+      title: 'Notifications',
+      type: 'group',
+      children: [
         {
           id: 'notification-list',
           title: 'Notifications',
           type: 'item',
-          icon: 'bell',
           url: '/dashboard/notification/list',
+          icon: Bell,
+          breadcrumbs: false
+        }
+      ]
+    },
+    {
+      id: 'financial-management',
+      title: 'Financial Management',
+      type: 'group',
+      children: [
+        {
+          id: 'transactions',
+          title: 'Transactions',
+          type: 'item',
+          url: '/dashboard/finance/transactions',
+          icon: CreditCard,
+          breadcrumbs: false
+        },
+        {
+          id: 'transaction-statistics',
+          title: 'Transaction Analytics',
+          type: 'item',
+          url: '/dashboard/finance/transactions/statistics',
+          icon: Briefcase,
+          breadcrumbs: false
+        },
+        {
+          id: 'wallet-management',
+          title: 'Wallet Management',
+          type: 'item',
+          url: '/dashboard/finance/wallets',
+          icon: Wallet, // Use Wallet instead of AccountBalanceWallet
+          breadcrumbs: false
+        },
+        {
+          id: 'withdrawal-requests',
+          title: 'Withdrawal Requests',
+          type: 'item',
+          url: '/dashboard/finance/withdrawals',
+          icon: DollarSign, // Changed to DollarSign
+          breadcrumbs: false
+        },
+        {
+          id: 'payment-settings',
+          title: 'Payment Settings',
+          type: 'item',
+          url: '/dashboard/finance/payment-settings',
+          icon: Settings,
+          breadcrumbs: false
         }
       ]
     }

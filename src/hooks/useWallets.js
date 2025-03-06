@@ -1,96 +1,126 @@
-// src/hooks/useWallets.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import WalletService from '../services/walletService';
-import { useContext } from 'react';
+import { useContext, useCallback } from 'react';
 import { NotificationContext } from '../contexts/NotificationContext';
+import api from '../utils/api';
+import ENDPOINTS from '../config/endpoints';
 
 const useWallets = () => {
   const queryClient = useQueryClient();
   const { addNotification } = useContext(NotificationContext);
 
-  // Create wallet mutation
-  const createWalletMutation = useMutation({
-    mutationFn: WalletService.add,
+  // Fetch all wallets query
+  const {
+    data: wallets = [],
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['wallets'],
+    queryFn: async () => {
+      const response = await api.get(ENDPOINTS.ADMIN.WALLETS.LIST);
+      return response.data;
+    },
+    onError: (err) => {
+      console.error('Error fetching wallets:', err);
+      addNotification('Failed to load wallets', 'error');
+    }
+  });
+
+  // Create a fetchWallets function that's compatible with the component
+  const fetchWallets = useCallback(async (params = {}) => {
+    try {
+      const response = await api.get(ENDPOINTS.ADMIN.WALLETS.LIST, { params });
+      // Manually update the query cache
+      queryClient.setQueryData(['wallets'], response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Error fetching wallets:', err);
+      addNotification('Failed to load wallets', 'error');
+      throw err;
+    }
+  }, [queryClient, addNotification]);
+
+  // Get wallet statistics
+  const getWalletStatistics = useCallback(async () => {
+    try {
+      const response = await api.get(ENDPOINTS.ADMIN.WALLETS.STATISTICS);
+      return response.data;
+    } catch (err) {
+      console.error('Error fetching wallet statistics:', err);
+      addNotification('Failed to load wallet statistics', 'error');
+      throw err;
+    }
+  }, [addNotification]);
+
+  // Update wallet status mutation
+  const updateWalletStatusMutation = useMutation({
+    mutationFn: async (args) => {
+      const { walletId, status } = args;
+      const response = await api.put(ENDPOINTS.ADMIN.WALLETS.UPDATE_STATUS(walletId), { status });
+      return response.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['wallets']);
-      addNotification('Ví đã được tạo thành công!', 'success');
+      addNotification('Wallet status updated successfully', 'success');
     },
-    onError: (error) => {
-      console.error('Failed to create wallet:', error);
-      addNotification('Không thể tạo ví. Vui lòng thử lại.', 'danger');
-    },
+    onError: (err) => {
+      console.error('Error updating wallet status:', err);
+      addNotification('Failed to update wallet status', 'error');
+    }
   });
 
-  // Fetch wallet by ID
-  const fetchWallet = (walletId) => {
-    return useQuery({
-      queryKey: ['wallet', walletId],
-      queryFn: () => WalletService.fetchById({ id: walletId, signal: undefined }),
-      enabled: !!walletId,
-      onError: (err) => {
-        console.error(`Error fetching wallet ${walletId}:`, err);
-        addNotification('Không thể tải thông tin ví.', 'danger');
-      },
-    });
-  };
-
-  // Update balance mutation
-  const updateBalanceMutation = useMutation({
-    mutationFn: WalletService.updateBalance,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries(['wallet', data.walletId]);
-      addNotification('Số dư ví đã được cập nhật!', 'success');
+  // Update wallet balance mutation
+  const updateWalletBalanceMutation = useMutation({
+    mutationFn: async (args) => {
+      const { instructorId, amount } = args;
+      const response = await api.put(ENDPOINTS.ADMIN.WALLETS.UPDATE_BALANCE(instructorId), { amount });
+      return response.data;
     },
-    onError: (error) => {
-      console.error('Failed to update wallet balance:', error);
-      addNotification('Không thể cập nhật số dư ví. Vui lòng thử lại.', 'danger');
+    onSuccess: () => {
+      queryClient.invalidateQueries(['wallets']);
+      addNotification('Wallet balance updated successfully', 'success');
     },
+    onError: (err) => {
+      console.error('Error updating wallet balance:', err);
+      addNotification('Failed to update wallet balance', 'error');
+    }
   });
 
-  // Update status mutation
-  const updateStatusMutation = useMutation({
-    mutationFn: WalletService.updateWalletStatus,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries(['wallet', data.walletId]);
-      addNotification('Trạng thái ví đã được cập nhật!', 'success');
-    },
-    onError: (error) => {
-      console.error('Failed to update wallet status:', error);
-      addNotification('Không thể cập nhật trạng thái ví. Vui lòng thử lại.', 'danger');
-    },
-  });
+  // Create function wrappers that match the component's expected API
+  const updateWalletStatus = useCallback((walletId, status) => {
+    return updateWalletStatusMutation.mutateAsync({ walletId, status });
+  }, [updateWalletStatusMutation]);
 
-  // Set max limit mutation
-  const setMaxLimitMutation = useMutation({
-    mutationFn: WalletService.setMaxLimit,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries(['wallet', data.walletId]);
-      addNotification('Giới hạn ví đã được đặt!', 'success');
-    },
-    onError: (error) => {
-      console.error('Failed to set wallet max limit:', error);
-      addNotification('Không thể đặt giới hạn ví. Vui lòng thử lại.', 'danger');
-    },
-  });
+  const updateWalletBalance = useCallback((instructorId, amount) => {
+    return updateWalletBalanceMutation.mutateAsync({ instructorId, amount });
+  }, [updateWalletBalanceMutation]);
+
+  // Fetch wallet by instructor ID
+  const fetchWalletByInstructorId = useCallback(async (instructorId) => {
+    try {
+      // Fix: Use the DETAIL endpoint function correctly
+      const response = await api.get(ENDPOINTS.ADMIN.WALLETS.DETAIL(instructorId));
+      return response.data;
+    } catch (err) {
+      console.error(`Error fetching wallet for instructor ${instructorId}:`, err);
+      addNotification('Failed to load wallet details', 'error');
+      throw err;
+    }
+  }, [addNotification]);
 
   return {
-    createWallet: createWalletMutation.mutate,
-    fetchWallet,
-    updateBalance: updateBalanceMutation.mutate,
-    updateStatus: updateStatusMutation.mutate,
-    setMaxLimit: setMaxLimitMutation.mutate,
-
-    createWalletStatus: createWalletMutation.status,
-    updateBalanceStatus: updateBalanceMutation.status,
-    updateStatusStatus: updateStatusMutation.status,
-    setMaxLimitStatus: setMaxLimitMutation.status,
+    wallets,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    fetchWallets,
+    fetchWalletByInstructorId,
+    getWalletStatistics,
+    updateWalletStatus,
+    updateWalletBalance
   };
 };
 
 export default useWallets;
-// const mutation = useMutation({
-//   mutationFn: async (args) => { ... },
-//   onSuccess: () => { ... },
-//   onError: () => { ... },
-//   // ...
-// });

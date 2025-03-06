@@ -1,83 +1,45 @@
-// src/services/TransactionService.js
-
 import api from '../utils/api';
-import { ENDPOINTS } from '../config/endpoints';
-import { handleError } from '../utils/errorHandler';
+import ENDPOINTS from '../config/endpoints';
 
-/**
- * TransactionService xử lý tất cả các tương tác API liên quan đến Transactions.
- */
-const TransactionService = {
-  /**
-   * Deposit money to a wallet.
-   * @param {object} params - Chứa walletId, amount, và signal.
-   * @param {number} params.walletId - ID của wallet.
-   * @param {number} params.amount - Số tiền.
-   * @param {AbortSignal} params.signal - Signal để hủy request nếu cần.
-   * @returns {Promise<Object>} Transaction đã deposit.
-   */
-  depositToWallet: async ({ walletId, amount, signal }) => {
-    try {
-      const response = await api.post(ENDPOINTS.TRANSACTIONS.DEPOSIT, { walletId, amount }, { signal });
-      return response.data;
-    } catch (error) {
-      console.error(`Error depositing to wallet ${walletId}:`, error);
-      throw handleError(error);
-    }
-  },
+const AdminTransactionService = {
+    getAllTransactions: async (page = 0, size = 10, type = null, status = null) => {
+        const params = { page, size };
+        if (type) params.type = type;
+        if (status) params.status = status;
+        
+        const response = await api.get(ENDPOINTS.ADMIN.TRANSACTIONS.LIST, { params });
+        return response.data;
+    },
 
-  /**
-   * Withdraw money from a wallet.
-   * @param {object} params - Chứa walletId, amount, và signal.
-   * @param {number} params.walletId - ID của wallet.
-   * @param {number} params.amount - Số tiền.
-   * @param {AbortSignal} params.signal - Signal để hủy request nếu cần.
-   * @returns {Promise<Object>} Transaction đã withdraw.
-   */
-  withdrawFromWallet: async ({ walletId, amount, signal }) => {
-    try {
-      const response = await api.post(ENDPOINTS.TRANSACTIONS.WITHDRAW, { walletId, amount }, { signal });
-      return response.data;
-    } catch (error) {
-      console.error(`Error withdrawing from wallet ${walletId}:`, error);
-      throw handleError(error);
-    }
-  },
+    getTransactionById: async (id) => {
+        const response = await api.get(ENDPOINTS.ADMIN.TRANSACTIONS.DETAIL(id));
+        return response.data;
+    },
 
-  /**
-   * Refund a payment.
-   * @param {object} params - Chứa paymentId, amount, và signal.
-   * @param {number} params.paymentId - ID của payment.
-   * @param {number} params.amount - Số tiền.
-   * @param {AbortSignal} params.signal - Signal để hủy request nếu cần.
-   * @returns {Promise<Object>} Transaction đã refund.
-   */
-  refundPayment: async ({ paymentId, amount, signal }) => {
-    try {
-      const response = await api.post(ENDPOINTS.TRANSACTIONS.REFUND, { paymentId, amount }, { signal });
-      return response.data;
-    } catch (error) {
-      console.error(`Error refunding payment ${paymentId}:`, error);
-      throw handleError(error);
-    }
-  },
+    getTransactionStatistics: async () => {
+        const response = await api.get(ENDPOINTS.ADMIN.TRANSACTIONS.STATISTICS);
+        return response.data;
+    },
 
-  /**
-   * Fetch transaction history for a wallet.
-   * @param {object} params - Chứa walletId và signal.
-   * @param {number} params.walletId - ID của wallet.
-   * @param {AbortSignal} params.signal - Signal để hủy request nếu cần.
-   * @returns {Promise<Array>} Danh sách transactions.
-   */
-  fetchTransactionHistory: async ({ walletId, signal }) => {
-    try {
-      const response = await api.get(`${ENDPOINTS.TRANSACTIONS.HISTORY(walletId)}`, { signal });
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching transaction history for wallet ${walletId}:`, error);
-      throw handleError(error);
+    approveWithdrawal: async (id) => {
+        const response = await api.put(ENDPOINTS.ADMIN.TRANSACTIONS.APPROVE_WITHDRAWAL(id));
+        return response.data;
+    },
+
+    rejectWithdrawal: async (id, reason) => {
+        const response = await api.put(ENDPOINTS.ADMIN.TRANSACTIONS.REJECT_WITHDRAWAL(id), { reason });
+        return response.data;
+    },
+
+    getStudentTransactionHistory: async (studentId) => {
+        const response = await api.get(ENDPOINTS.ADMIN.TRANSACTIONS.STUDENT_HISTORY(studentId));
+        return response.data;
+    },
+
+    getInstructorTransactions: async (instructorId) => {
+        const response = await api.get(ENDPOINTS.ADMIN.TRANSACTIONS.INSTRUCTOR_TRANSACTIONS(instructorId));
+        return response.data;
     }
-  }
 };
 
-export default TransactionService;
+export default AdminTransactionService;

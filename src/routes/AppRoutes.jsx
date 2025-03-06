@@ -34,7 +34,14 @@ const ReviewDetail = lazy(() => import('../views/review/ReviewDetail'));
 const ReviewStatistics = lazy(() => import('../views/review/ReviewStatistics'));
 const ListTicket = lazy(() => import('../views/ticket/ListTicket'));
 const NotificationList = lazy(() => import('../views/notification/NotificationList'));
-
+// Financial Management - New Components
+const TransactionList = lazy(() => import('../views/finance/TransactionList'));
+const TransactionDetail = lazy(() => import('../views/finance/TransactionDetail'));
+const TransactionStatistics = lazy(() => import('../views/finance/TransactionStatistics'));
+const WalletManagement = lazy(() => import('../views/finance/WalletManagement'));
+const WalletDetail = lazy(() => import('../views/finance/WalletDetail'));
+const WithdrawalRequests = lazy(() => import('../views/finance/WithdrawalRequests'));
+const PaymentSettings = lazy(() => import('../views/finance/PaymentSettings'));
 
 const AppRoutes = () => (
   <Suspense fallback={<Loader />}>
@@ -100,6 +107,18 @@ const AppRoutes = () => (
 
         {/* NOTIFICATION */}
         <Route path="notification/list" element={<NotificationList />} />
+
+         {/* FINANCIAL MANAGEMENT - New Routes */}
+         <Route path="finance">
+          <Route path="transactions" element={<TransactionList />} />
+          <Route path="transactions/:transactionId" element={<TransactionDetail />} />
+          <Route path="transactions/statistics" element={<TransactionStatistics />} />
+          <Route path="wallets" element={<WalletManagement />} />
+          <Route path="wallets/:walletId" element={<WalletDetail />} />
+          <Route path="withdrawals" element={<WithdrawalRequests />} />
+          <Route path="payment-settings" element={<PaymentSettings />} />
+        </Route>
+
 
         {/* Fallback Route */}
         <Route path="*" element={<Navigate to="/dashboard/default" replace />} />
