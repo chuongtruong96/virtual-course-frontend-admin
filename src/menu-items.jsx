@@ -124,21 +124,21 @@ const menuItems = {
         }
       ]
     },
-    {
-      id: 'support',
-      title: 'Support',
-      type: 'group',
-      children: [
-        {
-          id: 'ticket-list',
-          title: 'Ticket List',
-          type: 'item',
-          url: '/dashboard/ticket/list',
-          icon: MessageSquare,
-          breadcrumbs: false
-        }
-      ]
-    },
+    // {
+    //   id: 'support',
+    //   title: 'Support',
+    //   type: 'group',
+    //   children: [
+    //     {
+    //       id: 'ticket-list',
+    //       title: 'Ticket List',
+    //       type: 'item',
+    //       url: '/dashboard/ticket/list',
+    //       icon: MessageSquare,
+    //       breadcrumbs: false
+    //     }
+    //   ]
+    // },
     {
       id: 'notifications',
       title: 'Notifications',

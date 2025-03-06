@@ -79,6 +79,7 @@ const ENDPOINTS = {
     },
     TRANSACTIONS: {
       LIST: `${API_BASE}/admin/transactions`,
+      MONTHLY_TRENDS: `${API_BASE}/admin/transactions/trends/monthly`,
       DETAIL: (id) => `${API_BASE}/admin/transactions/detail/${id}`,
       STATISTICS: `${API_BASE}/admin/transactions/statistics`,
       APPROVE_WITHDRAWAL: (id) => `${API_BASE}/admin/transactions/approve-withdrawal/${id}`,

@@ -1,23 +1,24 @@
 // Thêm import React và các hooks cần thiết
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 // Thêm hooks mới để lấy dữ liệu tài chính
 import useTransactions from '../../hooks/useTransactions';
 import useWallets from '../../hooks/useWallets';
-import { 
+
+import {
   // Thêm icons mới
-  CreditCard, 
-  Wallet, 
+  CreditCard,
+  Wallet,
   DollarSign as DollarSignIcon,
   TrendingUp as TrendingUpIcon,
   BarChart2 as BarChart2Icon,
   PieChart as PieChartIcon,
   ArrowUpRight,
   // Các icons hiện có
-  Users, 
-  BookOpen, 
-  Grid as GridIcon, 
-  CheckCircle, 
+  Users,
+  BookOpen,
+  Grid as GridIcon,
+  CheckCircle,
   XCircle,
   TrendingUp,
   TrendingDown,
@@ -41,16 +42,17 @@ import {
   Settings,
   PieChart,
   LineChart,
-  BarChart
+  BarChart,
+  GraduationCap
 } from 'lucide-react';
-import { 
-  BarChart as RechartsBarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
-  Legend, 
+import {
+  BarChart as RechartsBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
   ResponsiveContainer,
   PieChart as RechartsPieChart,
   Pie,
@@ -60,28 +62,28 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { 
-  Box, 
-  Grid, 
-  Card, 
-  CardContent, 
-  Typography, 
-  Avatar, 
-  Button, 
-  FormControl, 
-  Select, 
-  MenuItem, 
-  IconButton, 
-  Chip, 
-  Divider, 
-  Tooltip, 
-  CircularProgress, 
-  Alert, 
-  Paper, 
+import {
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Avatar,
+  Button,
+  FormControl,
+  Select,
+  MenuItem,
+  IconButton,
+  Chip,
+  Divider,
+  Tooltip,
+  CircularProgress,
+  Alert,
+  Paper,
   Badge,
   Tab,
   Tabs,
-  useTheme,  // Thêm useTheme vào đây
+  useTheme, // Thêm useTheme vào đây
   alpha,
   Dialog,
   DialogTitle,
@@ -94,6 +96,11 @@ import {
   ListItemText
 } from '@mui/material';
 
+// Import performance metrics components
+import EnhancedPerformanceMetrics from '../finance/EnhancedPerformanceMetrics';
+import InstructorPerformanceMetrics from '../finance/InstructorPerformanceMetrics';
+import StudentPerformanceMetrics from '../finance/StudentPerformanceMetrics';
+
 // Thêm import cho các components cần thiết
 import useAdminDashboard from '../../hooks/useAdminDashboard';
 import useNotifications from '../../hooks/useNotifications';
@@ -105,6 +112,263 @@ import StatisticsChart from '../../components/StatisticsChart';
 import ApprovalItem from '../../components/ApprovalItem';
 import ReviewItem from '../../components/ReviewItem';
 import NotificationItem from '../../components/NotificationItem';
+import MonthlyTransactionChart from '../transaction/MonthlyTransactionChart';
+import TransactionTypePieChart from '../transaction/TransactionTypePieChart';
+import TransactionStatusBarChart from '../transaction/TransactionStatusBarChart';
+
+/**
+ * Performance Metrics component with tabs for different metric types
+ */
+const PerformanceMetricsWithTabs = ({
+  statistics,
+  reviewStatistics,
+  transactionStats,
+  walletStatistics,
+  instructorStatistics,
+  studentQuizStatistics,
+  isLoading,
+  theme,
+  onRefresh
+}) => {
+  const [tabValue, setTabValue] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Handle tab change
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+  };
+
+  // Handle refresh click
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    if (onRefresh) {
+      await onRefresh();
+    }
+    setTimeout(() => setIsRefreshing(false), 800);
+  };
+
+  return (
+    <Grid container spacing={3} sx={{ mt: 3 }}>
+      <Grid item xs={12}>
+        <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
+          <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" fontWeight="medium">
+                Platform Performance
+              </Typography>
+              
+              <Box display="flex" alignItems="center">
+                {isLoading && (
+                  <CircularProgress size={20} color="primary" sx={{ mr: 2 }} />
+                )}
+                
+                <Tooltip title="Refresh data">
+                  <IconButton 
+                    onClick={handleRefresh} 
+                    disabled={isRefreshing || isLoading}
+                    sx={{ 
+                      animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' }
+                      }
+                    }}
+                  >
+                    <RefreshCw size={18} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
+            >
+              <Tab label="Platform Overview" icon={<Activity size={16} />} iconPosition="start" />
+              <Tab label="Instructor Performance" icon={<GraduationCap size={16} />} iconPosition="start" />
+              <Tab label="Student Learning" icon={<BookOpen size={16} />} iconPosition="start" />
+            </Tabs>
+
+            {/* Platform Overview Tab */}
+            {tabValue === 0 && (
+              <>
+                <Grid container spacing={3} mt={1}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        borderRadius: 2,
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                        transition: 'all 0.3s',
+                        '&:hover': {
+                          transform: 'translateY(-5px)',
+                          boxShadow: 3
+                        }
+                      }}
+                    >
+                      <Activity size={24} color={theme.palette.primary.main} />
+                      <Typography variant="h5" fontWeight="bold" mt={1}>
+                        {isLoading ? (
+                          <CircularProgress size={24} color="primary" />
+                        ) : (
+                          statistics?.averageCompletionRate ? `${statistics.averageCompletionRate}%` : '0%'
+                        )}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Course Completion Rate
+                      </Typography>
+                    </Paper>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        borderRadius: 2,
+                        bgcolor: alpha(theme.palette.success.main, 0.05),
+                        border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+                        transition: 'all 0.3s',
+                        '&:hover': {
+                          transform: 'translateY(-5px)',
+                          boxShadow: 3
+                        }
+                      }}
+                    >
+                      <Award size={24} color={theme.palette.success.main} />
+                      <Typography variant="h5" fontWeight="bold" mt={1}>
+                        {isLoading ? (
+                          <CircularProgress size={24} color="success" />
+                        ) : (
+                          statistics?.averageRating ? statistics.averageRating.toFixed(1) : '0.0'
+                        )}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Average Course Rating
+                      </Typography>
+                    </Paper>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        borderRadius: 2,
+                        bgcolor: alpha(theme.palette.warning.main, 0.05),
+                        border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
+                        transition: 'all 0.3s',
+                        '&:hover': {
+                          transform: 'translateY(-5px)',
+                          boxShadow: 3
+                        }
+                      }}
+                    >
+                      <DollarSign size={24} color={theme.palette.warning.main} />
+                      <Typography variant="h5" fontWeight="bold" mt={1}>
+                        {isLoading ? (
+                          <CircularProgress size={24} color="warning" />
+                        ) : (
+                          statistics?.averageRevenue 
+                            ? `${statistics.averageRevenue.toLocaleString()} VND` 
+                            : '0 VND'
+                        )}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Avg. Revenue per User
+                      </Typography>
+                    </Paper>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        borderRadius: 2,
+                        bgcolor: alpha(theme.palette.info.main, 0.05),
+                        border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
+                        transition: 'all 0.3s',
+                        '&:hover': {
+                          transform: 'translateY(-5px)',
+                          boxShadow: 3
+                        }
+                      }}
+                    >
+                      <Users size={24} color={theme.palette.info.main} />
+                      <Typography variant="h5" fontWeight="bold" mt={1}>
+                        {isLoading ? (
+                          <CircularProgress size={24} color="info" />
+                        ) : (
+                          statistics?.activeUserRate ? `${statistics.activeUserRate}%` : '0%'
+                        )}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Active User Rate
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+
+                <Box display="flex" justifyContent="center" mt={3}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<BarChart2 size={18} />}
+                    component={Link}
+                    to="/dashboard/reviews/statistics"
+                    sx={{ mr: 2 }}
+                  >
+                    View Detailed Analytics
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    startIcon={<PieChartIcon size={18} />}
+                    component={Link}
+                    to="/dashboard/finance/statistics"
+                  >
+                    Financial Analytics
+                  </Button>
+                </Box>
+              </>
+            )}
+
+            {/* Instructor Performance Tab */}
+            {tabValue === 1 && (
+              <Box sx={{ mt: 2 }}>
+                <InstructorPerformanceMetrics 
+                  instructorStatistics={instructorStatistics}
+                  isLoading={isLoading}
+                  theme={theme}
+                  onRefresh={handleRefresh}
+                  onExport={() => console.log('Exporting instructor data...')}
+                />
+              </Box>
+            )}
+
+            {/* Student Learning Tab */}
+            {tabValue === 2 && (
+              <Box sx={{ mt: 2 }}>
+                <StudentPerformanceMetrics 
+                  studentQuizStatistics={studentQuizStatistics}
+                  isLoading={isLoading}
+                  theme={theme}
+                  onRefresh={handleRefresh}
+                />
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
+  );
+};
 
 const DashDefault = () => {
   const theme = useTheme();
@@ -114,6 +378,16 @@ const DashDefault = () => {
   const [tabValue, setTabValue] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   
+  // Add state for pending withdrawals
+  const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
+  const [pendingWithdrawalsLoading, setPendingWithdrawalsLoading] = useState(false);
+  const [approving, setApproving] = useState(false);
+
+  // Add state for review statistics
+  const [reviewStatistics, setReviewStatistics] = useState(null);
+  const [instructorStatistics, setInstructorStatistics] = useState(null);
+  const [studentQuizStatistics, setStudentQuizStatistics] = useState(null);
+
   // Existing hooks
   const {
     statistics,
@@ -131,47 +405,146 @@ const DashDefault = () => {
   } = useAdminDashboard(timeFilter, modelFilter);
 
   // Get notifications
-  const { 
-    notifications: recentNotifications, 
-    isLoading: notificationsLoading 
-  } = useNotifications(null, { 
-    viewAllUsers: true, 
-    isAdmin: true, 
-    recentOnly: true, 
-    size: 5 
+  const {
+    notifications: recentNotifications,
+    isLoading: notificationsLoading,
+    markAsRead
+  } = useNotifications(null, {
+    viewAllUsers: true,
+    isAdmin: true,
+    recentOnly: true,
+    size: 5
   });
 
   // Get recent reviews
-  const { 
-    reviews: recentReviews, 
-    isLoading: reviewsLoading 
-  } = useAdminReviews({ 
-    page: 0, 
-    size: 5 
+  const { reviews: recentReviews, isLoading: reviewsLoading } = useAdminReviews({
+    page: 0,
+    size: 5
   });
 
   // NEW: Get transaction statistics
   const {
     statistics: transactionStats,
+    monthlyTrends: transactionTrends,
     isLoading: transactionsLoading,
-    fetchTransactionStatistics
+    fetchTransactionStatistics,
+    fetchMonthlyTransactionTrends,
+    fetchTransactions,
+    approveWithdrawal,
+    rejectWithdrawal
   } = useTransactions();
 
   // NEW: Get wallet statistics
-  const {
-    walletStatistics,
-    isLoading: walletsLoading,
-    getWalletStatistics
+  // NEW: Get wallet statistics
+  const { 
+    isLoading: walletsLoading, 
+    getWalletStatistics 
   } = useWallets();
+  
+  // Add a state for wallet stats to match the variable name used in quickStats
+  const [walletStatistics, setWalletStatistics] = useState(null);
+  
+  // Update fetchPendingWithdrawals function to use the hooks properly
+  const fetchPendingWithdrawals = async () => {
+    setPendingWithdrawalsLoading(true);
+    try {
+      // Since we don't have a direct method in the hooks for this,
+      // we can filter pending withdrawals from transactions
+      const transactions = await fetchTransactions({ 
+        type: 'WITHDRAWAL', 
+        status: 'PENDING' 
+      });
+      
+      // Map the transactions to the format we need
+      const pendingWithdrawals = transactions?.content?.map(transaction => ({
+        id: transaction.id,
+        amount: transaction.amount,
+        instructorName: transaction.instructorName || 'Instructor',
+        createdAt: transaction.createdAt
+      })) || [];
+      
+      setPendingWithdrawals(pendingWithdrawals);
+    } catch (error) {
+      console.error('Error fetching pending withdrawals:', error);
+      // Fallback to empty array if API fails
+      setPendingWithdrawals([]);
+    } finally {
+      setPendingWithdrawalsLoading(false);
+    }
+  };
 
-  // Handle refresh
+  // Update approval handlers to use the hooks properly
+  const handleApproveWithdrawal = async (id) => {
+    setApproving(true);
+    try {
+      await approveWithdrawal(id);
+      // Refresh the list after approval
+      fetchPendingWithdrawals();
+      // Also refresh transaction statistics
+      fetchTransactionStatistics();
+    } catch (error) {
+      console.error('Error approving withdrawal:', error);
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleRejectWithdrawal = async (id) => {
+    setApproving(true);
+    try {
+      // Note: The hook expects an object with id and reason
+      await rejectWithdrawal({ id, reason: 'Rejected by admin' });
+      // Refresh the list after rejection
+      fetchPendingWithdrawals();
+      // Also refresh transaction statistics
+      fetchTransactionStatistics();
+    } catch (error) {
+      console.error('Error rejecting withdrawal:', error);
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  // Log data for debugging
+  useEffect(() => {
+    console.log("Recent reviews data:", recentReviews);
+  }, [recentReviews]);
+  
+  useEffect(() => {
+    console.log("Recent notifications data:", recentNotifications);
+  }, [recentNotifications]);
+
+  // Add this useEffect to fetch monthly trends when component mounts
+  useEffect(() => {
+    fetchMonthlyTransactionTrends();
+    fetchPendingWithdrawals();
+    
+    const fetchWalletStats = async () => {
+      try {
+        const stats = await getWalletStatistics();
+        setWalletStatistics(stats);
+      } catch (error) {
+        console.error('Error fetching wallet statistics:', error);
+        setWalletStatistics(null);
+      }
+    };
+    
+    fetchWalletStats();
+  }, [fetchMonthlyTransactionTrends, getWalletStatistics, fetchPendingWithdrawals]);
+
+  // Handle refresh - update to include monthly trends
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       await refetch();
-      // NEW: Also refresh financial data
+      // Also refresh financial data
       await fetchTransactionStatistics();
-      await getWalletStatistics();
+      await fetchMonthlyTransactionTrends();
+      await fetchPendingWithdrawals();
+      
+      // Refresh wallet statistics
+      const stats = await getWalletStatistics();
+      setWalletStatistics(stats);
     } finally {
       setTimeout(() => setRefreshing(false), 800);
     }
@@ -191,7 +564,32 @@ const DashDefault = () => {
   // Prepare quick stats with calculated trends
   const quickStats = useMemo(() => {
     if (!statistics || !trends) return [];
+  
+    // Calculate financial trends if we have previous data
+    const depositGrowth = transactionStats?.depositGrowth
+      ? { value: `${Math.abs(transactionStats.depositGrowth).toFixed(1)}%`, isUp: transactionStats.depositGrowth > 0 }
+      : { value: '0%', isUp: true };
+  
+    const walletGrowth = walletStatistics?.walletGrowth
+      ? { value: `${Math.abs(walletStatistics.walletGrowth).toFixed(1)}%`, isUp: walletStatistics.walletGrowth > 0 }
+      : { value: '0%', isUp: true };
+  
+    const withdrawalGrowth = transactionStats?.withdrawalGrowth
+      ? { value: `${Math.abs(transactionStats.withdrawalGrowth).toFixed(1)}%`, isUp: transactionStats.withdrawalGrowth > 0 }
+      : { value: '0%', isUp: false };
+  
+    const balanceGrowth = walletStatistics?.avgBalanceGrowth
+      ? { value: `${Math.abs(walletStatistics.avgBalanceGrowth).toFixed(1)}%`, isUp: walletStatistics.avgBalanceGrowth > 0 }
+      : { value: '0%', isUp: true };
 
+    const reviewsCount = statistics?.reviews || (recentReviews?.length || 0);
+  
+    // Tính toán trend cho reviews
+    const reviewsTrend = calculateTrend(
+      reviewsCount,
+      trends?.previousReviews || 0
+    );
+    
     return [
       {
         title: 'Total Users',
@@ -222,20 +620,20 @@ const DashDefault = () => {
       },
       {
         title: 'Reviews',
-        count: statistics?.reviews || 0,
+        count: reviewsCount,
         icon: <Star />,
-        trend: calculateTrend(statistics?.reviews || 0, trends?.previousReviews || 0).value,
-        trendUp: calculateTrend(statistics?.reviews || 0, trends?.previousReviews || 0).isUp,
+        trend: reviewsTrend.value,
+        trendUp: reviewsTrend.isUp,
         color: 'info',
         path: '/dashboard/reviews'
       },
       // NEW: Add financial stats to quick stats
       {
         title: 'Total Revenue',
-        count: transactionStats?.totalDepositAmount ? `$${transactionStats.totalDepositAmount.toFixed(2)}` : '$0.00',
+        count: transactionStats?.totalDepositAmount ? `${transactionStats.totalDepositAmount.toLocaleString()}VND` : '0VND',
         icon: <DollarSignIcon />,
-        trend: '8.5%',
-        trendUp: true,
+        trend: depositGrowth.value,
+        trendUp: depositGrowth.isUp,
         color: 'success',
         path: '/dashboard/finance/transactions'
       },
@@ -243,8 +641,8 @@ const DashDefault = () => {
         title: 'Active Wallets',
         count: walletStatistics?.activeWallets || 0,
         icon: <Wallet />,
-        trend: '4.2%',
-        trendUp: true,
+        trend: walletGrowth.value,
+        trendUp: walletGrowth.isUp,
         color: 'primary',
         path: '/dashboard/finance/wallets'
       },
@@ -252,53 +650,33 @@ const DashDefault = () => {
         title: 'Pending Withdrawals',
         count: transactionStats?.pendingTransactions || 0,
         icon: <CreditCard />,
-        trend: '2.1%',
-        trendUp: false,
+        trend: withdrawalGrowth.value,
+        trendUp: withdrawalGrowth.isUp,
         color: 'warning',
         path: '/dashboard/finance/withdrawal-requests'
       },
       {
         title: 'Avg. Wallet Balance',
-        count: walletStatistics?.averageBalance ? `$${walletStatistics.averageBalance.toFixed(2)}` : '$0.00',
+        count: walletStatistics?.averageBalance ? `${walletStatistics.averageBalance.toLocaleString()}VND` : '0VND',
         icon: <BarChart2Icon />,
-        trend: '6.7%',
-        trendUp: true,
+        trend: balanceGrowth.value,
+        trendUp: balanceGrowth.isUp,
         color: 'info',
         path: '/dashboard/finance/wallets'
       }
     ];
-  }, [statistics, trends, transactionStats, walletStatistics]);
+  }, [statistics, trends, recentReviews, transactionStats, walletStatistics]);
 
-  // Rest of your existing code...
+  // Replace the hardcoded monthlyTransactionData with this:
+  const monthlyTransactionData = useMemo(() => {
+    // If we have real data from API, use it
+    if (transactionTrends && transactionTrends.length > 0) {
+      return transactionTrends;
+    }
 
-  // NEW: Prepare data for transaction type pie chart
-  const transactionTypeData = [
-    { name: 'Deposits', value: transactionStats?.totalDeposits || 0, color: theme.palette.success.main },
-    { name: 'Withdrawals', value: transactionStats?.totalWithdrawals || 0, color: theme.palette.secondary.main }
-  ];
-  
-  // NEW: Prepare data for transaction status pie chart
-  const transactionStatusData = [
-    { name: 'Pending', value: transactionStats?.pendingTransactions || 0, color: theme.palette.warning.main },
-    { name: 'Completed', value: transactionStats?.completedTransactions || 0, color: theme.palette.success.main },
-    { name: 'Failed', value: transactionStats?.failedTransactions || 0, color: theme.palette.error.main }
-  ];
-
-  // NEW: Sample monthly transaction data (in a real app, this would come from the API)
-  const monthlyTransactionData = [
-    { month: 'Jan', deposits: 12500, withdrawals: 8200 },
-    { month: 'Feb', deposits: 14200, withdrawals: 9100 },
-    { month: 'Mar', deposits: 15800, withdrawals: 10500 },
-    { month: 'Apr', deposits: 16900, withdrawals: 11200 },
-    { month: 'May', deposits: 18500, withdrawals: 12800 },
-    { month: 'Jun', deposits: 19200, withdrawals: 13500 },
-    { month: 'Jul', deposits: 21000, withdrawals: 14200 },
-    { month: 'Aug', deposits: 22500, withdrawals: 15800 },
-    { month: 'Sep', deposits: 24100, withdrawals: 16500 },
-    { month: 'Oct', deposits: 25800, withdrawals: 17200 },
-    { month: 'Nov', deposits: 27200, withdrawals: 18500 },
-    { month: 'Dec', deposits: 29500, withdrawals: 19800 }
-  ];
+    // Return empty array if no data
+    return [];
+  }, [transactionTrends]);
 
   return (
     <Box sx={{ flexGrow: 1, padding: 2 }}>
@@ -310,20 +688,27 @@ const DashDefault = () => {
               <Typography variant="h4" component="h1" fontWeight="bold" sx={{ mr: 2 }}>
                 Dashboard
               </Typography>
-              <Chip 
-                icon={<Calendar size={16} />} 
-                label={timeFilter === 'allTime' ? 'All Time' : 
-                      timeFilter === 'today' ? 'Today' : 
-                      timeFilter === 'week' ? 'This Week' : 
-                      timeFilter === 'month' ? 'This Month' : 'This Year'} 
-                color="primary" 
-                variant="outlined" 
+              <Chip
+                icon={<Calendar size={16} />}
+                label={
+                  timeFilter === 'allTime'
+                    ? 'All Time'
+                    : timeFilter === 'today'
+                      ? 'Today'
+                      : timeFilter === 'week'
+                        ? 'This Week'
+                        : timeFilter === 'month'
+                          ? 'This Month'
+                          : 'This Year'
+                }
+                color="primary"
+                variant="outlined"
                 sx={{ mr: 1 }}
               />
               <Tooltip title="Refresh data">
-                <IconButton 
-                  color="primary" 
-                  onClick={handleRefresh} 
+                <IconButton
+                  color="primary"
+                  onClick={handleRefresh}
                   disabled={refreshing || isLoading}
                   sx={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }}
                 >
@@ -353,14 +738,12 @@ const DashDefault = () => {
       </Box>
 
       {/* Loading indicator */}
-      {(isLoading || transactionsLoading || walletsLoading) && (
-        <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />
-      )}
+      {(isLoading || transactionsLoading || walletsLoading) && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
 
       {/* Error message */}
       {isError && (
-        <Alert 
-          severity="error" 
+        <Alert
+          severity="error"
           sx={{ mb: 3 }}
           action={
             <Button color="inherit" size="small" onClick={handleRefresh}>
@@ -392,22 +775,14 @@ const DashDefault = () => {
       {/* Statistics Charts */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} md={6}>
-          <ChartCard 
-            title="Overall Growth" 
-            subtitle="📊 Statistics Overview"
-            chartType="line"
-          >
+          <ChartCard title="Overall Growth" subtitle="📊 Statistics Overview" chartType="line">
             <StatisticsChart model="total" filter={timeFilter} title="" />
           </ChartCard>
         </Grid>
         <Grid item xs={12} md={6}>
-          <ChartCard 
-            title="Course Enrollments" 
-            subtitle="📚 Statistics Overview"
-            chartType="bar"
-          >
+          <ChartCard title="Course Enrollments" subtitle="📚 Statistics Overview" chartType="bar">
             <StatisticsChart model="courses" filter={timeFilter} title="" />
-            </ChartCard>
+          </ChartCard>
         </Grid>
       </Grid>
 
@@ -415,7 +790,7 @@ const DashDefault = () => {
       <Typography variant="h5" sx={{ mb: 2, mt: 4, fontWeight: 'medium' }}>
         Financial Overview
       </Typography>
-      
+
       {/* Financial Stats */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {quickStats.slice(4).map((stat, index) => (
@@ -437,99 +812,42 @@ const DashDefault = () => {
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {/* Transaction Type Distribution */}
         <Grid item xs={12} md={6}>
-          <ChartCard 
-            title="Transaction Distribution" 
+          <ChartCard
+            title="Transaction Distribution"
             subtitle="💰 By Type"
             chartType="pie"
+            loading={transactionsLoading}
           >
-            <ResponsiveContainer width="100%" height={300}>
-              <RechartsPieChart>
-                <Pie
-                  data={transactionTypeData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                >
-                  {transactionTypeData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <RechartsTooltip formatter={(value) => [value, 'Transactions']} />
-                <Legend />
-              </RechartsPieChart>
-            </ResponsiveContainer>
+            <TransactionTypePieChart 
+              data={transactionStats} 
+              isLoading={transactionsLoading}
+            />
           </ChartCard>
         </Grid>
-        
+
         {/* Transaction Status Distribution */}
         <Grid item xs={12} md={6}>
-          <ChartCard 
-            title="Transaction Status" 
+          <ChartCard
+            title="Transaction Status"
             subtitle="📊 Overview"
             chartType="bar"
+            loading={transactionsLoading}
           >
-            <ResponsiveContainer width="100%" height={300}>
-              <RechartsBarChart
-                data={transactionStatusData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <RechartsTooltip formatter={(value) => [value, 'Transactions']} />
-                <Bar dataKey="value" name="Transactions">
-                  {transactionStatusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </RechartsBarChart>
-            </ResponsiveContainer>
+            <TransactionStatusBarChart 
+              data={transactionStats} 
+              isLoading={transactionsLoading}
+            />
           </ChartCard>
         </Grid>
-        
+
         {/* Monthly Transaction Trends */}
         <Grid item xs={12}>
-          <ChartCard 
-            title="Monthly Transaction Trends" 
-            subtitle="💹 Financial Activity"
-            chartType="line"
-          >
-            <ResponsiveContainer width="100%" height={300}>
-              <RechartsLineChart
-                data={monthlyTransactionData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis yAxisId="left" orientation="left" stroke={theme.palette.success.main} />
-                <YAxis yAxisId="right" orientation="right" stroke={theme.palette.secondary.main} />
-                <RechartsTooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
-                <Legend />
-                <Line 
-                  yAxisId="left" 
-                  type="monotone" 
-                  dataKey="deposits" 
-                  name="Deposits" 
-                  stroke={theme.palette.success.main} 
-                  activeDot={{ r: 8 }} 
-                />
-                <Line 
-                  yAxisId="right" 
-                  type="monotone" 
-                  dataKey="withdrawals" 
-                  name="Withdrawals" 
-                  stroke={theme.palette.secondary.main} 
-                />
-              </RechartsLineChart>
-            </ResponsiveContainer>
+          <ChartCard title="Monthly Transaction Trends" subtitle="💹 Financial Activity" chartType="line" loading={transactionsLoading}>
+          <MonthlyTransactionChart data={transactionStats?.monthlyData || []} isLoading={transactionsLoading} height={300} />
           </ChartCard>
         </Grid>
       </Grid>
-      
+
       {/* Financial Actions */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
         <Button 
@@ -554,9 +872,16 @@ const DashDefault = () => {
           variant="outlined" 
           color="warning" 
           startIcon={<CreditCard />}
-          onClick={() => navigate('/dashboard/finance/withdrawal-requests')}
+          onClick={() => navigate('/dashboard/finance/withdrawals')}
         >
-          Pending Withdrawals ({transactionStats?.pendingTransactions || 0})
+          Pending Withdrawals 
+          {transactionStats?.pendingTransactions > 0 && (
+            <Badge 
+              badgeContent={transactionStats.pendingTransactions} 
+              color="error" 
+              sx={{ ml: 1 }}
+            />
+          )}
         </Button>
       </Box>
 
@@ -569,16 +894,11 @@ const DashDefault = () => {
                 <Typography variant="h6" fontWeight="medium">
                   Pending Course Approvals
                 </Typography>
-                <Badge 
-                  badgeContent={pendingCourses?.length || 0} 
-                  color="error"
-                  max={99}
-                  showZero
-                >
+                <Badge badgeContent={pendingCourses?.length || 0} color="error" max={99} showZero>
                   <AlertCircle size={20} />
                 </Badge>
               </Box>
-              
+
               {isLoading ? (
                 <Box display="flex" justifyContent="center" my={4}>
                   <CircularProgress size={40} />
@@ -586,20 +906,14 @@ const DashDefault = () => {
               ) : Array.isArray(pendingCourses) && pendingCourses.length > 0 ? (
                 <Box sx={{ maxHeight: 400, overflowY: 'auto', pr: 1 }}>
                   {pendingCourses.map((course) => (
-                    <ApprovalItem 
-                      key={course.id} 
-                      item={course} 
-                      onApprove={approveCourse} 
-                      onReject={rejectCourse} 
-                      type="course" 
-                    />
+                    <ApprovalItem key={course.id} item={course} onApprove={approveCourse} onReject={rejectCourse} type="course" />
                   ))}
                 </Box>
               ) : (
-                <Box 
-                  sx={{ 
-                    p: 3, 
-                    textAlign: 'center', 
+                <Box
+                  sx={{
+                    p: 3,
+                    textAlign: 'center',
                     bgcolor: alpha(theme.palette.background.paper, 0.5),
                     borderRadius: 2
                   }}
@@ -610,14 +924,9 @@ const DashDefault = () => {
                   </Typography>
                 </Box>
               )}
-              
+
               <Box display="flex" justifyContent="flex-end" mt={2}>
-                <Button 
-                  component={Link} 
-                  to="/dashboard/course/list-course" 
-                  endIcon={<ChevronRight size={16} />}
-                  color="primary"
-                >
+                <Button component={Link} to="/dashboard/course/list-course" endIcon={<ChevronRight size={16} />} color="primary">
                   View All Courses
                 </Button>
               </Box>
@@ -632,16 +941,11 @@ const DashDefault = () => {
                 <Typography variant="h6" fontWeight="medium">
                   Pending Instructor Approvals
                 </Typography>
-                <Badge 
-                  badgeContent={pendingInstructors?.length || 0} 
-                  color="error"
-                  max={99}
-                  showZero
-                >
+                <Badge badgeContent={pendingInstructors?.length || 0} color="error" max={99} showZero>
                   <AlertCircle size={20} />
                 </Badge>
               </Box>
-              
+
               {isLoading ? (
                 <Box display="flex" justifyContent="center" my={4}>
                   <CircularProgress size={40} />
@@ -649,20 +953,20 @@ const DashDefault = () => {
               ) : Array.isArray(pendingInstructors) && pendingInstructors.length > 0 ? (
                 <Box sx={{ maxHeight: 400, overflowY: 'auto', pr: 1 }}>
                   {pendingInstructors.map((instructor) => (
-                    <ApprovalItem 
-                      key={instructor.id} 
-                      item={instructor} 
-                      onApprove={approveInstructor} 
-                      onReject={rejectInstructor} 
-                      type="instructor" 
+                    <ApprovalItem
+                      key={instructor.id}
+                      item={instructor}
+                      onApprove={approveInstructor}
+                      onReject={rejectInstructor}
+                      type="instructor"
                     />
                   ))}
                 </Box>
               ) : (
-                <Box 
-                  sx={{ 
-                    p: 3, 
-                    textAlign: 'center', 
+                <Box
+                  sx={{
+                    p: 3,
+                    textAlign: 'center',
                     bgcolor: alpha(theme.palette.background.paper, 0.5),
                     borderRadius: 2
                   }}
@@ -673,14 +977,9 @@ const DashDefault = () => {
                   </Typography>
                 </Box>
               )}
-              
+
               <Box display="flex" justifyContent="flex-end" mt={2}>
-                <Button 
-                  component={Link} 
-                  to="/dashboard/instructor/list" 
-                  endIcon={<ChevronRight size={16} />}
-                  color="primary"
-                >
+                <Button component={Link} to="/dashboard/instructor/list" endIcon={<ChevronRight size={16} />} color="primary">
                   View All Instructors
                 </Button>
               </Box>
@@ -699,31 +998,64 @@ const DashDefault = () => {
                   Recent Reviews
                 </Typography>
                 <Tooltip title="View all reviews">
-                  <IconButton 
-                    component={Link} 
-                    to="/dashboard/reviews" 
-                    size="small"
-                    color="primary"
-                  >
+                  <IconButton component={Link} to="/dashboard/reviews" size="small" color="primary">
                     <Eye size={18} />
                   </IconButton>
                 </Tooltip>
               </Box>
-              
+
               <Box sx={{ height: 400, overflowY: 'auto', pr: 1 }}>
                 {reviewsLoading ? (
                   <Box display="flex" justifyContent="center" my={4}>
                     <CircularProgress size={30} />
                   </Box>
                 ) : recentReviews && recentReviews.length > 0 ? (
-                  recentReviews.map((review) => (
-                    <ReviewItem key={review.id} review={review} />
-                  ))
+                  recentReviews.map((review) => {
+                    console.log("Processing review:", review);
+                    
+                    // Kiểm tra cấu trúc dữ liệu thực tế
+                    // Điều chỉnh mapping dữ liệu dựa trên cấu trúc API thực tế
+                    const safeReview = {
+                      id: review?.id || Math.random().toString(),
+                      // Kiểm tra các trường có thể có tên khác
+                      content: review?.comment || review?.content || review?.reviewText || 'No review content provided.',
+                      rating: review?.rating || review?.stars || 0,
+                      createdAt: review?.createdAt || review?.created || review?.date || new Date().toISOString(),
+                      status: review?.status || 'PENDING',
+                      user: {
+                        name: review?.studentName || review?.userName || (review?.user ? review.user.name : 'Anonymous User'),
+                        avatarUrl: review?.userAvatar || (review?.user ? review.user.avatarUrl : '')
+                      },
+                      course: {
+                        title: review?.courseTitle || (review?.course ? review.course.title : 'Unknown Course')
+                      }
+                    };
+                    
+                    return (
+                      <ReviewItem 
+                        key={safeReview.id} 
+                        review={safeReview}
+                        showActions={true}
+                        onReply={(reviewId) => {
+                          console.log(`Replying to review ${reviewId}`);
+                        }}
+                        onEdit={(reviewId) => {
+                          console.log(`Editing review ${reviewId}`);
+                        }}
+                        onDelete={(reviewId) => {
+                          console.log(`Deleting review ${reviewId}`);
+                        }}
+                        onClick={(reviewId) => {
+                          console.log(`Clicked on review ${reviewId}`);
+                        }}
+                      />
+                    );
+                  })
                 ) : (
-                  <Box 
-                    sx={{ 
-                      p: 3, 
-                      textAlign: 'center', 
+                  <Box
+                    sx={{
+                      p: 3,
+                      textAlign: 'center',
                       bgcolor: alpha(theme.palette.background.paper, 0.5),
                       borderRadius: 2
                     }}
@@ -747,17 +1079,12 @@ const DashDefault = () => {
                   Recent Notifications
                 </Typography>
                 <Tooltip title="View all notifications">
-                  <IconButton 
-                    component={Link} 
-                    to="/dashboard/notification/list" 
-                    size="small"
-                    color="primary"
-                  >
+                  <IconButton component={Link} to="/dashboard/notification/list" size="small" color="primary">
                     <Eye size={18} />
                   </IconButton>
                 </Tooltip>
               </Box>
-              
+
               <Box sx={{ height: 400, overflowY: 'auto', pr: 1 }}>
                 {notificationsLoading ? (
                   <Box display="flex" justifyContent="center" my={4}>
@@ -765,13 +1092,30 @@ const DashDefault = () => {
                   </Box>
                 ) : recentNotifications && recentNotifications.length > 0 ? (
                   recentNotifications.map((notification) => (
-                    <NotificationItem key={notification.id} notification={notification} />
+                    <NotificationItem 
+                      key={notification.id} 
+                      notification={notification}
+                      onMarkAsRead={(notificationId) => {
+                        // Gọi API đánh dấu đã đọc
+                        if (markAsRead) {
+                          markAsRead(notificationId);
+                        }
+                      }}
+                      onView={(notificationId) => {
+                        // Xử lý khi xem thông báo
+                        console.log(`Viewing notification ${notificationId}`);
+                        // Có thể chuyển hướng đến trang chi tiết nếu cần
+                        if (notification.actionUrl) {
+                          navigate(notification.actionUrl);
+                        }
+                      }}
+                    />
                   ))
                 ) : (
-                  <Box 
-                    sx={{ 
-                      p: 3, 
-                      textAlign: 'center', 
+                  <Box
+                    sx={{
+                      p: 3,
+                      textAlign: 'center',
                       bgcolor: alpha(theme.palette.background.paper, 0.5),
                       borderRadius: 2
                     }}
@@ -788,142 +1132,18 @@ const DashDefault = () => {
         </Grid>
       </Grid>
 
-      {/* Performance Metrics */}
-      <Grid container spacing={3} sx={{ mt: 3 }}>
-        <Grid item xs={12}>
-          <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight="medium" gutterBottom>
-                Platform Performance
-              </Typography>
-              
-              <Grid container spacing={3} mt={1}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Paper 
-                    sx={{ 
-                      p: 2, 
-                      textAlign: 'center', 
-                      borderRadius: 2,
-                      bgcolor: alpha(theme.palette.primary.main, 0.05),
-                      border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                      transition: 'all 0.3s',
-                      '&:hover': {
-                        transform: 'translateY(-5px)',
-                        boxShadow: 3
-                      }
-                    }}
-                  >
-                    <Activity size={24} color={theme.palette.primary.main} />
-                    <Typography variant="h5" fontWeight="bold" mt={1}>
-                      {statistics?.averageCompletionRate ? `${statistics.averageCompletionRate}%` : '85%'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Course Completion Rate
-                    </Typography>
-                  </Paper>
-                </Grid>
-                
-                <Grid item xs={12} sm={6} md={3}>
-                  <Paper 
-                    sx={{ 
-                      p: 2, 
-                      textAlign: 'center', 
-                      borderRadius: 2,
-                      bgcolor: alpha(theme.palette.success.main, 0.05),
-                      border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
-                      transition: 'all 0.3s',
-                      '&:hover': {
-                        transform: 'translateY(-5px)',
-                        boxShadow: 3
-                      }
-                    }}
-                  >
-                    <Award size={24} color={theme.palette.success.main} />
-                    <Typography variant="h5" fontWeight="bold" mt={1}>
-                      {statistics?.averageRating ? statistics.averageRating.toFixed(1) : '4.7'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Average Course Rating
-                    </Typography>
-                  </Paper>
-                </Grid>
-                
-                <Grid item xs={12} sm={6} md={3}>
-                  <Paper 
-                    sx={{ 
-                      p: 2, 
-                      textAlign: 'center', 
-                      borderRadius: 2,
-                      bgcolor: alpha(theme.palette.warning.main, 0.05),
-                      border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
-                      transition: 'all 0.3s',
-                      '&:hover': {
-                        transform: 'translateY(-5px)',
-                        boxShadow: 3
-                      }
-                    }}
-                  >
-                    <DollarSign size={24} color={theme.palette.warning.main} />
-                    <Typography variant="h5" fontWeight="bold" mt={1}>
-                      {statistics?.averageRevenue ? `$${statistics.averageRevenue.toFixed(2)}` : '$49.99'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Avg. Revenue per User
-                    </Typography>
-                  </Paper>
-                </Grid>
-                
-                <Grid item xs={12} sm={6} md={3}>
-                  <Paper 
-                    sx={{ 
-                      p: 2, 
-                      textAlign: 'center', 
-                      borderRadius: 2,
-                      bgcolor: alpha(theme.palette.info.main, 0.05),
-                      border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
-                      transition: 'all 0.3s',
-                      '&:hover': {
-                        transform: 'translateY(-5px)',
-                        boxShadow: 3
-                      }
-                    }}
-                  >
-                    <Users size={24} color={theme.palette.info.main} />
-                    <Typography variant="h5" fontWeight="bold" mt={1}>
-                      {statistics?.activeUserRate ? `${statistics.activeUserRate}%` : '78%'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Active User Rate
-                    </Typography>
-                  </Paper>
-                </Grid>
-              </Grid>
-              
-              <Box display="flex" justifyContent="center" mt={3}>
-                <Button 
-                  variant="outlined" 
-                  color="primary" 
-                  startIcon={<BarChart2 size={18} />}
-                  component={Link}
-                  to="/dashboard/reviews/statistics"
-                  sx={{ mr: 2 }}
-                >
-                  View Detailed Analytics
-                </Button>
-                <Button 
-                  variant="outlined" 
-                  color="secondary" 
-                  startIcon={<PieChartIcon size={18} />}
-                  component={Link}
-                  to="/dashboard/finance/statistics"
-                >
-                  Financial Analytics
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {/* Performance Metrics with Tabs */}
+      <PerformanceMetricsWithTabs
+        statistics={statistics}
+        reviewStatistics={reviewStatistics}
+        transactionStats={transactionStats}
+        walletStatistics={walletStatistics}
+        instructorStatistics={instructorStatistics}
+        studentQuizStatistics={studentQuizStatistics}
+        isLoading={isLoading || transactionsLoading || walletsLoading}
+        theme={theme}
+        onRefresh={handleRefresh}
+      />
     </Box>
   );
 };

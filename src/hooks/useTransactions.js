@@ -1,5 +1,6 @@
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useContext, useCallback } from 'react';
+import { useContext } from 'react';
 import { NotificationContext } from '../contexts/NotificationContext';
 import api from '../utils/api';
 import ENDPOINTS from '../config/endpoints';
@@ -7,6 +8,10 @@ import ENDPOINTS from '../config/endpoints';
 const useTransactions = (initialPage = 0, initialSize = 10, initialType = null, initialStatus = null) => {
   const queryClient = useQueryClient();
   const { addNotification } = useContext(NotificationContext);
+  
+  // Add state for statistics and monthlyTrends
+  const [statistics, setStatistics] = useState(null);
+  const [monthlyTrends, setMonthlyTrends] = useState([]);
 
   // Fetch transactions with pagination and filters
   const {
@@ -95,10 +100,24 @@ const useTransactions = (initialPage = 0, initialSize = 10, initialType = null, 
   const fetchTransactionStatistics = useCallback(async () => {
     try {
       const response = await api.get(ENDPOINTS.ADMIN.TRANSACTIONS.STATISTICS);
+      setStatistics(response.data); // Set statistics state
       return response.data;
     } catch (err) {
       console.error('Error fetching transaction statistics:', err);
       addNotification('Failed to load transaction statistics', 'error');
+      throw err;
+    }
+  }, [addNotification]);
+
+  // Fetch monthly transaction trends
+  const fetchMonthlyTransactionTrends = useCallback(async () => {
+    try {
+      const response = await api.get(ENDPOINTS.ADMIN.TRANSACTIONS.MONTHLY_TRENDS);
+      setMonthlyTrends(response.data); // Set monthlyTrends state
+      return response.data;
+    } catch (err) {
+      console.error('Error fetching monthly transaction trends:', err);
+      addNotification('Failed to load monthly transaction trends', 'error');
       throw err;
     }
   }, [addNotification]);
@@ -144,17 +163,26 @@ const useTransactions = (initialPage = 0, initialSize = 10, initialType = null, 
     return rejectWithdrawalMutation.mutateAsync({ id, reason });
   }, [rejectWithdrawalMutation]);
 
+  // Initial data fetch for statistics and trends
+  useEffect(() => {
+    fetchTransactionStatistics().catch(console.error);
+    fetchMonthlyTransactionTrends().catch(console.error);
+  }, [fetchTransactionStatistics, fetchMonthlyTransactionTrends]);
+
   return {
     transactions: data?.content || [],
     totalPages: data?.totalPages || 0,
     totalItems: data?.totalItems || 0,
     currentPage: data?.currentPage || 0,
+    statistics, // Now properly defined
+    monthlyTrends, // Now properly defined
     isLoading,
     isError,
     error,
     refetch,
     fetchTransactions,
     fetchTransactionById,
+    fetchMonthlyTransactionTrends,
     fetchTransactionStatistics,
     approveWithdrawal,
     rejectWithdrawal

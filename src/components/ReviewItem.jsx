@@ -1,406 +1,291 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
-  Paper,
   Typography,
   Avatar,
   Rating,
   Chip,
   IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
   Tooltip,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  alpha,
-  useTheme,
-  CircularProgress
+  Paper
 } from '@mui/material';
+import { formatDistanceToNow } from 'date-fns';
 import {
-  Star,
+  MoreVertical,
   MessageCircle,
-  Calendar,
-  User,
+  Edit,
+  Trash2,
   Flag,
   CheckCircle,
   XCircle,
-  MoreVertical,
-  Edit,
-  Trash,
-  ExternalLink
+  Eye
 } from 'lucide-react';
 
 /**
- * ReviewItem Component
- * 
- * A component for displaying course reviews with admin actions
+ * ReviewItem component displays a single review with user information, rating, and content
  * 
  * @param {Object} props
- * @param {Object} props.review - The review data to display
- * @param {Function} props.onDelete - Function to call when deleting a review
- * @param {Function} props.onFlag - Function to call when flagging a review
- * @param {Function} props.onApprove - Function to call when approving a review
- * @param {boolean} props.isAdmin - Whether the current user is an admin
+ * @param {Object} props.review - The review object containing all review data
+ * @param {boolean} props.showActions - Whether to show action buttons
+ * @param {Function} props.onReply - Callback when reply button is clicked
+ * @param {Function} props.onEdit - Callback when edit button is clicked
+ * @param {Function} props.onDelete - Callback when delete button is clicked
+ * @param {Function} props.onClick - Callback when the review item is clicked
+ * @param {Function} props.onApprove - Callback when approve button is clicked
+ * @param {Function} props.onReject - Callback when reject button is clicked
+ * @param {Function} props.onReport - Callback when report button is clicked
  */
-const ReviewItem = ({ 
-  review, 
-  onDelete, 
-  onFlag, 
+const ReviewItem = ({
+  review,
+  showActions = true,
+  onReply,
+  onEdit,
+  onDelete,
+  onClick,
   onApprove,
-  isAdmin = true
+  onReject,
+  onReport
 }) => {
-  const theme = useTheme();
-  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [flagDialogOpen, setFlagDialogOpen] = useState(false);
-  const [flagReason, setFlagReason] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isFlagging, setIsFlagging] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
+  const [anchorEl, setAnchorEl] = React.useState(null);
+  const open = Boolean(anchorEl);
   
-  // Format date string
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return dateString;
-    }
+  // Handle missing or malformed review data
+  if (!review) {
+    console.warn('ReviewItem received null or undefined review');
+    return null;
+  }
+  
+  // Safely extract review properties with fallbacks
+  const {
+    id = 'unknown',
+    content = 'No content provided',
+    rating = 0,
+    createdAt = new Date().toISOString(),
+    status = 'PENDING',
+    user = {},
+    course = {}
+  } = review;
+  
+  // Safely extract nested properties with fallbacks
+  const userName = user?.name || 'Anonymous User';
+  const userAvatar = user?.avatarUrl || '';
+  const courseTitle = course?.title || 'Unknown Course';
+  
+  // Format the date
+  let formattedDate;
+  try {
+    formattedDate = formatDistanceToNow(new Date(createdAt), { addSuffix: true });
+  } catch (error) {
+    console.warn('Error formatting date:', error);
+    formattedDate = 'Unknown date';
+  }
+  
+  // Handle menu open/close
+  const handleMenuClick = (event) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
   };
   
-  // Handle delete action
-  const handleDelete = async () => {
-    if (!review?.id || !onDelete) return;
-    
-    setIsDeleting(true);
-    try {
-      await onDelete(review.id);
-      setDeleteDialogOpen(false);
-    } catch (error) {
-      console.error('Error deleting review:', error);
-    } finally {
-      setIsDeleting(false);
-    }
+  const handleMenuClose = (event) => {
+    if (event) event.stopPropagation();
+    setAnchorEl(null);
   };
   
-  // Handle flag action
-  const handleFlag = async () => {
-    if (!review?.id || !onFlag) return;
-    
-    setIsFlagging(true);
-    try {
-      await onFlag(review.id, flagReason);
-      setFlagDialogOpen(false);
-      setFlagReason('');
-    } catch (error) {
-      console.error('Error flagging review:', error);
-    } finally {
-      setIsFlagging(false);
-    }
+  // Handle action clicks
+  const handleReply = (event) => {
+    event.stopPropagation();
+    handleMenuClose();
+    if (onReply) onReply(id);
   };
   
-  // Handle approve action
-  const handleApprove = async () => {
-    if (!review?.id || !onApprove) return;
-    
-    setIsApproving(true);
-    try {
-      await onApprove(review.id);
-    } catch (error) {
-      console.error('Error approving review:', error);
-    } finally {
-      setIsApproving(false);
-    }
+  const handleEdit = (event) => {
+    event.stopPropagation();
+    handleMenuClose();
+    if (onEdit) onEdit(id);
   };
   
-  // Get status chip based on review status
-  const getStatusChip = () => {
-    if (!review) return null;
-    
-    if (review.isApproved) {
-      return (
-        <Chip
-          size="small"
-          label="Approved"
-          icon={<CheckCircle size={14} />}
-          sx={{
-            bgcolor: alpha(theme.palette.success.main, 0.1),
-            color: theme.palette.success.main,
-            fontWeight: 'medium',
-            '& .MuiChip-icon': {
-              color: 'inherit'
-            }
-          }}
-        />
-      );
-    }
-    
-    if (review.isFlagged) {
-      return (
-        <Chip
-          size="small"
-          label="Flagged"
-          icon={<Flag size={14} />}
-          sx={{
-            bgcolor: alpha(theme.palette.error.main, 0.1),
-            color: theme.palette.error.main,
-            fontWeight: 'medium',
-            '& .MuiChip-icon': {
-              color: 'inherit'
-            }
-          }}
-        />
-      );
-    }
-    
-    return (
-      <Chip
-        size="small"
-        label="Pending"
-        icon={<MessageCircle size={14} />}
-        sx={{
-          bgcolor: alpha(theme.palette.warning.main, 0.1),
-          color: theme.palette.warning.main,
-          fontWeight: 'medium',
-          '& .MuiChip-icon': {
-            color: 'inherit'
-          }
-        }}
-      />
-    );
+  const handleDelete = (event) => {
+    event.stopPropagation();
+    handleMenuClose();
+    if (onDelete) onDelete(id);
   };
   
-  // Get user avatar
-  const getUserAvatar = () => {
-    const userName = review?.user?.name || 'User';
-    const userInitial = userName.charAt(0).toUpperCase();
-    
-    return (
-      <Avatar
-        src={review?.user?.avatar || ''}
-        alt={userName}
-        sx={{
-          width: 40,
-          height: 40,
-          bgcolor: theme.palette.primary.main,
-          color: theme.palette.primary.contrastText
-        }}
-      >
-        {userInitial}
-      </Avatar>
-    );
+  const handleApprove = (event) => {
+    event.stopPropagation();
+    handleMenuClose();
+    if (onApprove) onApprove(id);
+  };
+  
+  const handleReject = (event) => {
+    event.stopPropagation();
+    handleMenuClose();
+    if (onReject) onReject(id);
+  };
+  
+  const handleReport = (event) => {
+    event.stopPropagation();
+    handleMenuClose();
+    if (onReport) onReport(id);
+  };
+  
+  const handleClick = () => {
+    if (onClick) onClick(id);
+  };
+  
+  // Determine status color
+  const getStatusColor = () => {
+    switch (status?.toUpperCase()) {
+      case 'APPROVED':
+        return 'success';
+      case 'REJECTED':
+        return 'error';
+      case 'PENDING':
+        return 'warning';
+      default:
+        return 'default';
+    }
   };
   
   return (
-    <>
-      <Paper
-        elevation={0}
-        sx={{
-          p: 2,
-          mb: 2,
-          borderRadius: 2,
-          border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
-          transition: 'all 0.2s',
-          '&:hover': {
-            boxShadow: 2,
-            borderColor: theme.palette.primary.main
-          }
-        }}
-      >
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-          <Box display="flex" alignItems="flex-start">
-            {getUserAvatar()}
-            
-            <Box ml={2}>
-              <Typography variant="subtitle1" fontWeight="medium">
-                {review?.user?.name || 'Anonymous User'}
-              </Typography>
-              
-              <Box display="flex" alignItems="center" mt={0.5}>
-              <Rating 
-                  value={review?.rating || 0} 
-                  readOnly 
-                  size="small" 
-                  precision={0.5}
-                  sx={{ mr: 1 }}
-                />
-                <Typography variant="body2" color="textSecondary">
-                  {review?.rating?.toFixed(1) || '0.0'}
-                </Typography>
-              </Box>
-              
-              <Box display="flex" alignItems="center" mt={0.5}>
-                <Typography variant="caption" color="textSecondary" sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Calendar size={14} style={{ marginRight: 4 }} />
-                  {formatDate(review?.createdAt)}
-                </Typography>
-                
-                <Divider orientation="vertical" flexItem sx={{ mx: 1, height: 14 }} />
-                
-                <Typography variant="caption" color="textSecondary" sx={{ display: 'flex', alignItems: 'center' }}>
-                  <MessageCircle size={14} style={{ marginRight: 4 }} />
-                  {review?.course?.title || 'Unknown Course'}
-                </Typography>
-              </Box>
-            </Box>
+    <Paper
+      elevation={1}
+      sx={{
+        p: 2,
+        mb: 2,
+        borderRadius: 2,
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'all 0.2s',
+        '&:hover': {
+          boxShadow: onClick ? 3 : 1,
+          bgcolor: (theme) => onClick ? theme.palette.action.hover : 'inherit'
+        }
+      }}
+      onClick={handleClick}
+    >
+      <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+        <Box display="flex" alignItems="center">
+          <Avatar
+            src={userAvatar}
+            alt={userName}
+            sx={{ width: 40, height: 40, mr: 1.5 }}
+          >
+            {userName.charAt(0).toUpperCase()}
+          </Avatar>
+          <Box>
+            <Typography variant="subtitle1" fontWeight="medium">
+              {userName}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              {courseTitle}
+            </Typography>
           </Box>
+        </Box>
+        
+        <Box display="flex" alignItems="center">
+          <Chip
+            size="small"
+            label={status || 'PENDING'}
+            color={getStatusColor()}
+            sx={{ mr: 1, textTransform: 'capitalize' }}
+          />
           
-          <Box display="flex" alignItems="center">
-            {getStatusChip()}
-            
-            {isAdmin && (
-              <Box ml={1}>
-                <Tooltip title="Actions">
-                  <IconButton 
-                    size="small"
-                    onClick={(e) => setMenuAnchorEl(e.currentTarget)}
-                  >
-                    <MoreVertical size={18} />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            )}
-          </Box>
-        </Box>
-        
-        <Box mt={2}>
-          <Typography variant="body2">
-            {review?.content || 'No review content provided.'}
-          </Typography>
-        </Box>
-        
-        {isAdmin && (
-          <Box display="flex" justifyContent="flex-end" mt={2}>
-            {!review?.isApproved && (
-              <Tooltip title="Approve Review">
-                <IconButton 
-                  size="small" 
-                  color="success"
-                  onClick={handleApprove}
-                  disabled={isApproving}
-                  sx={{ mr: 1 }}
+          {showActions && (
+            <>
+              <Tooltip title="Actions">
+                <IconButton
+                  size="small"
+                  onClick={handleMenuClick}
+                  aria-controls={open ? 'review-menu' : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={open ? 'true' : undefined}
                 >
-                  {isApproving ? (
-                    <CircularProgress size={16} color="inherit" />
-                  ) : (
-                    <CheckCircle size={18} />
-                  )}
+                  <MoreVertical size={18} />
                 </IconButton>
               </Tooltip>
-            )}
-            
-            <Tooltip title="Flag Review">
-              <IconButton 
-                size="small" 
-                color="warning"
-                onClick={() => setFlagDialogOpen(true)}
-                disabled={isFlagging}
-                sx={{ mr: 1 }}
+              
+              <Menu
+                id="review-menu"
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleMenuClose}
+                onClick={(e) => e.stopPropagation()}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
               >
-                <Flag size={18} />
-              </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Delete Review">
-              <IconButton 
-                size="small" 
-                color="error"
-                onClick={() => setDeleteDialogOpen(true)}
-                disabled={isDeleting}
-              >
-                <Trash size={18} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        )}
-      </Paper>
+                {onReply && (
+                  <MenuItem onClick={handleReply}>
+                    <ListItemIcon>
+                      <MessageCircle size={18} />
+                    </ListItemIcon>
+                    <ListItemText>Reply</ListItemText>
+                  </MenuItem>
+                )}
+                
+                {onEdit && (
+                  <MenuItem onClick={handleEdit}>
+                    <ListItemIcon>
+                      <Edit size={18} />
+                    </ListItemIcon>
+                    <ListItemText>Edit</ListItemText>
+                  </MenuItem>
+                )}
+                
+                {onDelete && (
+                  <MenuItem onClick={handleDelete}>
+                    <ListItemIcon>
+                      <Trash2 size={18} />
+                    </ListItemIcon>
+                    <ListItemText>Delete</ListItemText>
+                  </MenuItem>
+                )}
+                
+                {onApprove && (
+                  <MenuItem onClick={handleApprove}>
+                    <ListItemIcon>
+                      <CheckCircle size={18} />
+                    </ListItemIcon>
+                    <ListItemText>Approve</ListItemText>
+                  </MenuItem>
+                )}
+                
+                {onReject && (
+                  <MenuItem onClick={handleReject}>
+                    <ListItemIcon>
+                      <XCircle size={18} />
+                    </ListItemIcon>
+                    <ListItemText>Reject</ListItemText>
+                  </MenuItem>
+                )}
+                
+                {onReport && (
+                  <MenuItem onClick={handleReport}>
+                    <ListItemIcon>
+                      <Flag size={18} />
+                    </ListItemIcon>
+                    <ListItemText>Report</ListItemText>
+                  </MenuItem>
+                )}
+              </Menu>
+            </>
+          )}
+        </Box>
+      </Box>
       
-      {/* Delete Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box display="flex" alignItems="center">
-            <Trash size={20} color={theme.palette.error.main} style={{ marginRight: 8 }} />
-            Delete Review
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2">
-            Are you sure you want to delete this review? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} color="inherit">
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleDelete} 
-            color="error" 
-            variant="contained"
-            disabled={isDeleting}
-          >
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <Box mt={2}>
+        <Rating value={Number(rating) || 0} readOnly precision={0.5} />
+        <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>
+          {formattedDate}
+        </Typography>
+      </Box>
       
-      {/* Flag Dialog */}
-      <Dialog
-        open={flagDialogOpen}
-        onClose={() => setFlagDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box display="flex" alignItems="center">
-            <Flag size={20} color={theme.palette.warning.main} style={{ marginRight: 8 }} />
-            Flag Review
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" paragraph>
-            Please provide a reason for flagging this review.
-          </Typography>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Reason for flagging"
-            fullWidth
-            multiline
-            rows={4}
-            value={flagReason}
-            onChange={(e) => setFlagReason(e.target.value)}
-            variant="outlined"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFlagDialogOpen(false)} color="inherit">
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleFlag} 
-            color="warning" 
-            variant="contained"
-            disabled={!flagReason.trim() || isFlagging}
-          >
-            {isFlagging ? 'Flagging...' : 'Flag Review'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+      <Typography variant="body1" sx={{ mt: 1.5, whiteSpace: 'pre-wrap' }}>
+        {content || 'No review content provided.'}
+      </Typography>
+    </Paper>
   );
 };
 

@@ -1,5 +1,5 @@
 import api from '../utils/api';
-import { handleError } from '../utils/errorHandler';
+import { handleApiError } from '../utils/errorHandler';
 
 /**
  * Upload a photo to a specific entity folder.
@@ -16,7 +16,7 @@ export const uploadPhoto = async ({ file, entity, signal }) => {
     return response.data; // Example: "1686944000000_image.jpg"
   } catch (error) {
     console.error('Error uploading file:', error);
-    throw handleError(error);
+    throw handleApiError(error);
   }
 };
 
@@ -28,7 +28,7 @@ export const deleteFile = async ({ filename, entity, signal }) => {
     await api.delete(`/files/delete/${entity}/${filename}`, { signal });
   } catch (error) {
     console.error('Error deleting file:', error);
-    throw handleError(error);
+    throw handleApiError(error);
   }
 };
 
