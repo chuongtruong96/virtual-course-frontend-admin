@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Button, Form, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { FaArrowLeft, FaSave, FaTrash, FaUserCircle, FaBook } from 'react-icons/fa';
-import ReviewService from '../../services/ReviewService';
+import ReviewService from '../../services/reviewService';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useContext } from 'react';
 
