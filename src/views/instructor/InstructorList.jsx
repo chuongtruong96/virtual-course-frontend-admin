@@ -63,8 +63,11 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useInstructors } from '../../hooks/useInstructors';
 import { useInstructorMetrics } from '../../hooks/useInstructorMetrics';
 import InstructorCard from './InstructorCard';
+import { InstructorCardWithDetails } from './InstructorCard'; // Import the new component
 import { format } from 'date-fns';
 import { UPLOAD_PATH, DEFAULT_IMAGES } from '../../config/endpoints';
+import ApprovalDialog from '../../views/dialogs/ApprovalDialog';
+import RejectionDialog from '../../views/dialogs/RejectionDialog';
 
 // Custom Error Fallback Component
 const ErrorFallback = ({ error, resetErrorBoundary }) => (
@@ -120,6 +123,10 @@ const InstructorList = () => {
   });
   const [filterMenuAnchor, setFilterMenuAnchor] = useState(null);
   const [expandedInstructor, setExpandedInstructor] = useState(null);
+  
+  // Dialog states for approval and rejection
+  const [approvalDialog, setApprovalDialog] = useState({ open: false, instructorId: null });
+  const [rejectionDialog, setRejectionDialog] = useState({ open: false, instructorId: null });
 
   // Status mapping for tabs
   const statusMap = {
@@ -267,6 +274,45 @@ const InstructorList = () => {
     setExpandedInstructor(expandedInstructor === instructorId ? null : instructorId);
   };
 
+  // Dialog handlers
+  const handleOpenApprovalDialog = (instructorId) => {
+    setApprovalDialog({ open: true, instructorId });
+  };
+
+  const handleCloseApprovalDialog = () => {
+    setApprovalDialog({ open: false, instructorId: null });
+  };
+
+  const handleOpenRejectionDialog = (instructorId) => {
+    setRejectionDialog({ open: true, instructorId });
+  };
+
+  const handleCloseRejectionDialog = () => {
+    setRejectionDialog({ open: false, instructorId: null });
+  };
+
+  const handleApproveInstructor = (notes) => {
+    approveInstructor({ 
+      instructorId: approvalDialog.instructorId, 
+      notes,
+      onSuccess: () => {
+        handleCloseApprovalDialog();
+        refetch();
+      }
+    });
+  };
+
+  const handleRejectInstructor = (reason) => {
+    rejectInstructor({ 
+      instructorId: rejectionDialog.instructorId, 
+      reason,
+      onSuccess: () => {
+        handleCloseRejectionDialog();
+        refetch();
+      }
+    });
+  };
+
   // Loading State
   if (isLoading) {
     return (
@@ -380,11 +426,13 @@ const InstructorList = () => {
               <Grid container spacing={3}>
                 {paginatedInstructors.map((instructor) => (
                   <Grid item xs={12} md={6} key={instructor.id}>
-                    <InstructorCard
-                      instructor={instructor}
-                      onApprove={() => approveInstructor(instructor.id)}
-                      onReject={() => rejectInstructor(instructor.id)}
+                    {/* Use the new InstructorCardWithDetails component */}
+                    <InstructorCardWithDetails
+                      instructorId={instructor.id}
+                      onApprove={() => handleOpenApprovalDialog(instructor.id)}
+                      onReject={() => handleOpenRejectionDialog(instructor.id)}
                       onViewDetail={() => navigate(`/dashboard/instructor/detail/${instructor.id}`)}
+                      showMetrics={true}
                     />
                   </Grid>
                 ))}
@@ -464,257 +512,275 @@ const InstructorList = () => {
                               </IconButton>
                             </TableCell>
                             <TableCell>
-  <Box display="flex" alignItems="center">
-    <Avatar 
-      src={imageUrl} 
-      alt={`${instructor.firstName} ${instructor.lastName}`}
-      sx={{ width: 40, height: 40, mr: 2 }}
-    >
-      {instructor.firstName?.[0]}
-    </Avatar>
-    <Box>
-      <Typography variant="body2" fontWeight="medium">
-        {instructor.firstName} {instructor.lastName}
-      </Typography>
-      <Typography variant="caption" color="text.secondary">
-        {instructor.title || 'Instructor'}
-      </Typography>
-    </Box>
-  </Box>
-</TableCell>
-<TableCell>
-  <Box display="flex" flexDirection="column">
-    <Box display="flex" alignItems="center">
-      <Mail size={14} style={{ marginRight: 8, opacity: 0.7 }} />
-      <Typography variant="body2">
-        {instructor.email || instructor.accountEmail}
-      </Typography>
-    </Box>
-    {instructor.phone && (
-      <Box display="flex" alignItems="center" mt={0.5}>
-        <Phone size={14} style={{ marginRight: 8, opacity: 0.7 }} />
-        <Typography variant="body2">
-          {instructor.phone}
-        </Typography>
-      </Box>
-    )}
-  </Box>
-</TableCell>
-<TableCell>
-  <Typography variant="body2">
-    {instructor.courseCount || 0}
-  </Typography>
-</TableCell>
-<TableCell>
-  <Chip 
-    label={instructor.status} 
-    size="small"
-    color={getStatusColor(instructor.status)}
-  />
-</TableCell>
-<TableCell>
-  <Typography variant="body2">
-    {instructor.createdAt 
-      ? format(new Date(instructor.createdAt), 'MMM dd, yyyy')
-      : 'N/A'
-    }
-  </Typography>
-</TableCell>
-<TableCell align="right">
-  <Box display="flex" justifyContent="flex-end">
-    <Tooltip title="View Details">
-      <IconButton
-        size="small"
-        onClick={() => navigate(`/dashboard/instructor/detail/${instructor.id}`)}
-      >
-        <Eye size={18} />
-      </IconButton>
-    </Tooltip>
-    
-    {instructor.status === 'PENDING' && (
-      <>
-        <Tooltip title="Approve">
-          <IconButton
-            size="small"
-            color="success"
-            onClick={() => approveInstructor(instructor.id)}
-          >
-            <CheckCircle size={18} />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Reject">
-          <IconButton
-            size="small"
-            color="error"
-            onClick={() => rejectInstructor(instructor.id)}
-          >
-            <XCircle size={18} />
-          </IconButton>
-        </Tooltip>
-      </>
-    )}
-    
-    <Tooltip title="More Actions">
-      <IconButton size="small">
-        <MoreVertical size={18} />
-      </IconButton>
-    </Tooltip>
-  </Box>
-</TableCell>
-</TableRow>
-<TableRow>
-  <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
-    <Collapse in={expandedInstructor === instructor.id} timeout="auto" unmountOnExit>
-      <Box sx={{ py: 2, px: 3 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" gutterBottom>
-              Instructor Details
-            </Typography>
-            {instructor.bio && (
-              <Typography variant="body2" paragraph>
-                {instructor.bio}
-              </Typography>
-            )}
-            {instructor.address && (
-              <Box display="flex" alignItems="center" mb={1}>
-                <Typography variant="body2" fontWeight="medium" mr={1}>
-                  Address:
-                </Typography>
-                <Typography variant="body2">
-                  {instructor.address}
-                </Typography>
-              </Box>
-            )}
-            <Box display="flex" alignItems="center">
-              <Typography variant="body2" fontWeight="medium" mr={1}>
-                Verified:
-              </Typography>
-              <Typography variant="body2">
-                {instructor.verifiedPhone ? 'Yes' : 'No'}
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" gutterBottom>
-              Course Statistics
-            </Typography>
-            <Box display="flex" flexDirection="column" gap={1}>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2">Total Courses:</Typography>
-                <Typography variant="body2" fontWeight="medium">
-                  {instructor.courseCount || 0}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2">Active Courses:</Typography>
-                <Typography variant="body2" fontWeight="medium">
-                  {instructor.activeCourseCount || 0}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2">Total Students:</Typography>
-                <Typography variant="body2" fontWeight="medium">
-                  {instructor.studentCount || 0}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2">Average Rating:</Typography>
-                <Typography variant="body2" fontWeight="medium">
-                  {instructor.averageRating?.toFixed(1) || 'N/A'}
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-        </Grid>
-        <Box display="flex" justifyContent="flex-end" mt={2}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<Eye size={16} />}
-            onClick={() => navigate(`/dashboard/instructor/detail/${instructor.id}`)}
-          >
-            View Full Profile
-          </Button>
+                              <Box display="flex" alignItems="center">
+                                <Avatar 
+                                  src={imageUrl} 
+                                  alt={`${instructor.firstName} ${instructor.lastName}`}
+                                  sx={{ width: 40, height: 40, mr: 2 }}
+                                >
+                                  {instructor.firstName?.[0]}
+                                </Avatar>
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {instructor.firstName} {instructor.lastName}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {instructor.title || 'Instructor'}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Box display="flex" flexDirection="column">
+                                <Box display="flex" alignItems="center">
+                                  <Mail size={14} style={{ marginRight: 8, opacity: 0.7 }} />
+                                  <Typography variant="body2">
+                                    {instructor.email || instructor.accountEmail}
+                                  </Typography>
+                                </Box>
+                                {instructor.phone && (
+                                  <Box display="flex" alignItems="center" mt={0.5}>
+                                    <Phone size={14} style={{ marginRight: 8, opacity: 0.7 }} />
+                                    <Typography variant="body2">
+                                      {instructor.phone}
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {instructor.courseCount || 0}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={instructor.status} 
+                                size="small"
+                                color={getStatusColor(instructor.status)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {instructor.createdAt 
+                                  ? format(new Date(instructor.createdAt), 'MMM dd, yyyy')
+                                  : 'N/A'
+                                }
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Box display="flex" justifyContent="flex-end">
+                                <Tooltip title="View Details">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => navigate(`/dashboard/instructor/detail/${instructor.id}`)}
+                                  >
+                                    <Eye size={18} />
+                                  </IconButton>
+                                </Tooltip>
+                                
+                                {instructor.status === 'PENDING' && (
+                                  <>
+                                    <Tooltip title="Approve">
+                                      <IconButton
+                                        size="small"
+                                        color="success"
+                                        onClick={() => handleOpenApprovalDialog(instructor.id)}
+                                      >
+                                        <CheckCircle size={18} />
+                                      </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Reject">
+                                      <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => handleOpenRejectionDialog(instructor.id)}
+                                      >
+                                        <XCircle size={18} />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </>
+                                )}
+                                
+                                <Tooltip title="More Actions">
+                                  <IconButton size="small">
+                                    <MoreVertical size={18} />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
+                              <Collapse in={expandedInstructor === instructor.id} timeout="auto" unmountOnExit>
+                                <Box sx={{ py: 2, px: 3 }}>
+                                  <Grid container spacing={2}>
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom>
+                                        Instructor Details
+                                      </Typography>
+                                      {instructor.bio && (
+                                        <Typography variant="body2" paragraph>
+                                          {instructor.bio}
+                                        </Typography>
+                                      )}
+                                      {instructor.address && (
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                          <Typography variant="body2" fontWeight="medium" mr={1}>
+                                            Address:
+                                          </Typography>
+                                          <Typography variant="body2">
+                                            {instructor.address}
+                                          </Typography>
+                                        </Box>
+                                      )}
+                                      <Box display="flex" alignItems="center">
+                                        <Typography variant="body2" fontWeight="medium" mr={1}>
+                                          Verified:
+                                        </Typography>
+                                        <Typography variant="body2">
+                                          {instructor.verifiedPhone ? 'Yes' : 'No'}
+                                        </Typography>
+                                      </Box>
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom>
+                                        Course Statistics
+                                      </Typography>
+                                      <Box display="flex" flexDirection="column" gap={1}>
+                                        <Box display="flex" justifyContent="space-between">
+                                          <Typography variant="body2">Total Courses:</Typography>
+                                          <Typography variant="body2" fontWeight="medium">
+                                            {instructor.courseCount || 0}
+                                          </Typography>
+                                        </Box>
+                                        <Box display="flex" justifyContent="space-between">
+                                          <Typography variant="body2">Active Courses:</Typography>
+                                          <Typography variant="body2" fontWeight="medium">
+                                            {instructor.activeCourseCount || 0}
+                                          </Typography>
+                                        </Box>
+                                        <Box display="flex" justifyContent="space-between">
+                                          <Typography variant="body2">Total Students:</Typography>
+                                          <Typography variant="body2" fontWeight="medium">
+                                            {instructor.studentCount || 0}
+                                          </Typography>
+                                        </Box>
+                                        <Box display="flex" justifyContent="space-between">
+                                          <Typography variant="body2">Average Rating:</Typography>
+                                          <Typography variant="body2" fontWeight="medium">
+                                            {instructor.averageRating?.toFixed(1) || 'N/A'}
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                    </Grid>
+                                  </Grid>
+                                  <Box display="flex" justifyContent="flex-end" mt={2}>
+                                    <Button
+                                      variant="outlined"
+                                      size="small"
+                                      startIcon={<Eye size={16} />}
+                                      onClick={() => navigate(`/dashboard/instructor/detail/${instructor.id}`)}
+                                    >
+                                      View Full Profile
+                                    </Button>
+                                  </Box>
+                                </Box>
+                              </Collapse>
+                            </TableCell>
+                          </TableRow>
+                        </React.Fragment>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )
+          )}
+
+          {/* Pagination */}
+          <Box display="flex" justifyContent="center" mt={3}>
+            <Pagination
+              count={Math.ceil(filteredAndSortedInstructors.length / filters.rowsPerPage)}
+              page={filters.page}
+              onChange={handlePageChange}
+              color="primary"
+            />
+          </Box>
         </Box>
-      </Box>
-    </Collapse>
-  </TableCell>
-</TableRow>
-</React.Fragment>
-);
-})}
-</TableBody>
-</Table>
-</TableContainer>
-)
-)}
 
-{/* Pagination */}
-<Box display="flex" justifyContent="center" mt={3}>
-<Pagination
-  count={Math.ceil(filteredAndSortedInstructors.length / filters.rowsPerPage)}
-  page={filters.page}
-  onChange={handlePageChange}
-  color="primary"
-/>
-</Box>
-</Box>
+        {/* Filter Menu */}
+        <Menu
+          anchorEl={filterMenuAnchor}
+          open={Boolean(filterMenuAnchor)}
+          onClose={() => setFilterMenuAnchor(null)}
+          PaperProps={{ sx: { width: 250, p: 1 } }}
+        >
+          <Typography variant="subtitle2" sx={{ px: 2, py: 1 }}>
+            Advanced Filters
+          </Typography>
+          <Divider sx={{ mb: 1 }} />
+          
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={filters.verified}
+                onChange={(e) => handleFilterChange('verified', e.target.checked)}
+              />
+            }
+            label="Verified instructors only"
+            sx={{ px: 1, display: 'block' }}
+          />
+          
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={filters.hasCourses}
+                onChange={(e) => handleFilterChange('hasCourses', e.target.checked)}
+              />
+            }
+            label="Has published courses"
+            sx={{ px: 1, display: 'block' }}
+          />
 
-{/* Filter Menu */}
-<Menu
-  anchorEl={filterMenuAnchor}
-  open={Boolean(filterMenuAnchor)}
-  onClose={() => setFilterMenuAnchor(null)}
-  PaperProps={{ sx: { width: 250, p: 1 } }}
->
-  <Typography variant="subtitle2" sx={{ px: 2, py: 1 }}>
-    Advanced Filters
-  </Typography>
-  <Divider sx={{ mb: 1 }} />
-  
-  <FormControlLabel
-    control={
-      <Checkbox
-        checked={filters.verified}
-        onChange={(e) => handleFilterChange('verified', e.target.checked)}
-      />
-    }
-    label="Verified instructors only"
-    sx={{ px: 1, display: 'block' }}
-  />
-  
-  <FormControlLabel
-    control={
-      <Checkbox
-        checked={filters.hasCourses}
-        onChange={(e) => handleFilterChange('hasCourses', e.target.checked)}
-      />
-    }
-    label="Has published courses"
-    sx={{ px: 1, display: 'block' }}
-  />
+          <Box display="flex" justifyContent="flex-end" mt={2} px={1}>
+            <Button
+              size="small"
+              onClick={handleResetFilters}
+            >
+              Reset
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={() => setFilterMenuAnchor(null)}
+              sx={{ ml: 1 }}
+            >
+              Apply
+            </Button>
+          </Box>
+        </Menu>
 
-  <Box display="flex" justifyContent="flex-end" mt={2} px={1}>
-    <Button
-      size="small"
-      onClick={handleResetFilters}
-    >
-      Reset
-    </Button>
-    <Button
-      size="small"
-      variant="contained"
-      onClick={() => setFilterMenuAnchor(null)}
-      sx={{ ml: 1 }}
-    >
-      Apply
-    </Button>
-  </Box>
-</Menu>
-</Card>
-</ErrorBoundary>
-);
+        {/* Approval Dialog */}
+        <ApprovalDialog
+          open={approvalDialog.open}
+          onClose={handleCloseApprovalDialog}
+          onApprove={handleApproveInstructor}
+          title="Approve Instructor"
+          content="Are you sure you want to approve this instructor? They will be able to create and publish courses."
+        />
+
+        {/* Rejection Dialog */}
+        <RejectionDialog
+          open={rejectionDialog.open}
+          onClose={handleCloseRejectionDialog}
+          onReject={handleRejectInstructor}
+          title="Reject Instructor"
+          content="Please provide a reason for rejecting this instructor application."
+        />
+      </Card>
+    </ErrorBoundary>
+  );
 };
 
 export default InstructorList;

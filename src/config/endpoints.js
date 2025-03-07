@@ -250,7 +250,20 @@ PAYMENT: {
     RETURN: `${API_BASE}/payment/vnpay-return`,
   },
 },
+// Transactions
+// Add this to your ENDPOINTS.ADMIN.TRANSACTIONS object in endpoints.js
 
+TRANSACTIONS: {
+  LIST: `${API_BASE}/admin/transactions`,
+  DASHBOARD: `${API_BASE}/admin/transactions/dashboard`, // New endpoint for dashboard
+  MONTHLY_TRENDS: `${API_BASE}/admin/transactions/trends/monthly`,
+  DETAIL: (id) => `${API_BASE}/admin/transactions/detail/${id}`,
+  STATISTICS: `${API_BASE}/admin/transactions/statistics`,
+  APPROVE_WITHDRAWAL: (id) => `${API_BASE}/admin/transactions/approve-withdrawal/${id}`,
+  REJECT_WITHDRAWAL: (id) => `${API_BASE}/admin/transactions/reject-withdrawal/${id}`,
+  STUDENT_HISTORY: (studentId) => `${API_BASE}/admin/transactions/student-history/${studentId}`,
+  INSTRUCTOR_TRANSACTIONS: (instructorId) => `${API_BASE}/admin/transactions/instructor-transactions/${instructorId}`
+},
 // Progress
 PROGRESS: {
   COMPLETE_LECTURE: `${API_BASE}/progress/complete-lecture`,

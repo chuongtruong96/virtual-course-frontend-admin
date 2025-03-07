@@ -13,8 +13,9 @@ import {
   Collapse,
   List,
   ListItem,
-  ListItemIcon,
-  ListItemText
+  ListItemText,
+  IconButton,
+  CircularProgress
 } from '@mui/material';
 import {
   Eye,
@@ -37,13 +38,84 @@ import {
 } from 'lucide-react';
 import { UPLOAD_PATH, DEFAULT_IMAGES } from '../../config/endpoints';
 import { format } from 'date-fns';
+import { useInstructorDetail } from '../../hooks/useInstructorDetail';
 
+// This is a wrapper component that uses the hook to fetch instructor details
+export const InstructorCardWithDetails = ({ 
+  instructorId, 
+  onApprove, 
+  onReject, 
+  onViewDetail,
+  showMetrics = true
+}) => {
+  const { 
+    instructor, 
+    statistics, 
+    educations, 
+    experiences, 
+    skills, 
+    social,
+    isLoading, 
+    isError 
+  } = useInstructorDetail(instructorId);
+
+  if (isLoading) {
+    return (
+      <Card sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CircularProgress size={40} />
+      </Card>
+    );
+  }
+
+  if (isError || !instructor) {
+    return (
+      <Card sx={{ p: 4, textAlign: 'center' }}>
+        <Typography color="error">Error loading instructor details</Typography>
+      </Card>
+    );
+  }
+
+  // Combine all the data into a single instructor object
+  const instructorWithDetails = {
+    ...instructor,
+    educations: educations || [],
+    experiences: experiences || [],
+    skills: skills || [],
+    social: social || null
+  };
+
+  // Create metrics object from statistics
+  const metrics = showMetrics ? {
+    totalStudents: statistics?.totalStudents || 0,
+    averageRating: statistics?.averageRating || 0,
+    completionRate: statistics?.completionRate || 0
+  } : null;
+
+  return (
+    <InstructorCard
+      instructor={instructorWithDetails}
+      metrics={metrics}
+      onApprove={onApprove}
+      onReject={onReject}
+      onViewDetail={onViewDetail}
+    />
+  );
+};
+
+InstructorCardWithDetails.propTypes = {
+  instructorId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  onApprove: PropTypes.func.isRequired,
+  onReject: PropTypes.func.isRequired,
+  onViewDetail: PropTypes.func.isRequired,
+  showMetrics: PropTypes.bool
+};
+
+// The original InstructorCard component remains mostly unchanged
 const InstructorCard = React.memo(({
   instructor,
   onApprove,
   onReject,
   onViewDetail,
-  props,
   metrics
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -271,7 +343,7 @@ const InstructorCard = React.memo(({
                       <>
                         {edu.university}
                         {edu.startYear && edu.endYear && (
-                          <span> • {edu.startYear} - {edu.endYear}</span>
+                          <span> • {edu.startYear} - {edu.endYear === new Date().getFullYear() + 1 ? 'Present' : edu.endYear}</span>
                         )}
                       </>
                     }
@@ -298,7 +370,7 @@ const InstructorCard = React.memo(({
                       <>
                         {exp.company}
                         {exp.startYear && exp.endYear && (
-                          <span> • {exp.startYear} - {exp.endYear}</span>
+                          <span> • {exp.startYear} - {exp.endYear === new Date().getFullYear() + 1 ? 'Present' : exp.endYear}</span>
                         )}
                       </>
                     }

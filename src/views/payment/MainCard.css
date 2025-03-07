@@ -1,0 +1,60 @@
+/* MainCard component styles */
+
+.card-shadow {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .card-shadow:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+  
+  .box-shadow-0 {
+    box-shadow: none !important;
+  }
+  
+  .card-header-right {
+    float: right;
+  }
+  
+  /* Border left variations for status cards */
+  .border-left-primary {
+    border-left: 4px solid #4e73df;
+  }
+  
+  .border-left-success {
+    border-left: 4px solid #1cc88a;
+  }
+  
+  .border-left-warning {
+    border-left: 4px solid #f6c23e;
+  }
+  
+  .border-left-danger {
+    border-left: 4px solid #e74a3b;
+  }
+  
+  .border-left-info {
+    border-left: 4px solid #36b9cc;
+  }
+  
+  /* Card header with flex layout */
+  .card-header.d-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .card-header.d-flex {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .card-header-right {
+      margin-top: 10px;
+      float: none;
+      width: 100%;
+    }
+  }

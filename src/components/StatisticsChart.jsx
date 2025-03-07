@@ -224,7 +224,7 @@ const StatisticsChart = ({
             <>
               <Line type="monotone" dataKey="users" name="Users" stroke={colors.users} activeDot={{ r: 8 }} />
               <Line type="monotone" dataKey="courses" name="Courses" stroke={colors.courses} />
-              <Line type="monotone" dataKey="revenue" name="Revenue ($)" stroke={colors.revenue} />
+              <Line type="monotone" dataKey="revenue" name="Revenue (VND)" stroke={colors.revenue} />
             </>
           )}
         </LineChart>
@@ -267,7 +267,7 @@ const StatisticsChart = ({
             <>
               <Bar dataKey="users" name="Users" fill={colors.users} />
               <Bar dataKey="courses" name="Courses" fill={colors.courses} />
-              <Bar dataKey="revenue" name="Revenue ($)" fill={colors.revenue} />
+              <Bar dataKey="revenue" name="Revenue (VND)" fill={colors.revenue} />
             </>
           )}
         </BarChart>
@@ -310,7 +310,7 @@ const StatisticsChart = ({
             <>
               <Area type="monotone" dataKey="users" name="Users" stroke={colors.users} fill={alpha(colors.users, 0.2)} />
               <Area type="monotone" dataKey="courses" name="Courses" stroke={colors.courses} fill={alpha(colors.courses, 0.2)} />
-              <Area type="monotone" dataKey="revenue" name="Revenue ($)" stroke={colors.revenue} fill={alpha(colors.revenue, 0.2)} />
+              <Area type="monotone" dataKey="revenue" name="Revenue (VND)" stroke={colors.revenue} fill={alpha(colors.revenue, 0.2)} />
             </>
           )}
         </AreaChart>

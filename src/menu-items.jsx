@@ -11,7 +11,9 @@ import {
   CreditCard,
   Briefcase,
   Settings,
-  Wallet
+  Wallet,
+  BarChart2  // Add this import
+
 } from 'lucide-react';
 
 const menuItems = {
@@ -160,11 +162,19 @@ const menuItems = {
       type: 'group',
       children: [
         {
-          id: 'transactions',
-          title: 'Transactions',
+          id: 'transaction-dashboard',
+          title: 'Transaction Dashboard',
           type: 'item',
-          url: '/dashboard/finance/transactions',
-          icon: CreditCard,
+          url: '/dashboard/finance/transactions/dashboard',
+          icon: BarChart2,  // This is commented out
+          breadcrumbs: false
+        },
+        {
+          id: 'student-transaction-list',
+          title: 'Student Transactions',
+          type: 'item',
+          url: '/dashboard/finance/transactions/student-list',
+          
           breadcrumbs: false
         },
         {

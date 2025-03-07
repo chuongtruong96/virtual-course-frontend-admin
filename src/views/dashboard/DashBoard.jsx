@@ -105,6 +105,8 @@ import StudentPerformanceMetrics from '../finance/StudentPerformanceMetrics';
 import useAdminDashboard from '../../hooks/useAdminDashboard';
 import useNotifications from '../../hooks/useNotifications';
 import useAdminReviews from '../../hooks/useAdminReviews';
+import useStudentStatistics from '../../hooks/useStudentStatistics';
+
 import { Link, useNavigate } from 'react-router-dom';
 import StatsCard from '../../components/StatsCard';
 import ChartCard from '../../components/ChartCard';
@@ -128,7 +130,8 @@ const PerformanceMetricsWithTabs = ({
   studentQuizStatistics,
   isLoading,
   theme,
-  onRefresh
+  onRefresh,
+  onExportStudentData
 }) => {
   const [tabValue, setTabValue] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -146,7 +149,24 @@ const PerformanceMetricsWithTabs = ({
     }
     setTimeout(() => setIsRefreshing(false), 800);
   };
+  // Add this function to handle student data export
+  const handleExportStudentData = () => {
+    try {
+      // You can implement this in your main component and pass it as a prop
+      // For now, we'll just log a message
+      console.log('Exporting student data...');
 
+      // If you have a service method for this:
+      // StudentStatisticsService.exportStudentPerformanceData();
+
+      // Use the passed prop if available
+      if (onExportStudentData) {
+        onExportStudentData();
+      }
+    } catch (error) {
+      console.error('Error exporting student data:', error);
+    }
+  };
   return (
     <Grid container spacing={3} sx={{ mt: 3 }}>
       <Grid item xs={12}>
@@ -156,17 +176,15 @@ const PerformanceMetricsWithTabs = ({
               <Typography variant="h6" fontWeight="medium">
                 Platform Performance
               </Typography>
-              
+
               <Box display="flex" alignItems="center">
-                {isLoading && (
-                  <CircularProgress size={20} color="primary" sx={{ mr: 2 }} />
-                )}
-                
+                {isLoading && <CircularProgress size={20} color="primary" sx={{ mr: 2 }} />}
+
                 <Tooltip title="Refresh data">
-                  <IconButton 
-                    onClick={handleRefresh} 
+                  <IconButton
+                    onClick={handleRefresh}
                     disabled={isRefreshing || isLoading}
-                    sx={{ 
+                    sx={{
                       animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
                       '@keyframes spin': {
                         '0%': { transform: 'rotate(0deg)' },
@@ -215,8 +233,10 @@ const PerformanceMetricsWithTabs = ({
                       <Typography variant="h5" fontWeight="bold" mt={1}>
                         {isLoading ? (
                           <CircularProgress size={24} color="primary" />
+                        ) : statistics?.averageCompletionRate ? (
+                          `${statistics.averageCompletionRate}%`
                         ) : (
-                          statistics?.averageCompletionRate ? `${statistics.averageCompletionRate}%` : '0%'
+                          '0%'
                         )}
                       </Typography>
                       <Typography variant="body2" color="textSecondary">
@@ -244,8 +264,10 @@ const PerformanceMetricsWithTabs = ({
                       <Typography variant="h5" fontWeight="bold" mt={1}>
                         {isLoading ? (
                           <CircularProgress size={24} color="success" />
+                        ) : statistics?.averageRating ? (
+                          statistics.averageRating.toFixed(1)
                         ) : (
-                          statistics?.averageRating ? statistics.averageRating.toFixed(1) : '0.0'
+                          '0.0'
                         )}
                       </Typography>
                       <Typography variant="body2" color="textSecondary">
@@ -273,10 +295,10 @@ const PerformanceMetricsWithTabs = ({
                       <Typography variant="h5" fontWeight="bold" mt={1}>
                         {isLoading ? (
                           <CircularProgress size={24} color="warning" />
+                        ) : statistics?.averageRevenue ? (
+                          `${statistics.averageRevenue.toLocaleString()} VND`
                         ) : (
-                          statistics?.averageRevenue 
-                            ? `${statistics.averageRevenue.toLocaleString()} VND` 
-                            : '0 VND'
+                          '0 VND'
                         )}
                       </Typography>
                       <Typography variant="body2" color="textSecondary">
@@ -304,8 +326,10 @@ const PerformanceMetricsWithTabs = ({
                       <Typography variant="h5" fontWeight="bold" mt={1}>
                         {isLoading ? (
                           <CircularProgress size={24} color="info" />
+                        ) : statistics?.activeUserRate ? (
+                          `${statistics.activeUserRate}%`
                         ) : (
-                          statistics?.activeUserRate ? `${statistics.activeUserRate}%` : '0%'
+                          '0%'
                         )}
                       </Typography>
                       <Typography variant="body2" color="textSecondary">
@@ -342,7 +366,7 @@ const PerformanceMetricsWithTabs = ({
             {/* Instructor Performance Tab */}
             {tabValue === 1 && (
               <Box sx={{ mt: 2 }}>
-                <InstructorPerformanceMetrics 
+                <InstructorPerformanceMetrics
                   instructorStatistics={instructorStatistics}
                   isLoading={isLoading}
                   theme={theme}
@@ -355,11 +379,12 @@ const PerformanceMetricsWithTabs = ({
             {/* Student Learning Tab */}
             {tabValue === 2 && (
               <Box sx={{ mt: 2 }}>
-                <StudentPerformanceMetrics 
-                  studentQuizStatistics={studentQuizStatistics}
+                <StudentPerformanceMetrics
+                  studentStatistics={studentQuizStatistics}
                   isLoading={isLoading}
                   theme={theme}
                   onRefresh={handleRefresh}
+                  onExport={handleExportStudentData}
                 />
               </Box>
             )}
@@ -377,7 +402,7 @@ const DashDefault = () => {
   const [modelFilter, setModelFilter] = useState('all');
   const [tabValue, setTabValue] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Add state for pending withdrawals
   const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
   const [pendingWithdrawalsLoading, setPendingWithdrawalsLoading] = useState(false);
@@ -386,7 +411,15 @@ const DashDefault = () => {
   // Add state for review statistics
   const [reviewStatistics, setReviewStatistics] = useState(null);
   const [instructorStatistics, setInstructorStatistics] = useState(null);
-  const [studentQuizStatistics, setStudentQuizStatistics] = useState(null);
+
+  // Add the student statistics hook
+  const {
+    studentStatistics,
+    isLoading: studentStatsLoading,
+    error: studentStatsError,
+    refreshStudentStatistics,
+    exportStudentStatistics
+  } = useStudentStatistics();
 
   // Existing hooks
   const {
@@ -435,34 +468,31 @@ const DashDefault = () => {
   } = useTransactions();
 
   // NEW: Get wallet statistics
-  // NEW: Get wallet statistics
-  const { 
-    isLoading: walletsLoading, 
-    getWalletStatistics 
-  } = useWallets();
-  
+  const { isLoading: walletsLoading, getWalletStatistics } = useWallets();
+
   // Add a state for wallet stats to match the variable name used in quickStats
   const [walletStatistics, setWalletStatistics] = useState(null);
-  
+
   // Update fetchPendingWithdrawals function to use the hooks properly
   const fetchPendingWithdrawals = async () => {
     setPendingWithdrawalsLoading(true);
     try {
       // Since we don't have a direct method in the hooks for this,
       // we can filter pending withdrawals from transactions
-      const transactions = await fetchTransactions({ 
-        type: 'WITHDRAWAL', 
-        status: 'PENDING' 
+      const transactions = await fetchTransactions({
+        type: 'WITHDRAWAL',
+        status: 'PENDING'
       });
-      
+
       // Map the transactions to the format we need
-      const pendingWithdrawals = transactions?.content?.map(transaction => ({
-        id: transaction.id,
-        amount: transaction.amount,
-        instructorName: transaction.instructorName || 'Instructor',
-        createdAt: transaction.createdAt
-      })) || [];
-      
+      const pendingWithdrawals =
+        transactions?.content?.map((transaction) => ({
+          id: transaction.id,
+          amount: transaction.amount,
+          instructorName: transaction.instructorName || 'Instructor',
+          createdAt: transaction.createdAt
+        })) || [];
+
       setPendingWithdrawals(pendingWithdrawals);
     } catch (error) {
       console.error('Error fetching pending withdrawals:', error);
@@ -507,18 +537,18 @@ const DashDefault = () => {
 
   // Log data for debugging
   useEffect(() => {
-    console.log("Recent reviews data:", recentReviews);
+    console.log('Recent reviews data:', recentReviews);
   }, [recentReviews]);
-  
+
   useEffect(() => {
-    console.log("Recent notifications data:", recentNotifications);
+    console.log('Recent notifications data:', recentNotifications);
   }, [recentNotifications]);
 
   // Add this useEffect to fetch monthly trends when component mounts
   useEffect(() => {
     fetchMonthlyTransactionTrends();
     fetchPendingWithdrawals();
-    
+
     const fetchWalletStats = async () => {
       try {
         const stats = await getWalletStatistics();
@@ -528,7 +558,7 @@ const DashDefault = () => {
         setWalletStatistics(null);
       }
     };
-    
+
     fetchWalletStats();
   }, [fetchMonthlyTransactionTrends, getWalletStatistics, fetchPendingWithdrawals]);
 
@@ -541,15 +571,29 @@ const DashDefault = () => {
       await fetchTransactionStatistics();
       await fetchMonthlyTransactionTrends();
       await fetchPendingWithdrawals();
-      
+
       // Refresh wallet statistics
       const stats = await getWalletStatistics();
       setWalletStatistics(stats);
+
+      // Refresh student statistics
+      await refreshStudentStatistics();
     } finally {
       setTimeout(() => setRefreshing(false), 800);
     }
   };
-
+  // Handle student data export
+  const handleExportStudentData = async () => {
+    try {
+      const success = await exportStudentStatistics();
+      if (success) {
+        // Show success message if needed
+        console.log('Student data exported successfully');
+      }
+    } catch (error) {
+      console.error('Error exporting student data:', error);
+    }
+  };
   // Calculate trends and percentages
   const calculateTrend = (current, previous) => {
     if (!previous) return { value: '0%', isUp: true };
@@ -564,32 +608,29 @@ const DashDefault = () => {
   // Prepare quick stats with calculated trends
   const quickStats = useMemo(() => {
     if (!statistics || !trends) return [];
-  
+
     // Calculate financial trends if we have previous data
     const depositGrowth = transactionStats?.depositGrowth
       ? { value: `${Math.abs(transactionStats.depositGrowth).toFixed(1)}%`, isUp: transactionStats.depositGrowth > 0 }
       : { value: '0%', isUp: true };
-  
+
     const walletGrowth = walletStatistics?.walletGrowth
       ? { value: `${Math.abs(walletStatistics.walletGrowth).toFixed(1)}%`, isUp: walletStatistics.walletGrowth > 0 }
       : { value: '0%', isUp: true };
-  
+
     const withdrawalGrowth = transactionStats?.withdrawalGrowth
       ? { value: `${Math.abs(transactionStats.withdrawalGrowth).toFixed(1)}%`, isUp: transactionStats.withdrawalGrowth > 0 }
       : { value: '0%', isUp: false };
-  
+
     const balanceGrowth = walletStatistics?.avgBalanceGrowth
       ? { value: `${Math.abs(walletStatistics.avgBalanceGrowth).toFixed(1)}%`, isUp: walletStatistics.avgBalanceGrowth > 0 }
       : { value: '0%', isUp: true };
 
-    const reviewsCount = statistics?.reviews || (recentReviews?.length || 0);
-  
+    const reviewsCount = statistics?.reviews || recentReviews?.length || 0;
+
     // Tính toán trend cho reviews
-    const reviewsTrend = calculateTrend(
-      reviewsCount,
-      trends?.previousReviews || 0
-    );
-    
+    const reviewsTrend = calculateTrend(reviewsCount, trends?.previousReviews || 0);
+
     return [
       {
         title: 'Total Users',
@@ -812,75 +853,50 @@ const DashDefault = () => {
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {/* Transaction Type Distribution */}
         <Grid item xs={12} md={6}>
-          <ChartCard
-            title="Transaction Distribution"
-            subtitle="💰 By Type"
-            chartType="pie"
-            loading={transactionsLoading}
-          >
-            <TransactionTypePieChart 
-              data={transactionStats} 
-              isLoading={transactionsLoading}
-            />
+          <ChartCard title="Transaction Distribution" subtitle="💰 By Type" chartType="pie" loading={transactionsLoading}>
+            <TransactionTypePieChart data={transactionStats} isLoading={transactionsLoading} />
           </ChartCard>
         </Grid>
 
         {/* Transaction Status Distribution */}
         <Grid item xs={12} md={6}>
-          <ChartCard
-            title="Transaction Status"
-            subtitle="📊 Overview"
-            chartType="bar"
-            loading={transactionsLoading}
-          >
-            <TransactionStatusBarChart 
-              data={transactionStats} 
-              isLoading={transactionsLoading}
-            />
+          <ChartCard title="Transaction Status" subtitle="📊 Overview" chartType="bar" loading={transactionsLoading}>
+            <TransactionStatusBarChart data={transactionStats} isLoading={transactionsLoading} />
           </ChartCard>
         </Grid>
 
         {/* Monthly Transaction Trends */}
         <Grid item xs={12}>
           <ChartCard title="Monthly Transaction Trends" subtitle="💹 Financial Activity" chartType="line" loading={transactionsLoading}>
-          <MonthlyTransactionChart data={transactionStats?.monthlyData || []} isLoading={transactionsLoading} height={300} />
+            <MonthlyTransactionChart data={transactionStats?.monthlyData || []} isLoading={transactionsLoading} height={300} />
           </ChartCard>
         </Grid>
       </Grid>
 
       {/* Financial Actions */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-        <Button 
-          variant="contained" 
-          color="primary" 
+        <Button
+          variant="contained"
+          color="primary"
           startIcon={<TrendingUpIcon />}
           onClick={() => navigate('/dashboard/finance/transactions')}
           sx={{ mr: 2 }}
         >
           View All Transactions
         </Button>
-        <Button 
-          variant="outlined" 
-          color="primary" 
+        <Button
+          variant="outlined"
+          color="primary"
           startIcon={<Wallet />}
           onClick={() => navigate('/dashboard/finance/wallets')}
           sx={{ mr: 2 }}
         >
           Manage Wallets
         </Button>
-        <Button 
-          variant="outlined" 
-          color="warning" 
-          startIcon={<CreditCard />}
-          onClick={() => navigate('/dashboard/finance/withdrawals')}
-        >
-          Pending Withdrawals 
+        <Button variant="outlined" color="warning" startIcon={<CreditCard />} onClick={() => navigate('/dashboard/finance/withdrawals')}>
+          Pending Withdrawals
           {transactionStats?.pendingTransactions > 0 && (
-            <Badge 
-              badgeContent={transactionStats.pendingTransactions} 
-              color="error" 
-              sx={{ ml: 1 }}
-            />
+            <Badge badgeContent={transactionStats.pendingTransactions} color="error" sx={{ ml: 1 }} />
           )}
         </Button>
       </Box>
@@ -1011,8 +1027,8 @@ const DashDefault = () => {
                   </Box>
                 ) : recentReviews && recentReviews.length > 0 ? (
                   recentReviews.map((review) => {
-                    console.log("Processing review:", review);
-                    
+                    console.log('Processing review:', review);
+
                     // Kiểm tra cấu trúc dữ liệu thực tế
                     // Điều chỉnh mapping dữ liệu dựa trên cấu trúc API thực tế
                     const safeReview = {
@@ -1030,10 +1046,10 @@ const DashDefault = () => {
                         title: review?.courseTitle || (review?.course ? review.course.title : 'Unknown Course')
                       }
                     };
-                    
+
                     return (
-                      <ReviewItem 
-                        key={safeReview.id} 
+                      <ReviewItem
+                        key={safeReview.id}
                         review={safeReview}
                         showActions={true}
                         onReply={(reviewId) => {
@@ -1092,8 +1108,8 @@ const DashDefault = () => {
                   </Box>
                 ) : recentNotifications && recentNotifications.length > 0 ? (
                   recentNotifications.map((notification) => (
-                    <NotificationItem 
-                      key={notification.id} 
+                    <NotificationItem
+                      key={notification.id}
                       notification={notification}
                       onMarkAsRead={(notificationId) => {
                         // Gọi API đánh dấu đã đọc
@@ -1139,10 +1155,11 @@ const DashDefault = () => {
         transactionStats={transactionStats}
         walletStatistics={walletStatistics}
         instructorStatistics={instructorStatistics}
-        studentQuizStatistics={studentQuizStatistics}
-        isLoading={isLoading || transactionsLoading || walletsLoading}
+        studentQuizStatistics={studentStatistics}
+        isLoading={isLoading || transactionsLoading || walletsLoading || studentStatsLoading}
         theme={theme}
         onRefresh={handleRefresh}
+        onExportStudentData={handleExportStudentData}
       />
     </Box>
   );

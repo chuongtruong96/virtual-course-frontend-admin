@@ -353,7 +353,7 @@ const ApprovalItem = ({
                     Price
                   </Typography>
                   <Typography variant="body2">
-                    {item?.price ? `$${item.price.toFixed(2)}` : 'Free'}
+                    {item?.price ? `${item.price.toLocaleString}VND` : 'Free'}
                   </Typography>
                 </Box>
                 

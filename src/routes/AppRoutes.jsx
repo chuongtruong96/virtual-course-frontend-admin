@@ -42,6 +42,16 @@ const WalletManagement = lazy(() => import('../views/finance/WalletManagement'))
 const WalletDetail = lazy(() => import('../views/finance/WalletDetail'));
 const WithdrawalRequests = lazy(() => import('../views/finance/WithdrawalRequests'));
 const PaymentSettings = lazy(() => import('../views/finance/PaymentSettings'));
+// Payment System - New Components
+const PaymentForm = lazy(() => import('../views/payment/PaymentForm'));
+const PaymentSuccess = lazy(() => import('../views/payment/PaymentSuccess'));
+const PaymentFailed = lazy(() => import('../views/payment/PaymentFailed'));
+const TransactionHistory = lazy(() => import('../views/payment/TransactionHistory'));
+const AdminTransactionDashboard = lazy(() => import('../views/payment/AdminTransactionDashboard'));
+const StudentTransactionHistory = lazy(() => import('../views/payment/StudentTransactionHistory'));
+const TransactionDashboard = lazy(() => import('../views/payment/TransactionDashboard'));
+// const StudentTransaction = lazy(() => import('../views/payment/StudentTransaction'));
+const StudentTransactionList = lazy(() => import('../views/student/StudentTransactionList'));
 
 const AppRoutes = () => (
   <Suspense fallback={<Loader />}>
@@ -56,9 +66,7 @@ const AppRoutes = () => (
       <Route
         path="/dashboard/*"
         element={
-          // <PrivateRoute>
-<PrivateRoute roles={['ROLE_ADMIN']}>
-
+          <PrivateRoute roles={['ROLE_ADMIN']}>
             <AdminLayout />
           </PrivateRoute>
         }
@@ -108,22 +116,45 @@ const AppRoutes = () => (
         {/* NOTIFICATION */}
         <Route path="notification/list" element={<NotificationList />} />
 
-         {/* FINANCIAL MANAGEMENT - New Routes */}
-         <Route path="finance">
+        {/* FINANCIAL MANAGEMENT - New Routes */}
+        <Route path="finance">
+          {/* Important: Place the dashboard route BEFORE the :transactionId route */}
+          <Route path="transactions/dashboard" element={<AdminTransactionDashboard />} />
+          <Route path="transactions/studentdashboard" element={<TransactionDashboard />} />
+          {/* <Route path="transactions/studenttransaction" element={<StudentTransaction />} /> */}
+          <Route path="transactions/student-list" element={<StudentTransactionList />} />
+
+          <Route path="transactions/statistics" element={<TransactionStatistics />} />
           <Route path="transactions" element={<TransactionList />} />
           <Route path="transactions/:transactionId" element={<TransactionDetail />} />
-          <Route path="transactions/statistics" element={<TransactionStatistics />} />
           <Route path="wallets" element={<WalletManagement />} />
           <Route path="wallets/:walletId" element={<WalletDetail />} />
           <Route path="withdrawals" element={<WithdrawalRequests />} />
           <Route path="payment-settings" element={<PaymentSettings />} />
         </Route>
 
-
         {/* Fallback Route */}
         <Route path="*" element={<Navigate to="/dashboard/default" replace />} />
       </Route>
-
+      
+      {/* Student Protected Routes */}
+      <Route
+        path="/student/*"
+        element={
+          <PrivateRoute roles={['ROLE_STUDENT']}>
+            {/* You can create a StudentLayout component similar to AdminLayout */}
+            <Suspense fallback={<Loader />}>
+              <Routes>
+                <Route path="payment/:courseId" element={<PaymentForm />} />
+                <Route path="payment/cart" element={<PaymentForm />} />
+                <Route path="transactions" element={<TransactionHistory />} />
+                {/* Add other student routes here */}
+              </Routes>
+            </Suspense>
+          </PrivateRoute>
+        }
+      />
+      
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard/default" replace />} />
 
